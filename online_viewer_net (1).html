@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MindsetOS Pro - Ultimate Edition</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Noto+Sans+Sinhala:wght@400;700;900&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --font-main: 'Inter', 'Noto Sans Sinhala', sans-serif;
+        }
+        body { 
+            font-family: var(--font-main);
+            scroll-behavior: smooth;
+        }
+        .animate-fade-in { animation: fadeIn 0.4s ease-out forwards; }
+        .animate-slide-up { animation: slideUp 0.5s ease-out forwards; }
+        
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideUp { 
+            from { opacity: 0; transform: translateY(15px); } 
+            to { opacity: 1; transform: translateY(0); } 
+        }
+
+        .glass {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+        
+        /* Custom Progress Bar Glow */
+        .progress-glow {
+            box-shadow: 0 0 15px rgba(79, 70, 229, 0.4);
+        }
+    </style>
+</head>
+<body class="bg-[#f8fafc] text-slate-900 selection:bg-indigo-100 overflow-x-hidden">
+
+    <div id="app-root"></div>
+
+    <script>
+        // --- App State ---
+        const appId = "mindset-os-ultimate-v2";
+        let activeTab = 'home';
+        let selectedArticleId = null;
+        let user = { name: '', joined: '' };
+        let isNewUser = true;
+        let habits = [];
+        let historyData = [];
+
+        // --- All Detailed Articles ---
+        const articles = [
+            {
+                id: "atomic-habits", title: "Atomic Habits: පුරුදු ඇති කරගන්නා විද්‍යාත්මක මග", author: "James Clear", category: "විනය & පුරුදු", icon: "target", color: "text-orange-500", readTime: "විනාඩි 12",
+                excerpt: "ජීවිතය වෙනස් කර ගැනීමට ලොකු ඉලක්ක නොව, කුඩා (Atomic) පුරුදු ප්‍රමාණවත් බව මෙහිදී පැහැදිලි කෙරේ.",
+                intro: "James Clear ගේ Atomic Habits යනු පුරුදු වෙනස් කිරීම පිළිබඳ ලොව පිළිගත් සාර්ථකම ක්‍රමවේදයයි. මෙහිදී අවධානය යොමු කරන්නේ ප්‍රතිඵලයට නොව, ක්‍රියාවලියටයි (Systems over Goals).",
+                sections: [
+                    { title: "1. 1% කින් දියුණු වීම", text: "සෑම දිනකම ඔබ කරන වැඩ 1% කින් දියුණු කළහොත්, වසර අවසානයේ ඔබ 37 ගුණයකින් දක්ෂයෙකු බවට පත්වේ. මෙය සංයුක්ත පොලිය (Compound Interest) මෙන් ක්‍රියා කරයි." },
+                    { title: "2. තත්පර 2 නීතිය", text: "ඕනෑම පුරුද්දක් ආරම්භ කිරීමේදී එය විනාඩි 2කට වඩා අඩු කාලයකින් කළ හැකි මට්ටමකට සරල කරන්න. උදාහරණයක් ලෙස 'පොතක් කියවීම' වෙනුවට 'එක් පිටුවක් කියවීම' ලෙස ආරම්භ කරන්න." },
+                    { title: "3. අනන්‍යතාවය වෙනස් කිරීම", text: "පුරුද්දක් ඇති කර ගැනීමට වඩා වැදගත් වන්නේ ඔබේ අනන්‍යතාවය (Identity) වෙනස් කිරීමයි. 'මම පොතක් කියවන කෙනෙක්' වෙනුවට 'මම පාඨකයෙක්' ලෙස සිතන්න." }
+                ],
+                science: "මොළයේ ඇති Basal Ganglia කොටස පුරුදු ගබඩා කිරීමට වගකියයි. පුරුද්දක් නැවත නැවත කරන විට ස්නායු අතර Myelin තට්ටුව ශක්තිමත් වී එය ඉබේම කෙරෙන කාර්යයක් බවට පත්වේ."
+            },
+            {
+                id: "dopamine-detox", title: "Dopamine Detox: අවධානය සහ උනන්දුව නැවත ලබාගැනීම", author: "Dr. Andrew Huberman", category: "Neuroscience", icon: "zap", color: "text-blue-500", readTime: "විනාඩි 15",
+                excerpt: "නූතන ලෝකයේ අපේ මොළය ඩොපමින් වලින් වැසී ගොස් ඇත. මෙය පාලනය කරන්නේ කෙසේද?",
+                intro: "ඩොපමින් යනු 'සතුටේ හෝමෝනය' නොව, 'අපේක්ෂාවේ හෝමෝනයයි'. සමාජ මාධ්‍ය සහ ක්ෂණික විනෝදය නිසා අපේ ඩොපමින් මට්ටම අසාමාන්‍ය ලෙස ඉහළ ගොස් ඇත.",
+                sections: [
+                    { title: "1. ඩොපමින් බේස්ලයින් බිඳවැටීම", text: "අධික ලෙස උත්තේජනය ලැබෙන විට (TikTok/Shorts), මොළය තමන්ගේ ඩොපමින් මට්ටම පහළ හෙළයි (Downregulation). එවිට සාමාන්‍ය වැදගත් වැඩක් කිරීමට අපට උනන්දුවක් ඇති නොවේ." },
+                    { title: "2. ඩොපමින් ඩෙටොක්ස් කරන්නේ කෙසේද?", text: "සෑම දිනකම උදෑසන අවදි වී පළමු පැය තුළ දුරකථනය භාවිතා නොකරන්න. සති අන්තයක සම්පූර්ණයෙන්ම ඩිජිටල් උපාංග වලින් ඈත් වී මොළයට 'විවේකයක්' ලබා දෙන්න." }
+                ],
+                science: "Prefrontal Cortex එක අපේ තීරණ ගැනීමට වගකියයි. අධික ඩොපමින් නිසා මෙය දුර්වල වන අතර, එය පාලනය කිරීමෙන් නැවත විනය ගොඩනැගිය හැකිය."
+            },
+            {
+                id: "sleep-science", title: "නින්දේ විද්‍යාව: මතකය සහ ශක්තිය අලුත් කිරීම", author: "Dr. Matthew Walker", category: "සෞඛ්‍යය & මතකය", icon: "moon", color: "text-indigo-500", readTime: "විනාඩි 10",
+                excerpt: "නින්ද යනු කම්මැලිකමක් නොව, මොළයේ දත්ත ගබඩා කිරීමේ ප්‍රධානතම ක්‍රියාවලියයි.",
+                intro: "Why We Sleep ග්‍රන්ථයට අනුව, නින්ද නොමැති වීම අපගේ බුද්ධිය සහ ප්‍රතිශක්තිය විනාශ කරන ප්‍රධාන සාධකයකි.",
+                sections: [
+                    { title: "1. REM සහ NREM නින්ද", text: "NREM නින්දේදී අපගේ ශරීරය අලුත් වැඩියා වේ. REM නින්දේදී අප දවල් කාලයේ ඉගෙන ගත් දේවල් දිගුකාලීන මතකයට (Long-term memory) ගබඩා වේ." },
+                    { title: "2. නින්දට බාධා කරන දේවල්", text: "නින්දට පෙර දුරකථන තිරයෙන් නිකුත් වන Blue Light මගින් Melatonin හෝමෝනය නිපදවීම 50% කින් අඩු කරයි." }
+                ],
+                science: "නින්දේදී මොළයේ ඇති ග්ලිම්ෆැටික් පද්ධතිය (Glymphatic system) ක්‍රියාත්මක වී, දිවා කාලයේ මොළයේ එකතු වූ විෂ ද්‍රව්‍ය සෝදා හරියි."
+            },
+            {
+                id: "procrastination", title: "වැඩ කල්දැමීම (Procrastination) විද්‍යාත්මකව නැවැත්වීම", author: "Tim Pychyl", category: "ඵලදායිතාව", icon: "coffee", color: "text-emerald-500", readTime: "විනාඩි 8",
+                excerpt: "අපි වැඩ කල් දමන්නේ කම්මැලි නිසා නොව, අපේ මොළය ඍණාත්මක හැඟීම් වලට දක්වන ප්‍රතිචාරයක් නිසාවෙනි.",
+                intro: "වැඩ කල්දැමීම යනු කාලය කළමනාකරණය කිරීමේ ගැටලුවක් නොව, හැඟීම් කළමනාකරණය කිරීමේ ගැටලුවකි.",
+                sections: [
+                    { title: "1. ඇයි අපි වැඩ කල් දමන්නේ?", text: "යම් වැඩක් දුෂ්කර යැයි අපට දැනෙන විට, මොළය එය 'තර්ජනයක්' ලෙස දකී. එවිට ක්ෂණික සහනයක් ගෙන දෙන දෙයකට මොළය අපව යොමු කරයි." },
+                    { title: "2. The 5-Minute Rule", text: "කල් දමන ඕනෑම වැඩක් 'මම මේක විනාඩි 5ක් විතරක් කරනවා' කියා පටන් ගන්න. බොහෝ විට එම කාලය අවසානයේ දිගටම වැඩ කිරීමට මනස සූදානම් වේ." }
+                ],
+                science: "වැඩක් ආරම්භ කිරීමට පෙර අපගේ Amygdala (භීතිය පාලනය කරන කොටස) සක්‍රීය වේ. වැඩය ආරම්භ කළ විගස එම බිය පහව ගොස් Prefrontal Cortex ක්‍රියාත්මක වේ."
+            },
+            {
+                id: "stress-management", title: "ආතතිය පාලනය: Cortisol අවම කරන ක්‍රම", author: "Dr. Robert Sapolsky", category: "මානසික සෞඛ්‍යය", icon: "activity", color: "text-rose-500", readTime: "විනාඩි 11",
+                excerpt: "දීර්ඝකාලීන මානසික ආතතිය අපගේ මතකය දුර්වල කර ශරීරය ලෙඩ කරයි. එය වළක්වන්නේ කෙසේද?",
+                intro: "කෙටිකාලීන ආතතිය අපට ප්‍රයෝජනවත් වුවත්, දීර්ඝකාලීන ආතතිය අපගේ මොළය සංකෝචනය කරයි.",
+                sections: [
+                    { title: "1. කෝටිසෝල් (Cortisol) හෝමෝනය", text: "අපි දිගින් දිගටම ප්‍රශ්න ගැන සිතන විට ශරීරයේ Cortisol අගය ඉහළ යයි. මෙය නින්දට බාධා කර, රුධිර පීඩනය වැඩි කරයි." },
+                    { title: "2. විද්‍යාත්මක හුස්ම ගැනීම", text: "ආතතිය ක්ෂණිකව අඩු කරගැනීමට: ගැඹුරු හුස්මක් ගෙන, එහි කෙළවරේදී තවත් කුඩා හුස්මක් ගෙන, ඉන්පසු සෙමින් හුස්ම පිට කරන්න." }
+                ],
+                science: "ආතතිය නිසා මොළයේ Hippocampus ප්‍රදේශයේ නියුරෝන විනාශ වේ. නිවැරදි හුස්ම ගැනීම් මගින් Parasympathetic පද්ධතිය සක්‍රීය වී එම විනාශය වළක්වයි."
+            }
+        ];
+
+        // --- Core Functions ---
+        function init() {
+            const data = localStorage.getItem(appId);
+            if (data) {
+                const p = JSON.parse(data);
+                user = p.user; habits = p.habits; historyData = p.history; isNewUser = false;
+            }
+            render();
+        }
+
+        function save() {
+            if (!isNewUser) localStorage.setItem(appId, JSON.stringify({ user, habits, history: historyData }));
+        }
+
+        function switchTab(t) { activeTab = t; selectedArticleId = null; render(); }
+        function viewArt(id) { selectedArticleId = id; activeTab = 'library'; render(); }
+
+        function handleStart() {
+            const n = document.getElementById('u-name').value;
+            if (n.trim()) { user = { name: n, joined: new Date().toLocaleDateString('si-LK') }; isNewUser = false; save(); render(); }
+        }
+
+        function addHabit() {
+            const i = document.getElementById('h-in');
+            if (i.value.trim()) { habits.unshift({ id: Date.now(), text: i.value, completed: false }); i.value = ''; updateHist(); save(); render(); }
+        }
+
+        function toggleH(id) { habits = habits.map(h => h.id === id ? { ...h, completed: !h.completed } : h); updateHist(); save(); render(); }
+        function delH(id) { habits = habits.filter(h => h.id !== id); updateHist(); save(); render(); }
+
+        function updateHist() {
+            const today = new Date().toLocaleDateString('si-LK');
+            const score = habits.length ? Math.round((habits.filter(h => h.completed).length / habits.length) * 100) : 0;
+            historyData = [...historyData.filter(d => d.date !== today), { date: today, score }].slice(-14);
+        }
+
+        // --- UI Templates ---
+        function render() {
+            const root = document.getElementById('app-root');
+            if (isNewUser) {
+                root.innerHTML = `
+                <div class="min-h-screen bg-[#0f172a] flex items-center justify-center p-6 text-white animate-fade-in">
+                    <div class="max-w-md w-full bg-slate-800/40 backdrop-blur-2xl rounded-[2.5rem] p-10 border border-slate-700/50 text-center shadow-2xl">
+                        <div class="w-20 h-20 bg-indigo-600 rounded-[2rem] flex items-center justify-center mx-auto mb-8 shadow-xl shadow-indigo-500/20"><i data-lucide="brain" class="w-10 h-10"></i></div>
+                        <h1 class="text-3xl font-black mb-4 tracking-tight">Mindset<span class="text-indigo-400">OS</span></h1>
+                        <p class="text-slate-400 mb-8 font-medium leading-relaxed">විද්‍යාත්මක ක්‍රමවේද හරහා ඔබේ ජීවිතය වඩාත් සාර්ථක කරගන්න.</p>
+                        <input type="text" id="u-name" placeholder="ඔබේ නම ඇතුළත් කරන්න" class="w-full p-5 bg-slate-900/50 border-2 border-slate-700 rounded-2xl mb-6 focus:border-indigo-500 outline-none text-center font-bold text-lg"/>
+                        <button onclick="handleStart()" class="w-full bg-indigo-600 font-black py-5 rounded-2xl hover:bg-indigo-700 transition-all flex items-center justify-center space-x-2"><span>වැඩේ පටන් ගමු</span><i data-lucide="chevron-right" class="w-5 h-5"></i></button>
+                    </div>
+                </div>`;
+            } else {
+                root.innerHTML = `
+                <div class="min-h-screen md:pl-20 lg:pl-72 pb-24 md:pb-0">
+                    ${renderNav()}
+                    <main class="max-w-6xl mx-auto p-6 md:p-12 animate-slide-up">
+                        ${selectedArticleId ? renderArticle() : renderTab()}
+                    </main>
+                </div>`;
+            }
+            lucide.createIcons();
+        }
+
+        function renderNav() {
+            const navs = [
+                {id:'home', i:'layout', l:'මුල් පිටුව'}, {id:'library', i:'book-open', l:'පුස්තකාලය'},
+                {id:'planner', i:'check-circle', l:'සැලසුම්කරු'}, {id:'stats', i:'bar-chart-2', l:'ප්‍රගතිය'},
+                {id:'settings', i:'settings', l:'සැකසුම්'}
+            ];
+            return `
+            <nav class="fixed bottom-0 left-0 w-full md:top-0 md:w-20 lg:w-72 md:h-full bg-white/80 glass border-t md:border-r border-slate-200 z-50 flex md:flex-col p-4 md:py-10 justify-around md:justify-start space-y-0 md:space-y-4">
+                <div class="hidden lg:flex items-center space-x-3 mb-10 px-6 cursor-pointer" onclick="switchTab('home')">
+                    <div class="bg-indigo-600 p-2 rounded-xl shadow-lg"><i data-lucide="brain" class="text-white w-6 h-6"></i></div>
+                    <span class="font-black text-xl tracking-tighter">MindsetOS</span>
+                </div>
+                ${navs.map(n => `
+                    <button onclick="switchTab('${n.id}')" class="flex flex-col md:flex-row items-center md:space-x-4 p-3 rounded-2xl transition-all w-full ${activeTab === n.id && !selectedArticleId ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-400 hover:bg-slate-50'}">
+                        <i data-lucide="${n.i}" class="w-6 h-6"></i>
+                        <span class="text-[10px] lg:text-[15px] font-bold mt-1 md:mt-0">${n.l}</span>
+                    </button>`).join('')}
+            </nav>`;
+        }
+
+        function renderTab() {
+            if(activeTab==='home') return renderHome();
+            if(activeTab==='library') return renderLib();
+            if(activeTab==='planner') return renderPlan();
+            if(activeTab==='stats') return renderStats();
+            return renderSets();
+        }
+
+        function renderHome() {
+            const score = habits.length ? Math.round((habits.filter(h => h.completed).length / habits.length) * 100) : 0;
+            return `
+            <div class="space-y-10">
+                <header><h2 class="text-4xl font-black text-slate-900 tracking-tight">ආයුබෝවන්, ${user.name}! 👋</h2><p class="text-slate-500 text-lg mt-2">අද දවස ඔබේ සාර්ථකත්වයේ ආරම්භයයි.</p></header>
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <div class="lg:col-span-2 bg-slate-900 rounded-[2.5rem] p-10 text-white shadow-2xl relative overflow-hidden cursor-pointer group" onclick="viewArt('dopamine-detox')">
+                        <div class="relative z-10">
+                            <span class="bg-indigo-500 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest mb-4 inline-block">අද දින විශේෂ ලිපිය</span>
+                            <h3 class="text-3xl font-black mb-4 leading-tight">ඔබේ අවධානය 10x වැඩි කරගන්නා අයුරු</h3>
+                            <p class="text-slate-400 mb-8 max-w-md">ඩොපමින් පාලනය කරමින් වැඩෙහි නියැලෙන විද්‍යාත්මක ක්‍රමවේදය දැන් කියවන්න.</p>
+                            <div class="flex items-center space-x-2 text-indigo-400 font-bold group-hover:translate-x-2 transition-transform"><span>කියවන්න</span><i data-lucide="arrow-right" class="w-4 h-4"></i></div>
+                        </div>
+                        <i data-lucide="zap" class="absolute right-[-20px] bottom-[-20px] w-64 h-64 text-white/5"></i>
+                    </div>
+                    <div class="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm flex flex-col justify-between">
+                        <div><h4 class="font-bold text-slate-400 uppercase text-xs tracking-widest mb-4">අද ප්‍රගතිය</h4><div class="flex items-baseline space-x-1"><span class="text-6xl font-black text-slate-900">${score}</span><span class="text-2xl font-black text-slate-300">%</span></div></div>
+                        <div class="w-full bg-slate-100 h-4 rounded-full mt-6 overflow-hidden"><div class="bg-indigo-600 h-full transition-all duration-1000 progress-glow" style="width:${score}%"></div></div>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    ${articles.slice(0,3).map(a => `<div onclick="viewArt('${a.id}')" class="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm hover:shadow-md transition-all cursor-pointer"><div class="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center mb-4"><i data-lucide="${a.icon}" class="${a.color} w-6 h-6"></i></div><h4 class="font-bold text-lg leading-tight mb-2">${a.title}</h4><p class="text-xs text-slate-400 line-clamp-2">${a.excerpt}</p></div>`).join('')}
+                </div>
+            </div>`;
+        }
+
+        function renderLib() {
+            return `
+            <div class="space-y-10">
+                <h2 class="text-3xl font-black">පර්යේෂණ පුස්තකාලය</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    ${articles.map(a => `
+                    <div onclick="viewArt('${a.id}')" class="bg-white rounded-[2rem] p-8 border border-slate-100 shadow-sm hover:shadow-xl transition-all cursor-pointer flex flex-col justify-between">
+                        <div><div class="flex justify-between mb-6"><div class="w-14 h-14 bg-slate-50 rounded-2xl flex items-center justify-center"><i data-lucide="${a.icon}" class="${a.color} w-7 h-7"></i></div><span class="text-[10px] font-bold text-slate-400 bg-slate-50 px-3 py-1 rounded-full h-fit">${a.category}</span></div><h3 class="text-xl font-black mb-4 leading-tight">${a.title}</h3><p class="text-slate-500 text-sm leading-relaxed mb-8">${a.excerpt}</p></div>
+                        <button class="w-full py-4 bg-slate-50 font-bold rounded-xl text-slate-700 hover:bg-slate-900 hover:text-white transition-all">කියවන්න</button>
+                    </div>`).join('')}
+                </div>
+            </div>`;
+        }
+
+        function renderArticle() {
+            const a = articles.find(x => x.id === selectedArticleId);
+            return `
+            <div class="max-w-3xl mx-auto space-y-10">
+                <button onclick="switchTab('library')" class="flex items-center space-x-2 text-slate-400 hover:text-slate-900 font-bold transition-all"><i data-lucide="arrow-left" class="w-5 h-5"></i><span>ආපසු</span></button>
+                <header class="space-y-4 text-center md:text-left">
+                    <span class="bg-indigo-100 text-indigo-700 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest">${a.category}</span>
+                    <h2 class="text-4xl md:text-5xl font-black leading-tight">${a.title}</h2>
+                    <p class="text-slate-400 font-bold text-sm">By ${a.author} • ${a.readTime} කියවීමක්</p>
+                </header>
+                <div class="prose prose-slate space-y-8">
+                    <p class="text-xl text-slate-600 leading-relaxed font-medium italic border-l-4 border-indigo-200 pl-6 py-2">${a.intro}</p>
+                    ${a.sections.map(s => `<div class="space-y-3"><h3 class="text-2xl font-black text-slate-800">${s.title}</h3><p class="text-lg text-slate-600 leading-relaxed">${s.text}</p></div>`).join('')}
+                    <div class="bg-slate-900 rounded-[2.5rem] p-10 text-white shadow-2xl"><div class="flex items-center space-x-3 mb-4"><i data-lucide="dna" class="text-indigo-400 w-6 h-6"></i><h4 class="text-xl font-black uppercase tracking-widest">විද්‍යාත්මක පදනම</h4></div><p class="text-slate-300 text-lg leading-relaxed">${a.science}</p></div>
+                </div>
+            </div>`;
+        }
+
+        function renderPlan() {
+            return `
+            <div class="max-w-2xl mx-auto space-y-10">
+                <h2 class="text-3xl font-black text-center">සැලසුම්කරු</h2>
+                <div class="bg-white p-3 rounded-[2rem] shadow-sm border border-slate-100 flex space-x-2">
+                    <input type="text" id="h-in" onkeydown="if(event.key==='Enter')addHabit()" placeholder="අද මොනවාද කරන්නේ?..." class="flex-1 bg-transparent px-6 py-4 outline-none font-bold text-lg"/>
+                    <button onclick="addHabit()" class="bg-indigo-600 text-white px-8 py-4 rounded-2xl font-black hover:bg-indigo-700 transition-all">එක් කරන්න</button>
+                </div>
+                <div class="space-y-4">
+                    ${habits.map(h => `
+                    <div class="flex items-center justify-between p-6 bg-white border-2 rounded-[2rem] transition-all ${h.completed?'border-indigo-100 bg-indigo-50/20 opacity-70':'border-slate-50'}">
+                        <div class="flex items-center space-x-4">
+                            <button onclick="toggleH(${h.id})" class="w-10 h-10 rounded-xl border-4 flex items-center justify-center transition-all ${h.completed?'bg-indigo-600 border-indigo-600 text-white':'border-slate-200'}">${h.completed?'<i data-lucide="check" class="w-5 h-5"></i>':''}</button>
+                            <span class="font-bold text-xl ${h.completed?'line-through text-slate-400':'text-slate-800'}">${h.text}</span>
+                        </div>
+                        <button onclick="delH(${h.id})" class="text-slate-300 hover:text-red-500 transition-colors"><i data-lucide="trash-2" class="w-5 h-5"></i></button>
+                    </div>`).join('')}
+                </div>
+            </div>`;
+        }
+
+        function renderStats() {
+            return `
+            <div class="space-y-12">
+                <h2 class="text-3xl font-black text-center">ප්‍රගති විශ්ලේෂණය</h2>
+                <div class="bg-white p-10 rounded-[3rem] border border-slate-100 shadow-sm">
+                    <div class="flex items-end justify-between h-64 space-x-2">
+                        ${historyData.map(d => `<div class="flex-1 flex flex-col items-center group relative"><div class="absolute bottom-full mb-2 bg-slate-800 text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">${d.score}%</div><div class="w-full bg-indigo-500 rounded-t-lg transition-all" style="height:${d.score}%"></div><span class="text-[8px] text-slate-400 mt-2 rotate-45">${d.date.split('/')[0]}/${d.date.split('/')[1]}</span></div>`).join('')}
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-center">
+                    <div class="bg-white p-8 rounded-[2rem] border border-slate-100 shadow-sm"><h4 class="text-4xl font-black">${historyData.length}</h4><p class="text-slate-400 text-xs font-bold uppercase tracking-widest mt-2">භාවිතා කළ දින</p></div>
+                    <div class="bg-white p-8 rounded-[2rem] border border-slate-100 shadow-sm"><h4 class="text-2xl font-black">${user.joined}</h4><p class="text-slate-400 text-xs font-bold uppercase tracking-widest mt-2">ආරම්භ කළ දිනය</p></div>
+                </div>
+            </div>`;
+        }
+
+        function renderSets() {
+            return `
+            <div class="max-w-xl mx-auto space-y-8">
+                <h2 class="text-3xl font-black">සැකසුම්</h2>
+                <div class="bg-white p-10 rounded-[2.5rem] border border-slate-100 shadow-sm space-y-8 text-center">
+                    <button onclick="exportData()" class="w-full py-5 bg-indigo-50 text-indigo-700 font-bold rounded-2xl flex items-center justify-center space-x-2"><i data-lucide="download" class="w-5 h-5"></i><span>දත්ත බැකප් (Backup)</span></button>
+                    <button onclick="if(confirm('සියල්ල මකන්නද?')) { localStorage.removeItem(appId); location.reload(); }" class="w-full py-5 border-4 border-red-50 text-red-500 font-bold rounded-2xl hover:bg-red-50">දත්ත මකා දමන්න</button>
+                </div>
+            </div>`;
+        }
+
+        function exportData() {
+            const s = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({ user, habits, history: historyData }));
+            const a = document.createElement('a'); a.href = s; a.download = "mindset_os_data.json"; a.click();
+        }
+
+        // --- Start ---
+        init();
+    </script>
+</body>
+</html>
