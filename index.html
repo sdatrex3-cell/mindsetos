@@ -170,8 +170,6 @@
         function escapeHTML(str) { return str ? str.replace(/[&<>'"]/g, tag => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'}[tag])) : ''; }
         function isAdmin() { return state.user.email === 'admin@mindsetos.com' && state.user.password === 'sadew12125'; }
 
-        function isDbMissing() { return GOOGLE_SCRIPT_URL.includes("YOUR_"); }
-
         function showToast(msg, type='info') {
             const container = document.getElementById('toast-container'); const el = document.createElement('div');
             let bgClass = type === 'success' ? 'bg-emerald-500' : type === 'error' ? 'bg-rose-500' : 'bg-indigo-600';
@@ -264,9 +262,9 @@
                 const yest = new Date(); yest.setDate(yest.getDate() - 1);
                 
                 if (state.streak.lastDate === yest.toLocaleDateString('si-LK')) {
-                    state.streak.count += 1; // Increment streak if continuous
+                    state.streak.count += 1; 
                 } else {
-                    state.streak.count = 1; // Reset to 1 for today
+                    state.streak.count = 1; 
                 }
                 
                 const completedYesterday = state.habits.filter(h => h.completed);
@@ -351,7 +349,6 @@
         // 6. GOOGLE SHEETS
         // ==========================================
         async function fetchArticlesFromGoogleSheet() {
-            // FIX: Replaced actual URL with "YOUR_" placeholder check
             if (!GOOGLE_SHEET_ARTICLES_CSV_URL || GOOGLE_SHEET_ARTICLES_CSV_URL.includes("YOUR_")) return;
             try {
                 const response = await fetch(GOOGLE_SHEET_ARTICLES_CSV_URL + "&t=" + Date.now(), { cache: 'no-store' });
@@ -364,7 +361,6 @@
         }
 
         async function fetchUsersFromGoogleSheet() {
-            // FIX: Replaced actual URL with "YOUR_" placeholder check
             if (!isAdmin() || !GOOGLE_SHEET_USERS_CSV_URL || GOOGLE_SHEET_USERS_CSV_URL.includes("YOUR_")) return;
             try {
                 const response = await fetch(GOOGLE_SHEET_USERS_CSV_URL + "&t=" + Date.now(), { cache: 'no-store' });
@@ -378,7 +374,6 @@
         }
 
         function syncUserStatsToGoogleSheet() {
-            // FIX: Replaced actual URL with "YOUR_" placeholder check
             if (!GOOGLE_SCRIPT_URL || GOOGLE_SCRIPT_URL.includes("YOUR_") || state.isNewUser || isAdmin()) return;
             const formData = new URLSearchParams();
             formData.append('action', 'saveUser'); formData.append('name', state.user.name); formData.append('email', state.user.email); formData.append('level', state.user.level); formData.append('xp', state.user.xp); formData.append('focusMinutes', state.stats.totalFocusMinutes || 0); formData.append('joinedDate', state.user.joined);
@@ -425,7 +420,7 @@
             if (text) { 
                 state.habits.unshift({ id: Date.now(), text: escapeHTML(text), category: cat, priority: pri, completed: false, date: new Date().toLocaleDateString('si-LK') }); 
                 updateHistory(); 
-                inputEl.value = ''; // පසුව ඇතුළත් කිරීමට පහසු වීමට කොටුව හිස් කිරීම
+                inputEl.value = ''; 
                 render(); 
                 showToast("කාර්යය ඇතුළත් කරන ලදී", "success");
             }
@@ -453,8 +448,8 @@
             if(q && a) { 
                 state.flashcards.unshift({ id: Date.now(), q: escapeHTML(q), a: escapeHTML(a) }); 
                 saveData(); 
-                qEl.value = ''; // කොටුව හිස් කිරීම
-                aEl.value = ''; // කොටුව හිස් කිරීම
+                qEl.value = ''; 
+                aEl.value = ''; 
                 render(); 
                 showToast("ෆ්ලෑෂ් කාඩ්පත එක් කරන ලදී", "success");
             } else {
@@ -482,37 +477,24 @@
             } catch(e) { console.log(e); }
         }
 
+        // ==========================================
+        // FIXED POMODORO FUNCTIONS
+        // ==========================================
         function toggleTimer() {
-    if (!globalAudioCtx) {
-        globalAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    }
-    if (globalAudioCtx.state === 'suspended') {
-        globalAudioCtx.resume();
-    }
-
-    if (timerState.phase === 'running' || timerState.phase === 'break-running') { 
-        clearInterval(timerState.interval); 
-        timerState.phase = timerState.phase === 'running' ? 'paused' : 'break-paused'; 
-    } else if (timerState.phase === 'paused' || timerState.phase === 'break-paused') {
-        timerState.phase = timerState.phase === 'paused' ? 'running' : 'break-running';
-        startTimerInterval();
-    } else {
-        // focus-ended අවස්ථාවේදී පවා ටයිමරය ක්‍රියා කරන ලෙස සකසා ඇත
-        timerState.phase = timerState.mode === 'focus' ? 'running' : 'break-running';
-        startTimerInterval();
-    }
-    render();}
+            if (!globalAudioCtx) {
+                globalAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
             if (globalAudioCtx.state === 'suspended') {
                 globalAudioCtx.resume();
             }
 
             if (timerState.phase === 'running' || timerState.phase === 'break-running') { 
-                clearInterval(timerState.interval); timerState.phase = timerState.phase === 'running' ? 'paused' : 'break-paused'; 
+                clearInterval(timerState.interval); 
+                timerState.phase = timerState.phase === 'running' ? 'paused' : 'break-paused'; 
             } else if (timerState.phase === 'paused' || timerState.phase === 'break-paused') {
                 timerState.phase = timerState.phase === 'paused' ? 'running' : 'break-running';
                 startTimerInterval();
             } else {
-                if(timerState.phase === 'focus-ended') return; 
                 timerState.phase = timerState.mode === 'focus' ? 'running' : 'break-running';
                 startTimerInterval();
             }
@@ -520,19 +502,20 @@
         }
 
         function startTimerInterval() {
-            clearInterval(timerState.interval); // Prevent multiple intervals
+            clearInterval(timerState.interval);
             timerState.interval = setInterval(() => {
-                if (timerState.timeLeft > 0) { timerState.timeLeft--; updateTimerUI(); } 
-                else {
+                if (timerState.timeLeft > 0) { 
+                    timerState.timeLeft--; 
+                    updateTimerUI(); 
+                } else {
                     clearInterval(timerState.interval); 
                     playAlarm(); 
-                    if(audioCtxObj) { audioCtxObj.close(); audioCtxObj=null; }
-                    
                     if(timerState.mode === 'focus') { 
                         addXP(25); state.stats.totalFocusMinutes += 25; 
                         const today = new Date().toLocaleDateString('si-LK');
                         state.dailyFocus[today] = (state.dailyFocus[today] || 0) + 25;
-                        saveData(); timerState.phase = 'focus-ended';
+                        saveData(); 
+                        timerState.phase = 'focus-ended';
                         showToast("අවධානය යොමුකළ කාලය අවසන්!", "success"); 
                     } else { 
                         showToast("විවේක කාලය අවසන්!", "info"); 
@@ -543,21 +526,28 @@
             }, 1000);
         }
         
-        function resetTimer() { clearInterval(timerState.interval); timerState.mode = 'focus'; timerState.phase = 'idle'; timerState.timeLeft = 25 * 60; render(); }
-        function startBreakManual() {
-    timerState.mode = 'break';
-    timerState.timeLeft = 5 * 60;
-    timerState.phase = 'break-running'; 
-    
-    if (!globalAudioCtx) {
-        globalAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    }
-    if (globalAudioCtx.state === 'suspended') {
-        globalAudioCtx.resume();
-    }
+        function resetTimer() { 
+            clearInterval(timerState.interval); 
+            timerState.mode = 'focus'; 
+            timerState.phase = 'idle'; 
+            timerState.timeLeft = 25 * 60; 
+            render(); 
+        }
 
-    startTimerInterval(); 
-    render();}
+        function startBreakManual() {
+            timerState.mode = 'break';
+            timerState.timeLeft = 5 * 60;
+            timerState.phase = 'break-running';
+            if (!globalAudioCtx) {
+                globalAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (globalAudioCtx.state === 'suspended') {
+                globalAudioCtx.resume();
+            }
+            startTimerInterval();
+            render();
+        }
+
         function skipBreakManual() { resetTimer(); render(); }
         
         function updateTimerUI() {
@@ -616,7 +606,7 @@
         function exportData() {
             const dataStr = JSON.stringify(state); const blob = new Blob([dataStr], { type: "application/json" }); const url = URL.createObjectURL(blob);
             const a = document.createElement('a'); a.href = url; a.download = `MindsetOS_Backup_${state.user.email}_${new Date().toISOString().split('T')[0]}.json`;
-            a.click(); URL.revokeObjectURL(url); showToast("දත්ත උපස්ථ කිරීම සාර්ථකයි (Backup Success).", "success");
+            a.click(); URL.revokeObjectURL(url); showToast("Backup Success.", "success");
         }
         
         function importData(event) {
@@ -624,9 +614,9 @@
             reader.onload = async function(e) {
                 try {
                     const data = JSON.parse(e.target.result);
-                    if (data && data.user) { state = { ...state, ...data }; saveData(); showToast("දත්ත ප්‍රතිසාධනය සාර්ථකයි (Restore Success)!", "success"); render(); } 
-                    else showToast("අවලංගු උපස්ථ ගොනුවකි (Invalid Backup File)!", "error");
-                } catch (err) { showToast("ගොනුව කියවීමේ දෝෂයක්!", "error"); }
+                    if (data && data.user) { state = { ...state, ...data }; saveData(); showToast("Restore Success!", "success"); render(); } 
+                    else showToast("Invalid Backup File!", "error");
+                } catch (err) { showToast("Error reading file!", "error"); }
             };
             reader.readAsText(file);
         }
@@ -648,20 +638,16 @@
         function switchTab(t) { state.activeTab = t; state.selectedArticleId = null; render(); }
         function viewArticle(id) { state.selectedArticleId = id; state.activeTab = 'library'; addXP(5); render(); }
         
-        // Removed double-render call from addXP
         function addXP(amount) { 
             state.user.xp += amount; 
             if (state.user.xp >= state.user.level * 100) { 
                 state.user.xp -= state.user.level * 100; 
                 state.user.level++; 
-                showToast(`🎉 ඔබ මීළඟ මට්ටමට පැමිණියා! (Level Up! Level ${state.user.level})`, 'success'); 
+                showToast(`🎉 Level Up! Level ${state.user.level}`, 'success'); 
             } 
             saveData(); 
         }
 
-        // ==========================================
-        // EXPORTING ALL FUNCTIONS GLOBALLY 
-        // ==========================================
         Object.assign(window, {
             handleRegister, handleLogin, handleForgotPassword, switchAuthMode, logout, toggleLang, toggleTheme, switchTab, viewArticle,
             addHabit, toggleHabit, deleteHabit, setMood, saveJournal, addFlashcard,
@@ -670,9 +656,6 @@
             exportData, importData, updateTargetDate, addCustomCategory, clearAllData, deleteAccount
         });
 
-        // ==========================================
-        // 8. RENDERING HTML 
-        // ==========================================
         function render() {
             const root = document.getElementById('app-root');
             if (isAppLoading) {
@@ -707,7 +690,7 @@
 
         function renderWelcome() { 
             const isLogin = window.authMode === 'login';
-            return `<div class="min-h-screen flex items-center justify-center p-6"><div class="max-w-md w-full glass-panel rounded-[3rem] p-10 text-center animate-slide-up"><div class="w-24 h-24 bg-gradient-to-tr from-indigo-500 to-purple-500 rounded-[2rem] flex items-center justify-center mx-auto mb-6 shadow-xl text-5xl">☁️</div><h1 class="text-4xl font-black mb-2">Mindset<span class="text-indigo-600 dark:text-indigo-400">OS</span></h1><p class="text-slate-500 font-bold mb-8">${isLogin ? t('login') : t('register')}</p><div class="space-y-4 mb-8 text-left mt-8">${!isLogin ? `<input type="text" id="init-name" placeholder="ඔබේ නම (Name)" class="w-full p-4 glass-btn rounded-2xl outline-none font-bold text-base focus:border-indigo-500 transition-colors"/>` : ''}<input type="email" id="init-email" placeholder="විද්‍යුත් තැපෑල (Email)" class="w-full p-4 glass-btn rounded-2xl outline-none font-bold text-base focus:border-indigo-500 transition-colors"/><input type="password" id="init-password" placeholder="මුරපදය (Password)" class="w-full p-4 glass-btn rounded-2xl outline-none font-bold text-base focus:border-indigo-500 transition-colors"/></div><button onclick="${isLogin ? 'window.handleLogin()' : 'window.handleRegister()'}" class="w-full bg-indigo-600 text-white hover:bg-indigo-500 font-black py-4 rounded-2xl shadow-lg mb-4">${isLogin ? t('login') : 'ආරම්භ කරන්න'}</button><button onclick="window.switchAuthMode()" class="text-sm font-bold text-indigo-600 hover:underline mb-2">${isLogin ? t('no_account') + ' ' + t('register') : t('have_account') + ' ' + t('login')}</button>${isLogin ? `<br><button onclick="window.handleForgotPassword()" class="text-sm font-bold text-slate-500 hover:underline mt-4">${t('forgot_password')}</button>` : ''}</div></div>`; 
+            return `<div class="min-h-screen flex items-center justify-center p-6"><div class="max-w-md w-full glass-panel rounded-[3rem] p-10 text-center animate-slide-up"><div class="w-24 h-24 bg-gradient-to-tr from-indigo-500 to-purple-500 rounded-[2rem] flex items-center justify-center mx-auto mb-6 shadow-xl text-5xl">☁️</div><h1 class="text-4xl font-black mb-2">Mindset<span class="text-indigo-600 dark:text-indigo-400">OS</span></h1><p class="text-slate-500 font-bold mb-8">${isLogin ? t('login') : t('register')}</p><div class="space-y-4 mb-8 text-left mt-8">${!isLogin ? `<input type="text" id="init-name" placeholder="ඔබේ නම" class="w-full p-4 glass-btn rounded-2xl outline-none font-bold text-base focus:border-indigo-500 transition-colors"/>` : ''}<input type="email" id="init-email" placeholder="Email" class="w-full p-4 glass-btn rounded-2xl outline-none font-bold text-base focus:border-indigo-500 transition-colors"/><input type="password" id="init-password" placeholder="Password" class="w-full p-4 glass-btn rounded-2xl outline-none font-bold text-base focus:border-indigo-500 transition-colors"/></div><button onclick="${isLogin ? 'window.handleLogin()' : 'window.handleRegister()'}" class="w-full bg-indigo-600 text-white hover:bg-indigo-500 font-black py-4 rounded-2xl shadow-lg mb-4">${isLogin ? t('login') : 'ආරම්භ කරන්න'}</button><button onclick="window.switchAuthMode()" class="text-sm font-bold text-indigo-600 hover:underline mb-2">${isLogin ? t('no_account') + ' ' + t('register') : t('have_account') + ' ' + t('login')}</button>${isLogin ? `<br><button onclick="window.handleForgotPassword()" class="text-sm font-bold text-slate-500 hover:underline mt-4">${t('forgot_password')}</button>` : ''}</div></div>`; 
         }
         
         function renderSidebar() {
@@ -736,12 +719,12 @@
                     if (d === today) return; 
                     historyHTML += `<div class="glass-panel p-6 rounded-3xl"><h4 class="font-bold text-indigo-600 dark:text-indigo-400 mb-3">${d}</h4>`;
                     if (state.pastTasks[d] && state.pastTasks[d].length > 0) {
-                        historyHTML += `<div class="mb-3"><p class="text-xs uppercase font-bold text-slate-500 mb-2">කාර්යයන් (Tasks)</p><ul class="list-disc list-inside pl-4 text-sm font-medium space-y-1 opacity-80">`;
+                        historyHTML += `<div class="mb-3"><p class="text-xs uppercase font-bold text-slate-500 mb-2">Tasks</p><ul class="list-disc list-inside pl-4 text-sm font-medium space-y-1 opacity-80">`;
                         state.pastTasks[d].forEach(task => { historyHTML += `<li>${task.text}</li>`; });
                         historyHTML += `</ul></div>`;
                     }
                     if (state.reflections[d]) {
-                        historyHTML += `<div><p class="text-xs uppercase font-bold text-slate-500 mb-2">දවසේ සටහන (Journal)</p><p class="text-sm font-medium italic opacity-90 border-l-2 border-indigo-400 pl-3">${state.reflections[d]}</p></div>`;
+                        historyHTML += `<div><p class="text-xs uppercase font-bold text-slate-500 mb-2">Journal</p><p class="text-sm font-medium italic opacity-90 border-l-2 border-indigo-400 pl-3">${state.reflections[d]}</p></div>`;
                     }
                     historyHTML += `</div>`;
                 });
@@ -764,7 +747,7 @@
         }
 
         function renderFlashcards() {
-            return `<div class="max-w-4xl mx-auto space-y-10 pb-20"><header class="text-center"><h2 class="text-4xl font-black drop-shadow-md">${t('flashcards')}</h2></header><div class="glass-panel p-6 rounded-[2rem] flex flex-col md:flex-row gap-4"><input type="text" id="fc-q" placeholder="ප්‍රශ්නය (Question)..." class="flex-1 px-4 py-3 glass-btn rounded-xl outline-none font-bold"/><input type="text" id="fc-a" placeholder="පිළිතුර (Answer)..." class="flex-1 px-4 py-3 glass-btn rounded-xl outline-none font-bold"/><button onclick="window.addFlashcard()" class="bg-indigo-600 text-white px-6 py-3 rounded-xl font-black">${t('add_btn')}</button></div><div class="grid grid-cols-1 md:grid-cols-2 gap-6 perspective">${state.flashcards.length === 0 ? `<div class="col-span-full text-center py-10 text-slate-400 font-bold">ආරම්භ කිරීමට ෆ්ලෑෂ් කාඩ්පතක් එක් කරන්න (Create a card to start).</div>` : state.flashcards.map(f => `<div class="relative h-48 w-full group cursor-pointer" onclick="window.flipCardDOM(${f.id}, this)"><div class="absolute inset-0 w-full h-full preserve-3d ${state.flippedCards[f.id] ? 'rotate-y-180' : ''}"><div class="absolute inset-0 backface-hidden glass-panel rounded-[2rem] p-6 flex flex-col justify-center items-center shadow-sm"><span class="text-xs font-bold text-indigo-500 mb-2">ප්‍රශ්නය (Question)</span><h3 class="text-xl font-black text-center break-words w-full">${f.q}</h3><button onclick="event.stopPropagation(); window.deleteFlashcard(${f.id})" class="absolute top-4 right-4 text-slate-400 hover:text-red-500 text-lg">🗑️</button></div><div class="absolute inset-0 backface-hidden rotate-y-180 bg-indigo-600/90 text-white rounded-[2rem] p-6 flex flex-col justify-center items-center shadow-md"><span class="text-xs font-bold text-indigo-200 mb-2">පිළිතුර (Answer)</span><h3 class="text-2xl font-black text-center break-words w-full">${f.a}</h3></div></div></div>`).join('')}</div></div>`;
+            return `<div class="max-w-4xl mx-auto space-y-10 pb-20"><header class="text-center"><h2 class="text-4xl font-black drop-shadow-md">${t('flashcards')}</h2></header><div class="glass-panel p-6 rounded-[2rem] flex flex-col md:flex-row gap-4"><input type="text" id="fc-q" placeholder="ප්‍රශ්නය (Question)..." class="flex-1 px-4 py-3 glass-btn rounded-xl outline-none font-bold"/><input type="text" id="fc-a" placeholder="පිළිතුර (Answer)..." class="flex-1 px-4 py-3 glass-btn rounded-xl outline-none font-bold"/><button onclick="window.addFlashcard()" class="bg-indigo-600 text-white px-6 py-3 rounded-xl font-black">${t('add_btn')}</button></div><div class="grid grid-cols-1 md:grid-cols-2 gap-6 perspective">${state.flashcards.length === 0 ? `<div class="col-span-full text-center py-10 text-slate-400 font-bold">ආරම්භ කිරීමට ෆ්ලෑෂ් කාඩ්පතක් එක් කරන්න.</div>` : state.flashcards.map(f => `<div class="relative h-48 w-full group cursor-pointer" onclick="window.flipCardDOM(${f.id}, this)"><div class="absolute inset-0 w-full h-full preserve-3d ${state.flippedCards[f.id] ? 'rotate-y-180' : ''}"><div class="absolute inset-0 backface-hidden glass-panel rounded-[2rem] p-6 flex flex-col justify-center items-center shadow-sm"><span class="text-xs font-bold text-indigo-500 mb-2">ප්‍රශ්නය</span><h3 class="text-xl font-black text-center break-words w-full">${f.q}</h3><button onclick="event.stopPropagation(); window.deleteFlashcard(${f.id})" class="absolute top-4 right-4 text-slate-400 hover:text-red-500 text-lg">🗑️</button></div><div class="absolute inset-0 backface-hidden rotate-y-180 bg-indigo-600/90 text-white rounded-[2rem] p-6 flex flex-col justify-center items-center shadow-md"><span class="text-xs font-bold text-indigo-200 mb-2">පිළිතුර</span><h3 class="text-2xl font-black text-center break-words w-full">${f.a}</h3></div></div></div>`).join('')}</div></div>`;
         }
 
         function renderLibrary() {
@@ -774,11 +757,11 @@
         function renderArticleView() {
             const a = articles.find(x => x.id === state.selectedArticleId);
             if(!a) return '';
-            return `<div class="max-w-3xl mx-auto space-y-10 pb-20 print-content"><div class="flex justify-between items-center print-hidden"><button onclick="window.switchTab('library')" class="glass-btn px-4 py-2 rounded-xl flex items-center space-x-2 font-bold shadow-sm"><span class="text-xl">⬅️</span><span>ආපසු (Back)</span></button></div><h2 class="text-5xl font-black drop-shadow-md print-text-black">${a.title}</h2><div class="flex space-x-4 text-sm font-bold opacity-70"><span>Author: ${a.author}</span></div><p class="text-xl italic border-l-4 border-indigo-400 pl-6 print-text-black font-medium">${a.intro}</p>${a.sections.map(s=>`<div class="space-y-2"><h3 class="text-2xl font-black text-indigo-600 drop-shadow-sm">${s.title}</h3><p class="text-lg font-medium leading-relaxed whitespace-pre-wrap">${s.text}</p></div>`).join('')}</div>`;
+            return `<div class="max-w-3xl mx-auto space-y-10 pb-20 print-content"><div class="flex justify-between items-center print-hidden"><button onclick="window.switchTab('library')" class="glass-btn px-4 py-2 rounded-xl flex items-center space-x-2 font-bold shadow-sm"><span class="text-xl">⬅️</span><span>Back</span></button></div><h2 class="text-5xl font-black drop-shadow-md print-text-black">${a.title}</h2><div class="flex space-x-4 text-sm font-bold opacity-70"><span>Author: ${a.author}</span></div><p class="text-xl italic border-l-4 border-indigo-400 pl-6 print-text-black font-medium">${a.intro}</p>${a.sections.map(s=>`<div class="space-y-2"><h3 class="text-2xl font-black text-indigo-600 drop-shadow-sm">${s.title}</h3><p class="text-lg font-medium leading-relaxed whitespace-pre-wrap">${s.text}</p></div>`).join('')}</div>`;
         }
 
         function renderStats() {
-            return `<div class="space-y-10 pb-20"><header class="text-center"><h2 class="text-4xl font-black drop-shadow-md">${t('stats')}</h2></header><div class="grid grid-cols-1 md:grid-cols-2 gap-6"><div class="glass-panel p-8 rounded-[2rem] text-center shadow-sm"><h4 class="text-5xl font-black mb-2 drop-shadow-md">${Math.floor((state.stats.totalFocusMinutes || 0)/60)}<span class="text-2xl text-slate-500">h</span> ${((state.stats.totalFocusMinutes || 0)%60)}<span class="text-2xl text-slate-500">m</span></h4><p class="font-bold uppercase tracking-widest text-xs text-slate-500">${t('total_focus')}</p></div><div class="glass-panel p-8 rounded-[2rem] text-center shadow-sm"><h4 class="text-5xl font-black mb-2 drop-shadow-md text-orange-500">${state.streak.count}</h4><p class="font-bold uppercase tracking-widest text-xs text-slate-500">දැනට පවතින දින ගණන (Current Streak)</p></div></div><div class="grid grid-cols-1 lg:grid-cols-2 gap-8"><div class="glass-panel p-8 rounded-[3rem] shadow-sm"><h4 class="font-black mb-6 text-center text-slate-600 dark:text-slate-300 drop-shadow-sm">${t('progress_chart')}</h4><div class="chart-container"><canvas id="progressChart"></canvas></div></div><div class="glass-panel p-8 rounded-[3rem] shadow-sm"><h4 class="font-black mb-6 text-center text-slate-600 dark:text-slate-300 drop-shadow-sm">${t('focus_chart')}</h4><div class="chart-container"><canvas id="focusChart"></canvas></div></div></div></div>`;
+            return `<div class="space-y-10 pb-20"><header class="text-center"><h2 class="text-4xl font-black drop-shadow-md">${t('stats')}</h2></header><div class="grid grid-cols-1 md:grid-cols-2 gap-6"><div class="glass-panel p-8 rounded-[2rem] text-center shadow-sm"><h4 class="text-5xl font-black mb-2 drop-shadow-md">${Math.floor((state.stats.totalFocusMinutes || 0)/60)}<span class="text-2xl text-slate-500">h</span> ${((state.stats.totalFocusMinutes || 0)%60)}<span class="text-2xl text-slate-500">m</span></h4><p class="font-bold uppercase tracking-widest text-xs text-slate-500">${t('total_focus')}</p></div><div class="glass-panel p-8 rounded-[2rem] text-center shadow-sm"><h4 class="text-5xl font-black mb-2 drop-shadow-md text-orange-500">${state.streak.count}</h4><p class="font-bold uppercase tracking-widest text-xs text-slate-500">Current Streak (Days)</p></div></div><div class="grid grid-cols-1 lg:grid-cols-2 gap-8"><div class="glass-panel p-8 rounded-[3rem] shadow-sm"><h4 class="font-black mb-6 text-center text-slate-600 dark:text-slate-300 drop-shadow-sm">${t('progress_chart')}</h4><div class="chart-container"><canvas id="progressChart"></canvas></div></div><div class="glass-panel p-8 rounded-[3rem] shadow-sm"><h4 class="font-black mb-6 text-center text-slate-600 dark:text-slate-300 drop-shadow-sm">${t('focus_chart')}</h4><div class="chart-container"><canvas id="focusChart"></canvas></div></div></div></div>`;
         }
 
         function renderProfile() {
@@ -786,15 +769,14 @@
             return `<div class="max-w-2xl mx-auto space-y-10 pb-20">
                 <header class="text-center"><h2 class="text-4xl font-black drop-shadow-md">${t('profile')}</h2></header>
                 
-                <!-- Profile Card -->
                 <div class="glass-panel p-8 md:p-10 rounded-[3rem] shadow-sm text-center">
                     <div class="w-24 h-24 bg-gradient-to-tr from-indigo-500 to-purple-500 rounded-full flex items-center justify-center mx-auto mb-4 shadow-xl text-4xl text-white font-black">${state.user.name.charAt(0).toUpperCase()}</div>
                     <h3 class="text-3xl font-black mb-1">${state.user.name}</h3>
                     <p class="text-slate-500 font-bold mb-6">${state.user.email}</p>
                     <div class="flex justify-center space-x-8 border-t border-slate-300 dark:border-slate-700 pt-6">
-                        <div><p class="text-2xl font-black text-indigo-500">${state.user.level}</p><p class="text-xs uppercase font-bold text-slate-500">මට්ටම (Level)</p></div>
+                        <div><p class="text-2xl font-black text-indigo-500">${state.user.level}</p><p class="text-xs uppercase font-bold text-slate-500">Level</p></div>
                         <div><p class="text-2xl font-black text-emerald-500">${state.user.xp}</p><p class="text-xs uppercase font-bold text-slate-500">XP</p></div>
-                        <div><p class="text-2xl font-black text-orange-500">${state.user.joined}</p><p class="text-xs uppercase font-bold text-slate-500">එක්වූ දිනය (Joined)</p></div>
+                        <div><p class="text-2xl font-black text-orange-500">${state.user.joined}</p><p class="text-xs uppercase font-bold text-slate-500">Joined</p></div>
                     </div>
                 </div>
 
