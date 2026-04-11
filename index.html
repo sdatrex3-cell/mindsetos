@@ -34,7 +34,6 @@
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
         .dark ::-webkit-scrollbar-thumb { background: #475569; }
         
-        /* Custom scrollbar for tables */
         .custom-scrollbar::-webkit-scrollbar { height: 8px; width: 8px; }
         
         .timer-circle { border-radius: 50%; }
@@ -52,26 +51,18 @@
     <div id="toast-container" class="fixed top-24 right-6 z-50 flex flex-col space-y-2 pointer-events-none"></div>
     <div id="modal-container" class="fixed inset-0 z-[100] hidden items-center justify-center bg-slate-900/60 backdrop-blur-sm transition-opacity"></div>
 
-    <!-- Firebase SDK Integration -->
+    <!-- MAIN SCRIPT LOGIC (Modules & Global Functions Combined) -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, doc, setDoc, getDoc, onSnapshot, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        window.FB = {
-            initializeApp, getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged,
-            getFirestore, collection, doc, setDoc, getDoc, onSnapshot, getDocs, deleteDoc
-        };
-
-        window.dispatchEvent(new Event('firebase-loaded'));
-    </script>
-
-    <script>
         // ==========================================
         // 1. DATA & STATE MANAGEMENT
         // ==========================================
         let auth, db, currentUid = null;
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'mindsetos-app-v5';
+        let isAppLoading = true; // Prevents blank screens during load
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'mindsetos-app-v6';
         window.adminUsersData = [];
 
         let state = {
@@ -108,47 +99,71 @@
         let articles = [...defaultArticles];
 
         // ==========================================
-        // 2. FIREBASE INTEGRATION & INIT
+        // 2. INITIALIZE FIREBASE (WITH LOCAL FALLBACK)
         // ==========================================
-        window.addEventListener('firebase-loaded', async () => {
-            const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : { apiKey: "mock" };
-            const app = window.FB.initializeApp(firebaseConfig);
-            auth = window.FB.getAuth(app);
-            db = window.FB.getFirestore(app);
+        try {
+            render(); // Show Loading Screen Immediately
+            
+            const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
+            if(firebaseConfig && Object.keys(firebaseConfig).length > 0) {
+                const app = initializeApp(firebaseConfig);
+                auth = getAuth(app);
+                db = getFirestore(app);
 
-            try {
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    await window.FB.signInWithCustomToken(auth, __initial_auth_token);
-                } else {
-                    await window.FB.signInAnonymously(auth);
-                }
-            } catch(e) { console.error("Auth Init Error", e); }
+                const initAuth = async () => {
+                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                        await signInWithCustomToken(auth, __initial_auth_token);
+                    } else {
+                        await signInAnonymously(auth);
+                    }
+                };
+                initAuth();
 
-            window.FB.onAuthStateChanged(auth, async (user) => {
-                if (user) {
-                    currentUid = user.uid;
-                    await loadUserData(user.uid);
-                    loadArticles();
-                    if (isAdmin()) loadAllUsersForAdmin();
-                } else {
-                    currentUid = null;
-                    state.isNewUser = true;
-                    render();
-                }
-            });
-        });
+                onAuthStateChanged(auth, async (user) => {
+                    if (user) {
+                        currentUid = user.uid;
+                        await loadUserData(user.uid);
+                        loadArticles();
+                        if (isAdmin()) loadAllUsersForAdmin();
+                    } else {
+                        currentUid = null;
+                        state.isNewUser = true;
+                        isAppLoading = false;
+                        render();
+                    }
+                });
+            } else {
+                initLocalMode();
+            }
+        } catch(e) {
+            console.error("Firebase init failed, switching to local mode:", e);
+            initLocalMode();
+        }
+
+        function initLocalMode() {
+            db = null; auth = null; currentUid = 'local_user';
+            const savedUser = localStorage.getItem("mindsetos_fallback_db");
+            if (savedUser) { state = { ...state, ...JSON.parse(savedUser), isNewUser: false }; } 
+            else { state.isNewUser = true; }
+            
+            const savedArts = localStorage.getItem("mindsetos_fallback_arts");
+            if (savedArts) { articles = [...JSON.parse(savedArts), ...defaultArticles]; }
+            
+            checkNewDay(); applyTheme();
+            isAppLoading = false; render();
+        }
 
         async function loadUserData(uid) {
             try {
-                const profileRef = window.FB.doc(db, 'artifacts', appId, 'public', 'data', 'userProfiles', uid);
-                const profileSnap = await window.FB.getDoc(profileRef);
+                const profileRef = doc(db, 'artifacts', appId, 'public', 'data', 'userProfiles', uid);
+                const profileSnap = await getDoc(profileRef);
 
                 if (profileSnap.exists()) {
                     state.user = { ...state.user, ...profileSnap.data() };
                     state.isNewUser = false;
 
-                    const privateRef = window.FB.doc(db, 'artifacts', appId, 'users', uid, 'private', 'appData');
-                    const privateSnap = await window.FB.getDoc(privateRef);
+                    const privateRef = doc(db, 'artifacts', appId, 'users', uid, 'userData', 'main');
+                    const privateSnap = await getDoc(privateRef);
                     if (privateSnap.exists()) {
                         const pData = privateSnap.data();
                         state.habits = pData.habits || [];
@@ -160,48 +175,37 @@
                         state.streak = pData.streak || { count: 0, lastDate: null };
                         if(pData.categories) state.categories = pData.categories;
                     }
-                    checkNewDay();
-                    applyTheme();
-                    render();
-                } else {
-                    state.isNewUser = true;
-                    render();
-                }
+                } else { state.isNewUser = true; }
             } catch (e) {
                 console.error("Error loading user data:", e);
                 state.isNewUser = true;
-                render();
+            } finally {
+                checkNewDay(); applyTheme();
+                isAppLoading = false; render();
             }
         }
 
         async function saveData() { 
-            if (!currentUid || state.isNewUser) return;
-            try {
-                const profileRef = window.FB.doc(db, 'artifacts', appId, 'public', 'data', 'userProfiles', currentUid);
-                await window.FB.setDoc(profileRef, {
-                    name: state.user.name,
-                    email: state.user.email,
-                    joined: state.user.joined,
-                    targetDate: state.user.targetDate,
-                    theme: state.user.theme,
-                    xp: state.user.xp,
-                    level: state.user.level,
-                    totalFocusMinutes: state.stats.totalFocusMinutes,
-                    streakCount: state.streak.count
-                }, { merge: true });
+            if (state.isNewUser) return;
+            if (db && currentUid) {
+                try {
+                    const profileRef = doc(db, 'artifacts', appId, 'public', 'data', 'userProfiles', currentUid);
+                    await setDoc(profileRef, {
+                        name: state.user.name, email: state.user.email, joined: state.user.joined,
+                        targetDate: state.user.targetDate, theme: state.user.theme, xp: state.user.xp,
+                        level: state.user.level, totalFocusMinutes: state.stats.totalFocusMinutes, streakCount: state.streak.count
+                    }, { merge: true });
 
-                const privateRef = window.FB.doc(db, 'artifacts', appId, 'users', currentUid, 'private', 'appData');
-                await window.FB.setDoc(privateRef, {
-                    habits: state.habits,
-                    history: state.history,
-                    reflections: state.reflections,
-                    moods: state.moods,
-                    flashcards: state.flashcards,
-                    stats: state.stats,
-                    streak: state.streak,
-                    categories: state.categories
-                });
-            } catch(e) { console.error("Error saving data:", e); }
+                    const privateRef = doc(db, 'artifacts', appId, 'users', currentUid, 'userData', 'main');
+                    await setDoc(privateRef, {
+                        habits: state.habits, history: state.history, reflections: state.reflections,
+                        moods: state.moods, flashcards: state.flashcards, stats: state.stats,
+                        streak: state.streak, categories: state.categories
+                    });
+                } catch(e) { console.error("Error saving data:", e); }
+            } else {
+                localStorage.setItem("mindsetos_fallback_db", JSON.stringify(state));
+            }
         }
 
         // ==========================================
@@ -279,27 +283,30 @@
         // 4. ADMIN CAPABILITIES & CLOUD LOGIC
         // ==========================================
         function loadAllUsersForAdmin() {
-            if (!isAdmin() || !currentUid) return;
-            const usersRef = window.FB.collection(db, 'artifacts', appId, 'public', 'data', 'userProfiles');
-            window.FB.onSnapshot(usersRef, (snapshot) => {
-                window.adminUsersData = [];
-                snapshot.forEach(doc => { window.adminUsersData.push({ id: doc.id, ...doc.data() }); });
-                // Sort by XP descending
-                window.adminUsersData.sort((a,b) => (b.xp || 0) - (a.xp || 0));
-                if(state.activeTab === 'settings') render();
-            }, (error) => console.error("Error fetching users:", error));
+            if (!isAdmin() || !currentUid || !db) return;
+            try {
+                const usersRef = collection(db, 'artifacts', appId, 'public', 'data', 'userProfiles');
+                onSnapshot(usersRef, (snapshot) => {
+                    window.adminUsersData = [];
+                    snapshot.forEach(doc => { window.adminUsersData.push({ id: doc.id, ...doc.data() }); });
+                    window.adminUsersData.sort((a,b) => (b.xp || 0) - (a.xp || 0));
+                    if(state.activeTab === 'settings') render();
+                }, (error) => console.error("Error fetching users:", error));
+            } catch(e) { console.error("Admin user sync error", e); }
         }
 
         function loadArticles() {
-            if (!currentUid) return;
-            const artsRef = window.FB.collection(db, 'artifacts', appId, 'public', 'data', 'articles');
-            window.FB.onSnapshot(artsRef, (snapshot) => {
-                let loadedArts = [];
-                snapshot.forEach(doc => loadedArts.push(doc.data()));
-                loadedArts.sort((a,b) => (b.timestamp || 0) - (a.timestamp || 0));
-                articles = [...loadedArts, ...defaultArticles];
-                if (state.activeTab === 'library' || state.selectedArticleId || state.activeTab === 'settings') render();
-            }, (error) => console.error("Error loading articles", error));
+            if (!currentUid || !db) return;
+            try {
+                const artsRef = collection(db, 'artifacts', appId, 'public', 'data', 'articles');
+                onSnapshot(artsRef, (snapshot) => {
+                    let loadedArts = [];
+                    snapshot.forEach(doc => loadedArts.push(doc.data()));
+                    loadedArts.sort((a,b) => (b.timestamp || 0) - (a.timestamp || 0));
+                    articles = [...loadedArts, ...defaultArticles];
+                    if (state.activeTab === 'library' || state.selectedArticleId || state.activeTab === 'settings') render();
+                }, (error) => console.error("Error loading articles", error));
+            } catch(e) { console.error("Article sync error", e); }
         }
 
         async function publishAdminArticle() {
@@ -325,23 +332,56 @@
             const btn = document.getElementById('publish-btn');
             btn.innerText = "Publishing to Cloud..."; btn.disabled = true;
 
-            try {
-                const artRef = window.FB.doc(db, 'artifacts', appId, 'public', 'data', 'articles', newArt.id);
-                await window.FB.setDoc(artRef, newArt);
-                showToast("ලිපිය සාර්ථකව Cloud Database වෙත Publish කරන ලදී!", "success");
-            } catch(e) { showToast("Cloud වෙත යැවීම අසාර්ථකයි.", "error"); }
+            if (db) {
+                try {
+                    const artRef = doc(db, 'artifacts', appId, 'public', 'data', 'articles', newArt.id);
+                    await setDoc(artRef, newArt);
+                    showToast("ලිපිය සාර්ථකව Cloud Database වෙත Publish කරන ලදී!", "success");
+                } catch(e) { showToast("Cloud වෙත යැවීම අසාර්ථකයි.", "error"); }
+            } else {
+                // Local Mode Fallback
+                let localArts = JSON.parse(localStorage.getItem("mindsetos_fallback_arts") || '[]');
+                localArts.unshift(newArt);
+                localStorage.setItem("mindsetos_fallback_arts", JSON.stringify(localArts));
+                articles.unshift(newArt);
+                showToast("ලිපිය Local Storage වෙත එක්විය (Offline).", "success");
+                render();
+            }
 
             document.getElementById('admin-art-title').value = ''; document.getElementById('admin-art-intro').value = ''; document.getElementById('admin-art-text').value = '';
             btn.innerText = "ලිපිය Publish කරන්න (Global)"; btn.disabled = false;
         }
 
         async function deleteAdminArticle(articleId) {
-            showConfirmModal("මෙම ලිපිය Cloud Database එකෙන් සම්පූර්ණයෙන්ම ඉවත් කිරීමට ඔබට අවශ්‍යද?", async () => {
-                try {
-                    const artRef = window.FB.doc(db, 'artifacts', appId, 'public', 'data', 'articles', articleId);
-                    await window.FB.deleteDoc(artRef);
-                    showToast("ලිපිය සාර්ථකව මකා දමන ලදී.", "success");
-                } catch(e) { showToast("දෝෂයකි!", "error"); }
+            showConfirmModal("මෙම ලිපිය සම්පූර්ණයෙන්ම ඉවත් කිරීමට ඔබට අවශ්‍යද?", async () => {
+                if (db) {
+                    try {
+                        const artRef = doc(db, 'artifacts', appId, 'public', 'data', 'articles', articleId);
+                        await deleteDoc(artRef);
+                        showToast("ලිපිය සාර්ථකව මකා දමන ලදී.", "success");
+                    } catch(e) { showToast("දෝෂයකි!", "error"); }
+                } else {
+                    let localArts = JSON.parse(localStorage.getItem("mindsetos_fallback_arts") || '[]');
+                    localArts = localArts.filter(a => a.id !== articleId);
+                    localStorage.setItem("mindsetos_fallback_arts", JSON.stringify(localArts));
+                    articles = articles.filter(a => a.id !== articleId);
+                    showToast("ලිපිය මකා දමන ලදී (Offline).", "success");
+                    render();
+                }
+            });
+        }
+
+        async function logout() {
+            showConfirmModal("ඔබට නිසැකවම ගිණුමෙන් ඉවත් වීමට අවශ්‍යද?", async () => {
+                if (auth) {
+                    try {
+                        await auth.signOut();
+                        window.location.reload();
+                    } catch(e) { console.error("Logout error", e); }
+                } else {
+                    localStorage.removeItem("mindsetos_fallback_db");
+                    window.location.reload();
+                }
             });
         }
 
@@ -469,7 +509,7 @@
                     const data = JSON.parse(e.target.result);
                     if (data && data.user) {
                         state = { ...state, ...data };
-                        await saveData(); // Push restored data to Cloud
+                        await saveData(); 
                         showToast("දත්ත සාර්ථකව Restore කරන ලදී! Cloud Database එකද යාවත්කාලීන විය.", "success");
                         render();
                     } else showToast("මෙය නිවැරදි Backup ගොනුවක් නොවේ!", "error");
@@ -526,36 +566,66 @@
             window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
         }
 
+        // EXPORT ALL FUNCTIONS TO WINDOW (To fix "Function is not defined" inline HTML errors)
+        window.handleStart = handleStart; window.logout = logout; window.switchTab = switchTab;
+        window.viewArticle = viewArticle; window.publishAdminArticle = publishAdminArticle; 
+        window.deleteAdminArticle = deleteAdminArticle; window.addHabit = addHabit; 
+        window.toggleHabit = toggleHabit; window.deleteHabit = deleteHabit; 
+        window.addCustomCategory = addCustomCategory; window.updateTargetDate = updateTargetDate;
+        window.setMood = setMood; window.saveJournal = saveJournal; window.addFlashcard = addFlashcard;
+        window.deleteFlashcard = deleteFlashcard; window.flipCardDOM = flipCardDOM;
+        window.toggleFocusSound = toggleFocusSound; window.toggleTimer = toggleTimer;
+        window.switchTimerMode = switchTimerMode; window.exportData = exportData;
+        window.importData = importData; window.shareToWhatsApp = shareToWhatsApp;
+        window.toggleTheme = toggleTheme; window.showConfirmModal = showConfirmModal;
+
         // ==========================================
         // 6. RENDERING HTML
         // ==========================================
         function render() {
             const root = document.getElementById('app-root');
-            if (state.isNewUser) { root.innerHTML = renderWelcome(); } 
-            else {
-                let content = state.selectedArticleId ? renderArticleView() : ( state.activeTab==='home' ? renderHome() : state.activeTab==='planner' ? renderPlanner() : state.activeTab==='timer' ? renderTimer() : state.activeTab==='flashcards' ? renderFlashcards() : state.activeTab==='library' ? renderLibrary() : state.activeTab==='stats' ? renderStats() : renderSettings() );
-                
+            
+            // 1. Loading Screen (Fixes the "load යනවා" blank screen issue)
+            if (isAppLoading) {
                 root.innerHTML = `
-                <div class="min-h-screen md:pl-24 lg:pl-72 pb-24 md:pb-0 flex flex-col print-content">
-                    ${renderSidebar()}
-                    <div class="fixed top-0 right-0 p-4 md:p-6 z-40 flex items-center space-x-3 md:space-x-4 print-hidden">
-                        <div class="glass-nav px-4 py-2 rounded-2xl flex items-center space-x-4 shadow-sm border border-slate-200 dark:border-slate-700">
-                            <div class="flex items-center space-x-2" title="Streak"><span class="text-xl">🔥</span><span class="font-black text-slate-800 dark:text-white">${state.streak.count}</span></div>
-                            <div class="h-6 w-px bg-slate-300 dark:bg-slate-600"></div>
-                            <div class="flex flex-col items-center w-24">
-                                <span class="text-[10px] font-bold text-slate-500 uppercase">Level ${state.user.level}</span>
-                                <div class="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full mt-1 overflow-hidden"><div class="h-full bg-yellow-400 transition-all duration-500" style="width:${(state.user.xp / (state.user.level * 100)) * 100}%"></div></div>
-                            </div>
-                        </div>
-                        <button onclick="toggleTheme()" class="w-12 h-12 glass-nav rounded-full flex items-center justify-center shadow-sm border border-slate-200 dark:border-slate-700"><span class="text-xl">${state.user.theme === 'dark' ? '☀️' : '🌙'}</span></button>
-                    </div>
-                    <main class="flex-1 max-w-7xl mx-auto w-full p-6 mt-16 md:mt-0 md:p-10 lg:p-12 animate-slide-up print-content">${content}</main>
+                <div class="min-h-screen bg-slate-900 flex flex-col items-center justify-center p-6 text-white">
+                    <div class="w-16 h-16 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mb-6 shadow-[0_0_15px_rgba(99,102,241,0.5)]"></div>
+                    <h1 class="text-3xl font-black mb-2 animate-pulse tracking-tighter">Mindset<span class="text-indigo-500">OS</span></h1>
+                    <p class="text-slate-400 text-sm font-bold tracking-widest uppercase">පද්ධතිය පූරණය වෙමින් පවතී...</p>
                 </div>`;
-                if(state.activeTab === 'timer' && !state.selectedArticleId) updateTimerUI();
-                if(state.activeTab === 'stats') setTimeout(initProgressChart, 50);
+                return;
             }
+
+            // 2. Welcome Screen
+            if (state.isNewUser) { 
+                root.innerHTML = renderWelcome(); 
+                return;
+            } 
+            
+            // 3. Main Application View
+            let content = state.selectedArticleId ? renderArticleView() : ( state.activeTab==='home' ? renderHome() : state.activeTab==='planner' ? renderPlanner() : state.activeTab==='timer' ? renderTimer() : state.activeTab==='flashcards' ? renderFlashcards() : state.activeTab==='library' ? renderLibrary() : state.activeTab==='stats' ? renderStats() : renderSettings() );
+            
+            root.innerHTML = `
+            <div class="min-h-screen md:pl-24 lg:pl-72 pb-24 md:pb-0 flex flex-col print-content">
+                ${renderSidebar()}
+                <div class="fixed top-0 right-0 p-4 md:p-6 z-40 flex items-center space-x-3 md:space-x-4 print-hidden">
+                    <div class="glass-nav px-4 py-2 rounded-2xl flex items-center space-x-4 shadow-sm border border-slate-200 dark:border-slate-700">
+                        <div class="flex items-center space-x-2" title="Streak"><span class="text-xl">🔥</span><span class="font-black text-slate-800 dark:text-white">${state.streak.count}</span></div>
+                        <div class="h-6 w-px bg-slate-300 dark:bg-slate-600"></div>
+                        <div class="flex flex-col items-center w-24">
+                            <span class="text-[10px] font-bold text-slate-500 uppercase">Level ${state.user.level}</span>
+                            <div class="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full mt-1 overflow-hidden"><div class="h-full bg-yellow-400 transition-all duration-500" style="width:${(state.user.xp / (state.user.level * 100)) * 100}%"></div></div>
+                        </div>
+                    </div>
+                    <button onclick="toggleTheme()" class="w-12 h-12 glass-nav rounded-full flex items-center justify-center shadow-sm border border-slate-200 dark:border-slate-700"><span class="text-xl">${state.user.theme === 'dark' ? '☀️' : '🌙'}</span></button>
+                </div>
+                <main class="flex-1 max-w-7xl mx-auto w-full p-6 mt-16 md:mt-0 md:p-10 lg:p-12 animate-slide-up print-content">${content}</main>
+            </div>`;
+            if(state.activeTab === 'timer' && !state.selectedArticleId) updateTimerUI();
+            if(state.activeTab === 'stats') setTimeout(initProgressChart, 50);
         }
 
+        // --- View Functions ---
         function renderWelcome() { 
             return `
             <div class="min-h-screen bg-slate-900 flex items-center justify-center p-6 text-white">
@@ -675,14 +745,14 @@
                                     <tbody class="divide-y divide-slate-700/50">
                                         ${window.adminUsersData.map(u => `
                                             <tr class="hover:bg-slate-700/50 transition-colors">
-                                                <td class="px-5 py-4"><p class="font-bold text-white text-base">${u.name}</p><p class="text-xs text-slate-400">${u.email}</p></td>
-                                                <td class="px-5 py-4"><span class="bg-indigo-500/20 text-indigo-300 px-2 py-1 rounded-lg text-xs font-black border border-indigo-500/30">Lvl ${u.level}</span> <span class="text-xs ml-2 text-slate-400 font-bold">${u.xp} XP</span></td>
+                                                <td class="px-5 py-4"><p class="font-bold text-white text-base">${u.name || 'Unknown'}</p><p class="text-xs text-slate-400">${u.email || 'No email'}</p></td>
+                                                <td class="px-5 py-4"><span class="bg-indigo-500/20 text-indigo-300 px-2 py-1 rounded-lg text-xs font-black border border-indigo-500/30">Lvl ${u.level||1}</span> <span class="text-xs ml-2 text-slate-400 font-bold">${u.xp||0} XP</span></td>
                                                 <td class="px-5 py-4 text-emerald-400 font-bold">${Math.floor((u.totalFocusMinutes||0)/60)}h ${(u.totalFocusMinutes||0)%60}m</td>
                                                 <td class="px-5 py-4 text-orange-400 font-bold">${u.streakCount||0} 🔥</td>
-                                                <td class="px-5 py-4 text-xs text-slate-400 font-medium">${u.joined}</td>
+                                                <td class="px-5 py-4 text-xs text-slate-400 font-medium">${u.joined || '-'}</td>
                                             </tr>
                                         `).join('')}
-                                        ${window.adminUsersData.length === 0 ? '<tr><td colspan="5" class="text-center py-8 text-slate-500 font-bold">පරිශීලකයන් පූරණය වෙමින් පවතී...</td></tr>' : ''}
+                                        ${window.adminUsersData.length === 0 ? '<tr><td colspan="5" class="text-center py-8 text-slate-500 font-bold">පරිශීලකයන් පූරණය වෙමින් පවතී හෝ කිසිවෙකු නොමැත...</td></tr>' : ''}
                                     </tbody>
                                 </table>
                             </div>
@@ -734,7 +804,7 @@
 
                     <div class="pt-6 border-t border-slate-200 dark:border-slate-700 space-y-4">
                         <button onclick="logout()" class="w-full py-4 bg-slate-100 dark:bg-slate-800 font-black rounded-2xl hover:bg-slate-200 dark:hover:bg-slate-700">ගිණුමෙන් ඉවත් වන්න (Logout)</button>
-                        <button onclick="showConfirmModal('ඔබගේ සියලුම දත්ත මකා දැමීමට අවශ්‍යද? මෙය නැවත ලබා ගත නොහැක.', () => { localStorage.removeItem(USER_DATA_KEY); location.reload(); })" class="w-full py-4 border-2 border-red-200 text-red-500 font-black rounded-2xl hover:bg-red-50 dark:hover:bg-red-900/20">සම්පූර්ණ ගිණුම මකා දමන්න</button>
+                        <button onclick="showConfirmModal('ඔබගේ සියලුම දත්ත මකා දැමීමට අවශ්‍යද? මෙය නැවත ලබා ගත නොහැක.', () => { localStorage.removeItem('mindsetos_fallback_db'); location.reload(); })" class="w-full py-4 border-2 border-red-200 text-red-500 font-black rounded-2xl hover:bg-red-50 dark:hover:bg-red-900/20">සම්පූර්ණ ගිණුම මකා දමන්න</button>
                     </div>
                 </div>
             </div>`;
