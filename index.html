@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MindsetOS - Ultimate Cloud Framework</title>
+    <title>MindsetOS - Ultimate Framework</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -14,6 +14,8 @@
     </script>
     <!-- Chart.js for Analytics -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- PapaParse for Google Sheets Database (Free Backend) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&family=Noto+Sans+Sinhala:wght@400;600;800;900&display=swap" rel="stylesheet">
     
@@ -43,28 +45,36 @@
         .rotate-y-180 { transform: rotateY(180deg); }
         
         .chart-container { position: relative; width: 100%; max-width: 800px; margin-left: auto; margin-right: auto; height: 300px; max-height: 400px; }
+        
+        @media print {
+            body { background: white !important; color: black !important; }
+            .print-hidden { display: none !important; }
+            .print-content { padding: 0 !important; margin: 0 !important; max-width: 100% !important; }
+            .print-text-black { color: black !important; }
+            .print-border-light { border-color: #e2e8f0 !important; }
+            canvas { max-width: 100% !important; height: auto !important; }
+        }
     </style>
 </head>
-<body class="bg-slate-50 dark:bg-darkbg text-slate-900 dark:text-slate-100 overflow-x-hidden transition-colors duration-300">
+<body class="bg-slate-50 dark:bg-darkbg text-slate-900 dark:text-slate-100 overflow-x-hidden transition-colors duration-300 print:bg-white">
 
     <div id="app-root"></div>
-    <div id="toast-container" class="fixed top-24 right-6 z-50 flex flex-col space-y-2 pointer-events-none"></div>
-    <div id="modal-container" class="fixed inset-0 z-[100] hidden items-center justify-center bg-slate-900/60 backdrop-blur-sm transition-opacity"></div>
+    <div id="toast-container" class="fixed top-24 right-6 z-50 flex flex-col space-y-2 pointer-events-none print-hidden"></div>
+    <div id="modal-container" class="fixed inset-0 z-[100] hidden items-center justify-center bg-slate-900/60 backdrop-blur-sm print-hidden transition-opacity"></div>
 
-    <!-- MAIN SCRIPT LOGIC (Modules & Global Functions Combined) -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, doc, setDoc, getDoc, onSnapshot, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    <script>
+        // ==========================================
+        // 1. SYSTEM CONFIGURATION & URLS
+        // ==========================================
+        const USER_DATA_KEY = "mindsetos_local_db"; 
+        
+        // ඔබගේ Google Sheets URL මෙතන ඇත
+        const GOOGLE_SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQFbQGRAZ0-oVmelxStjuVQKVT7QcXvyp8udwNdDhWRwBUPa5a9Qyh7i0IEufIZ5ODi8owLHhXszqkW/pub?output=csv";
+        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxNfCYs1B05XPW6JyedxcHNisNSt9plGEl6YCUrYTZ7qTK40avqv8uNZ1DyRX_GU0UjOQ/exec";
 
         // ==========================================
-        // 1. DATA & STATE MANAGEMENT
+        // 2. DEFAULT DATA & STATE
         // ==========================================
-        let auth, db, currentUid = null;
-        let isAppLoading = true; // Prevents blank screens during load
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'mindsetos-app-v6';
-        window.adminUsersData = [];
-
         let state = {
             activeTab: 'home',
             selectedArticleId: null,
@@ -96,120 +106,11 @@
             { id: "default-1", title: "මනස සන්සුන් කරගැනීමේ විද්‍යාව", author: "MindsetOS Team", category: "Health", icon: "🧘‍♂️", color: "text-blue-500", readTime: "විනාඩි 3", excerpt: "මානසික ආතතිය අවම කරගැනීමට හා අවධානය වැඩි කරගැනීමට...", intro: "ඔබේ මනස සන්සුන් කිරීම යනු හුදු විවේකයක් පමණක් නොව, මොළයේ ක්‍රියාකාරීත්වය වර්ධනය කරන විද්‍යාත්මක ක්‍රියාවලියකි.", sections: [{title: "හුස්ම ගැනීමේ වැදගත්කම", text: "ගැඹුරු හුස්ම ගැනීම් මගින් රුධිර පීඩනය පාලනය කර ස්නායු පද්ධතිය සන්සුන් කරයි."}], science: "Deep breathing activates the parasympathetic nervous system, lowering cortisol levels." },
             { id: "default-2", title: "සාර්ථකත්වයේ රහස: 1% Rule", author: "James Clear", category: "Study", icon: "📈", color: "text-green-500", readTime: "විනාඩි 5", excerpt: "දිනපතා 1% කින් දියුණු වීම හරහා වසරක් අවසානයේ 37 ගුණයක වර්ධනයක් ලබා ගන්නේ කෙසේද?", intro: "විශාල වෙනස්කම් එකවර කිරීමට යාමෙන් බොහෝ දෙනා අසාර්ථක වේ. නමුත් කුඩා පුරුදු දිගුකාලීනව පවත්වා ගැනීමෙන් ඉහළ ප්‍රතිඵල ලබාගත හැක.", sections: [{title: "Continuous Improvement", text: "ඔබ සෑම දිනකම 1% කින් දියුණු වුවහොත්, දින 365 කට පසු ඔබ සිටින්නේ විශාල ඉදිරි පිම්මකය."}], science: "Habit formation relies on neuroplasticity. Small, consistent actions create strong neural pathways." }
         ];
+        
         let articles = [...defaultArticles];
 
         // ==========================================
-        // 2. INITIALIZE FIREBASE (WITH LOCAL FALLBACK)
-        // ==========================================
-        try {
-            render(); // Show Loading Screen Immediately
-            
-            const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
-            if(firebaseConfig && Object.keys(firebaseConfig).length > 0) {
-                const app = initializeApp(firebaseConfig);
-                auth = getAuth(app);
-                db = getFirestore(app);
-
-                const initAuth = async () => {
-                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                        await signInWithCustomToken(auth, __initial_auth_token);
-                    } else {
-                        await signInAnonymously(auth);
-                    }
-                };
-                initAuth();
-
-                onAuthStateChanged(auth, async (user) => {
-                    if (user) {
-                        currentUid = user.uid;
-                        await loadUserData(user.uid);
-                        loadArticles();
-                        if (isAdmin()) loadAllUsersForAdmin();
-                    } else {
-                        currentUid = null;
-                        state.isNewUser = true;
-                        isAppLoading = false;
-                        render();
-                    }
-                });
-            } else {
-                initLocalMode();
-            }
-        } catch(e) {
-            console.error("Firebase init failed, switching to local mode:", e);
-            initLocalMode();
-        }
-
-        function initLocalMode() {
-            db = null; auth = null; currentUid = 'local_user';
-            const savedUser = localStorage.getItem("mindsetos_fallback_db");
-            if (savedUser) { state = { ...state, ...JSON.parse(savedUser), isNewUser: false }; } 
-            else { state.isNewUser = true; }
-            
-            const savedArts = localStorage.getItem("mindsetos_fallback_arts");
-            if (savedArts) { articles = [...JSON.parse(savedArts), ...defaultArticles]; }
-            
-            checkNewDay(); applyTheme();
-            isAppLoading = false; render();
-        }
-
-        async function loadUserData(uid) {
-            try {
-                const profileRef = doc(db, 'artifacts', appId, 'public', 'data', 'userProfiles', uid);
-                const profileSnap = await getDoc(profileRef);
-
-                if (profileSnap.exists()) {
-                    state.user = { ...state.user, ...profileSnap.data() };
-                    state.isNewUser = false;
-
-                    const privateRef = doc(db, 'artifacts', appId, 'users', uid, 'userData', 'main');
-                    const privateSnap = await getDoc(privateRef);
-                    if (privateSnap.exists()) {
-                        const pData = privateSnap.data();
-                        state.habits = pData.habits || [];
-                        state.history = pData.history || [];
-                        state.reflections = pData.reflections || {};
-                        state.moods = pData.moods || {};
-                        state.flashcards = pData.flashcards || [];
-                        state.stats = pData.stats || { totalFocusMinutes: 0 };
-                        state.streak = pData.streak || { count: 0, lastDate: null };
-                        if(pData.categories) state.categories = pData.categories;
-                    }
-                } else { state.isNewUser = true; }
-            } catch (e) {
-                console.error("Error loading user data:", e);
-                state.isNewUser = true;
-            } finally {
-                checkNewDay(); applyTheme();
-                isAppLoading = false; render();
-            }
-        }
-
-        async function saveData() { 
-            if (state.isNewUser) return;
-            if (db && currentUid) {
-                try {
-                    const profileRef = doc(db, 'artifacts', appId, 'public', 'data', 'userProfiles', currentUid);
-                    await setDoc(profileRef, {
-                        name: state.user.name, email: state.user.email, joined: state.user.joined,
-                        targetDate: state.user.targetDate, theme: state.user.theme, xp: state.user.xp,
-                        level: state.user.level, totalFocusMinutes: state.stats.totalFocusMinutes, streakCount: state.streak.count
-                    }, { merge: true });
-
-                    const privateRef = doc(db, 'artifacts', appId, 'users', currentUid, 'userData', 'main');
-                    await setDoc(privateRef, {
-                        habits: state.habits, history: state.history, reflections: state.reflections,
-                        moods: state.moods, flashcards: state.flashcards, stats: state.stats,
-                        streak: state.streak, categories: state.categories
-                    });
-                } catch(e) { console.error("Error saving data:", e); }
-            } else {
-                localStorage.setItem("mindsetos_fallback_db", JSON.stringify(state));
-            }
-        }
-
-        // ==========================================
-        // 3. UI HELPERS & LOGIC
+        // 3. UI HELPERS & MODALS
         // ==========================================
         function escapeHTML(str) { return str ? str.replace(/[&<>'"]/g, tag => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'}[tag])) : ''; }
         function isAdmin() { return state.user.email === 'admin@mindsetos.com' && state.user.password === 'sadew12125'; }
@@ -220,6 +121,7 @@
             let bgClass = 'bg-indigo-600';
             if (type === 'success') bgClass = 'bg-emerald-500';
             else if (type === 'error') bgClass = 'bg-rose-500';
+            
             el.className = `px-6 py-3 rounded-2xl font-bold shadow-lg animate-slide-up text-white ${bgClass}`;
             el.innerHTML = msg; container.appendChild(el);
             setTimeout(() => { el.style.opacity = '0'; setTimeout(() => el.remove(), 300); }, 3000);
@@ -227,7 +129,16 @@
 
         function showConfirmModal(message, onConfirm) {
             const container = document.getElementById('modal-container');
-            container.innerHTML = `<div class="bg-white dark:bg-darkcard p-8 rounded-[2rem] shadow-2xl max-w-sm w-full mx-4 animate-slide-up border border-slate-200 dark:border-slate-700"><h3 class="text-xl font-black mb-4 text-slate-900 dark:text-white">තහවුරු කරන්න</h3><p class="text-slate-600 dark:text-slate-300 mb-8">${message}</p><div class="flex space-x-4"><button id="modal-cancel" class="flex-1 py-3 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">අවලංගු කරන්න</button><button id="modal-confirm" class="flex-1 py-3 bg-rose-600 text-white font-bold rounded-xl hover:bg-rose-700 transition-colors">තහවුරුයි</button></div></div>`;
+            container.innerHTML = `
+                <div class="bg-white dark:bg-darkcard p-8 rounded-[2rem] shadow-2xl max-w-sm w-full mx-4 animate-slide-up border border-slate-200 dark:border-slate-700">
+                    <h3 class="text-xl font-black mb-4 text-slate-900 dark:text-white">තහවුරු කරන්න</h3>
+                    <p class="text-slate-600 dark:text-slate-300 mb-8">${message}</p>
+                    <div class="flex space-x-4">
+                        <button id="modal-cancel" class="flex-1 py-3 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">අවලංගු කරන්න</button>
+                        <button id="modal-confirm" class="flex-1 py-3 bg-rose-600 text-white font-bold rounded-xl hover:bg-rose-700 transition-colors">තහවුරුයි</button>
+                    </div>
+                </div>
+            `;
             container.classList.remove('hidden'); container.classList.add('flex');
             document.getElementById('modal-cancel').onclick = () => { container.classList.add('hidden'); container.classList.remove('flex'); };
             document.getElementById('modal-confirm').onclick = () => { container.classList.add('hidden'); container.classList.remove('flex'); onConfirm(); };
@@ -235,7 +146,16 @@
 
         function showPromptModal(message, onConfirm) {
             const container = document.getElementById('modal-container');
-            container.innerHTML = `<div class="bg-white dark:bg-darkcard p-8 rounded-[2rem] shadow-2xl max-w-sm w-full mx-4 animate-slide-up border border-slate-200 dark:border-slate-700"><h3 class="text-xl font-black mb-4 text-slate-900 dark:text-white">${message}</h3><input type="text" id="modal-input" class="w-full px-4 py-3 mb-8 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 outline-none font-bold text-slate-800 dark:text-white"/><div class="flex space-x-4"><button id="modal-cancel" class="flex-1 py-3 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">අවලංගු කරන්න</button><button id="modal-confirm" class="flex-1 py-3 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-colors">එක් කරන්න</button></div></div>`;
+            container.innerHTML = `
+                <div class="bg-white dark:bg-darkcard p-8 rounded-[2rem] shadow-2xl max-w-sm w-full mx-4 animate-slide-up border border-slate-200 dark:border-slate-700">
+                    <h3 class="text-xl font-black mb-4 text-slate-900 dark:text-white">${message}</h3>
+                    <input type="text" id="modal-input" class="w-full px-4 py-3 mb-8 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 outline-none font-bold text-slate-800 dark:text-white"/>
+                    <div class="flex space-x-4">
+                        <button id="modal-cancel" class="flex-1 py-3 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">අවලංගු කරන්න</button>
+                        <button id="modal-confirm" class="flex-1 py-3 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-colors">එක් කරන්න</button>
+                    </div>
+                </div>
+            `;
             container.classList.remove('hidden'); container.classList.add('flex');
             document.getElementById('modal-cancel').onclick = () => { container.classList.add('hidden'); container.classList.remove('flex'); };
             document.getElementById('modal-confirm').onclick = () => {
@@ -245,6 +165,55 @@
             };
         }
 
+        // ==========================================
+        // 4. CORE APP LOGIC (NO LOADING BUGS)
+        // ==========================================
+        function initApp() {
+            // 1. Load Local Data Synchronously (Instant Load)
+            const savedData = localStorage.getItem(USER_DATA_KEY);
+            if (savedData) {
+                try {
+                    const parsed = JSON.parse(savedData);
+                    if (parsed.user && parsed.user.email) {
+                        state = { ...state, ...parsed, isNewUser: false };
+                    }
+                } catch(e) { console.error("Data parse error", e); }
+            }
+            
+            checkNewDay();
+            applyTheme();
+            render(); // Render UI immediately
+
+            // 2. Fetch Articles Asynchronously
+            fetchArticlesFromGoogleSheet();
+        }
+
+        function checkNewDay() {
+            if (state.isNewUser) return;
+            const today = new Date().toLocaleDateString('si-LK');
+            
+            if (!state.streak.lastDate) {
+                state.streak.lastDate = today;
+                updateHistory();
+            } else if (state.streak.lastDate !== today) {
+                const yest = new Date(); yest.setDate(yest.getDate() - 1);
+                if (state.streak.lastDate !== yest.toLocaleDateString('si-LK')) {
+                    state.streak.count = 0; 
+                }
+                state.habits = state.habits.map(h => ({ ...h, completed: false }));
+                state.streak.lastDate = today;
+                updateHistory();
+                saveData();
+            }
+        }
+
+        function saveData() { 
+            if (!state.isNewUser) {
+                localStorage.setItem(USER_DATA_KEY, JSON.stringify(state)); 
+                syncUserStatsToGoogleSheet(); // Send minor update to sheet in background
+            }
+        }
+
         async function handleStart() { 
             const n = document.getElementById('init-name')?.value.trim(); 
             const e = document.getElementById('init-email')?.value.trim(); 
@@ -252,6 +221,7 @@
             const d = document.getElementById('init-date')?.value;
             
             const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            
             if(!n) return showToast("කරුණාකර ඔබගේ නම ඇතුළත් කරන්න.", "error");
             if(!e || !emailRegex.test(e)) return showToast("කරුණාකර නිවැරදි ඊමේල් ලිපිනයක් ඇතුළත් කරන්න.", "error");
             if(!p || p.length < 6) return showToast("කරුණාකර මුරපදයක් ඇතුළත් කරන්න.", "error");
@@ -260,133 +230,125 @@
             state.user.targetDate = d; state.user.joined = new Date().toLocaleDateString('si-LK'); 
             state.isNewUser = false; 
 
-            await saveData(); 
-            if (isAdmin()) loadAllUsersForAdmin();
+            saveData(); 
+            syncUserStatsToGoogleSheet(true); // Explicitly sync new user
+            
             render(); 
             showToast("සාර්ථකව පද්ධතියට එක්විය!", "success");
         }
 
-        function checkNewDay() {
-            if (state.isNewUser) return;
-            const today = new Date().toLocaleDateString('si-LK');
-            if (!state.streak.lastDate) {
-                state.streak.lastDate = today; updateHistory();
-            } else if (state.streak.lastDate !== today) {
-                const yest = new Date(); yest.setDate(yest.getDate() - 1);
-                if (state.streak.lastDate !== yest.toLocaleDateString('si-LK')) state.streak.count = 0; 
-                state.habits = state.habits.map(h => ({ ...h, completed: false }));
-                state.streak.lastDate = today; updateHistory(); saveData();
+        function logout() {
+            showConfirmModal("ඔබට නිසැකවම ගිණුමෙන් ඉවත් වීමට අවශ්‍යද?", () => {
+                localStorage.removeItem(USER_DATA_KEY);
+                location.reload();
+            });
+        }
+
+        // ==========================================
+        // 5. GOOGLE SHEETS INTEGRATION (Fetch & Sync)
+        // ==========================================
+        
+        async function fetchArticlesFromGoogleSheet() {
+            if (!GOOGLE_SHEET_CSV_URL) return;
+            try {
+                // Add timestamp to prevent caching old data
+                const response = await fetch(GOOGLE_SHEET_CSV_URL + "&t=" + Date.now(), { cache: 'no-store' });
+                const csvData = await response.text();
+                
+                Papa.parse(csvData, {
+                    header: true, skipEmptyLines: true,
+                    complete: function(results) {
+                        const fetchedArticles = results.data.map(row => {
+                            return {
+                                id: row.ID, title: row.Title, author: row.Author || 'MindsetOS', 
+                                category: row.Category || 'General', icon: row.Icon || '📚', 
+                                color: row.Color || 'text-indigo-500', readTime: row.ReadTime || 'විනාඩි 5', 
+                                excerpt: row.Excerpt, intro: row.Intro, 
+                                sections: [{title: row.Sec1Title || 'අන්තර්ගතය', text: row.Sec1Text || ''}], 
+                                science: row.Science || ''
+                            };
+                        }).filter(a => a.id && a.title);
+
+                        if(fetchedArticles.length > 0) {
+                            articles = [...fetchedArticles, ...defaultArticles];
+                            if(state.activeTab === 'library' || state.selectedArticleId || state.activeTab === 'settings') render();
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error("Google Sheets Fetch Error:", error);
             }
         }
 
-        // ==========================================
-        // 4. ADMIN CAPABILITIES & CLOUD LOGIC
-        // ==========================================
-        function loadAllUsersForAdmin() {
-            if (!isAdmin() || !currentUid || !db) return;
-            try {
-                const usersRef = collection(db, 'artifacts', appId, 'public', 'data', 'userProfiles');
-                onSnapshot(usersRef, (snapshot) => {
-                    window.adminUsersData = [];
-                    snapshot.forEach(doc => { window.adminUsersData.push({ id: doc.id, ...doc.data() }); });
-                    window.adminUsersData.sort((a,b) => (b.xp || 0) - (a.xp || 0));
-                    if(state.activeTab === 'settings') render();
-                }, (error) => console.error("Error fetching users:", error));
-            } catch(e) { console.error("Admin user sync error", e); }
-        }
+        function syncUserStatsToGoogleSheet(isNew = false) {
+            if (!GOOGLE_SCRIPT_URL || state.isNewUser || isAdmin()) return;
+            // Send user data securely via POST to Google Apps Script
+            const formData = new URLSearchParams();
+            formData.append('action', 'saveUser');
+            formData.append('name', state.user.name);
+            formData.append('email', state.user.email);
+            formData.append('level', state.user.level);
+            formData.append('xp', state.user.xp);
+            formData.append('focusMinutes', state.stats.totalFocusMinutes || 0);
+            formData.append('joinedDate', state.user.joined);
 
-        function loadArticles() {
-            if (!currentUid || !db) return;
-            try {
-                const artsRef = collection(db, 'artifacts', appId, 'public', 'data', 'articles');
-                onSnapshot(artsRef, (snapshot) => {
-                    let loadedArts = [];
-                    snapshot.forEach(doc => loadedArts.push(doc.data()));
-                    loadedArts.sort((a,b) => (b.timestamp || 0) - (a.timestamp || 0));
-                    articles = [...loadedArts, ...defaultArticles];
-                    if (state.activeTab === 'library' || state.selectedArticleId || state.activeTab === 'settings') render();
-                }, (error) => console.error("Error loading articles", error));
-            } catch(e) { console.error("Article sync error", e); }
+            fetch(GOOGLE_SCRIPT_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: formData.toString(),
+                mode: 'no-cors' // Required to prevent CORS blocks, response cannot be read but data is sent
+            }).catch(e => console.log("Silent Sync Error", e));
         }
 
         async function publishAdminArticle() {
-            const titleElement = document.getElementById('admin-art-title');
-            if(!titleElement) return;
-            
-            const title = titleElement.value;
-            const author = document.getElementById('admin-art-author')?.value || 'MindsetOS Admin';
-            const readTime = document.getElementById('admin-art-time')?.value || 'විනාඩි 5';
-            const cat = document.getElementById('admin-art-cat')?.value || 'General';
-            const intro = document.getElementById('admin-art-intro')?.value || '';
-            const text = document.getElementById('admin-art-text')?.value || '';
+            const title = document.getElementById('admin-art-title')?.value;
+            const intro = document.getElementById('admin-art-intro')?.value;
+            const text = document.getElementById('admin-art-text')?.value;
 
             if(!title || !intro || !text) return showToast("කරුණාකර මාතෘකාව, හැඳින්වීම සහ අන්තර්ගතය ඇතුළත් කරන්න.", "error");
 
-            const newArt = {
-                id: 'custom-' + Date.now(), title: title, author: author, category: cat,
-                icon: '⭐', color: 'text-yellow-500', readTime: readTime, excerpt: intro.substring(0, 100) + '...',
-                intro: intro, sections: [{ title: 'ප්‍රධාන අන්තර්ගතය', text: text }],
-                science: 'Admin විසින් තහවුරු කරන ලද දත්ත.', timestamp: Date.now()
-            };
-
             const btn = document.getElementById('publish-btn');
-            btn.innerText = "Publishing to Cloud..."; btn.disabled = true;
+            btn.innerText = "Google Sheet වෙත යවමින් පවතී...";
+            btn.disabled = true;
 
-            if (db) {
-                try {
-                    const artRef = doc(db, 'artifacts', appId, 'public', 'data', 'articles', newArt.id);
-                    await setDoc(artRef, newArt);
-                    showToast("ලිපිය සාර්ථකව Cloud Database වෙත Publish කරන ලදී!", "success");
-                } catch(e) { showToast("Cloud වෙත යැවීම අසාර්ථකයි.", "error"); }
-            } else {
-                // Local Mode Fallback
-                let localArts = JSON.parse(localStorage.getItem("mindsetos_fallback_arts") || '[]');
-                localArts.unshift(newArt);
-                localStorage.setItem("mindsetos_fallback_arts", JSON.stringify(localArts));
-                articles.unshift(newArt);
-                showToast("ලිපිය Local Storage වෙත එක්විය (Offline).", "success");
-                render();
+            const formData = new URLSearchParams();
+            formData.append('action', 'saveArticle');
+            formData.append('ID', 'art-' + Date.now());
+            formData.append('Title', title);
+            formData.append('Author', document.getElementById('admin-art-author')?.value || 'Admin');
+            formData.append('Category', document.getElementById('admin-art-cat')?.value || 'General');
+            formData.append('Icon', '⭐');
+            formData.append('Color', 'text-yellow-500');
+            formData.append('ReadTime', document.getElementById('admin-art-time')?.value || 'විනාඩි 5');
+            formData.append('Excerpt', intro.substring(0, 100) + '...');
+            formData.append('Intro', intro);
+            formData.append('Sec1Title', 'අන්තර්ගතය');
+            formData.append('Sec1Text', text);
+            formData.append('Science', 'Admin Data');
+
+            try {
+                await fetch(GOOGLE_SCRIPT_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: formData.toString(),
+                    mode: 'no-cors'
+                });
+                
+                showToast("ලිපිය සාර්ථකව Google Sheets වෙත යවන ලදී! තත්පර කිහිපයකින් Library එක යාවත්කාලීන වනු ඇත.", "success");
+                document.getElementById('admin-art-title').value = ''; document.getElementById('admin-art-intro').value = ''; document.getElementById('admin-art-text').value = '';
+                
+                // Refresh articles immediately
+                setTimeout(fetchArticlesFromGoogleSheet, 2000);
+            } catch(e) {
+                showToast("අන්තර්ජාල දෝෂයකි.", "error");
             }
-
-            document.getElementById('admin-art-title').value = ''; document.getElementById('admin-art-intro').value = ''; document.getElementById('admin-art-text').value = '';
-            btn.innerText = "ලිපිය Publish කරන්න (Global)"; btn.disabled = false;
-        }
-
-        async function deleteAdminArticle(articleId) {
-            showConfirmModal("මෙම ලිපිය සම්පූර්ණයෙන්ම ඉවත් කිරීමට ඔබට අවශ්‍යද?", async () => {
-                if (db) {
-                    try {
-                        const artRef = doc(db, 'artifacts', appId, 'public', 'data', 'articles', articleId);
-                        await deleteDoc(artRef);
-                        showToast("ලිපිය සාර්ථකව මකා දමන ලදී.", "success");
-                    } catch(e) { showToast("දෝෂයකි!", "error"); }
-                } else {
-                    let localArts = JSON.parse(localStorage.getItem("mindsetos_fallback_arts") || '[]');
-                    localArts = localArts.filter(a => a.id !== articleId);
-                    localStorage.setItem("mindsetos_fallback_arts", JSON.stringify(localArts));
-                    articles = articles.filter(a => a.id !== articleId);
-                    showToast("ලිපිය මකා දමන ලදී (Offline).", "success");
-                    render();
-                }
-            });
-        }
-
-        async function logout() {
-            showConfirmModal("ඔබට නිසැකවම ගිණුමෙන් ඉවත් වීමට අවශ්‍යද?", async () => {
-                if (auth) {
-                    try {
-                        await auth.signOut();
-                        window.location.reload();
-                    } catch(e) { console.error("Logout error", e); }
-                } else {
-                    localStorage.removeItem("mindsetos_fallback_db");
-                    window.location.reload();
-                }
-            });
+            
+            btn.innerText = "ලිපිය Publish කරන්න (Global)";
+            btn.disabled = false;
         }
 
         // ==========================================
-        // 5. APP FEATURES
+        // 6. APP FEATURES
         // ==========================================
         function addXP(amount) {
             state.user.xp += amount;
@@ -415,15 +377,6 @@
             updateHistory(); render();
         }
         function deleteHabit(id) { state.habits = state.habits.filter(h => h.id !== id); updateHistory(); render(); }
-        
-        function updateStreak() {
-            const today = new Date().toLocaleDateString('si-LK');
-            if (state.streak.lastDate !== today) {
-                const yest = new Date(); yest.setDate(yest.getDate() - 1);
-                if (state.streak.lastDate === yest.toLocaleDateString('si-LK')) state.streak.count++; else state.streak.count = 1;
-                state.streak.lastDate = today;
-            }
-        }
         
         function updateHistory() {
             const today = new Date().toLocaleDateString('si-LK');
@@ -509,8 +462,8 @@
                     const data = JSON.parse(e.target.result);
                     if (data && data.user) {
                         state = { ...state, ...data };
-                        await saveData(); 
-                        showToast("දත්ත සාර්ථකව Restore කරන ලදී! Cloud Database එකද යාවත්කාලීන විය.", "success");
+                        saveData(); 
+                        showToast("දත්ත සාර්ථකව Restore කරන ලදී!", "success");
                         render();
                     } else showToast("මෙය නිවැරදි Backup ගොනුවක් නොවේ!", "error");
                 } catch (err) { showToast("ගොනුව කියවීමේ දෝෂයකි!", "error"); }
@@ -566,43 +519,19 @@
             window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
         }
 
-        // EXPORT ALL FUNCTIONS TO WINDOW (To fix "Function is not defined" inline HTML errors)
-        window.handleStart = handleStart; window.logout = logout; window.switchTab = switchTab;
-        window.viewArticle = viewArticle; window.publishAdminArticle = publishAdminArticle; 
-        window.deleteAdminArticle = deleteAdminArticle; window.addHabit = addHabit; 
-        window.toggleHabit = toggleHabit; window.deleteHabit = deleteHabit; 
-        window.addCustomCategory = addCustomCategory; window.updateTargetDate = updateTargetDate;
-        window.setMood = setMood; window.saveJournal = saveJournal; window.addFlashcard = addFlashcard;
-        window.deleteFlashcard = deleteFlashcard; window.flipCardDOM = flipCardDOM;
-        window.toggleFocusSound = toggleFocusSound; window.toggleTimer = toggleTimer;
-        window.switchTimerMode = switchTimerMode; window.exportData = exportData;
-        window.importData = importData; window.shareToWhatsApp = shareToWhatsApp;
-        window.toggleTheme = toggleTheme; window.showConfirmModal = showConfirmModal;
-
         // ==========================================
-        // 6. RENDERING HTML
+        // 7. RENDERING HTML
         // ==========================================
         function render() {
             const root = document.getElementById('app-root');
             
-            // 1. Loading Screen (Fixes the "load යනවා" blank screen issue)
-            if (isAppLoading) {
-                root.innerHTML = `
-                <div class="min-h-screen bg-slate-900 flex flex-col items-center justify-center p-6 text-white">
-                    <div class="w-16 h-16 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mb-6 shadow-[0_0_15px_rgba(99,102,241,0.5)]"></div>
-                    <h1 class="text-3xl font-black mb-2 animate-pulse tracking-tighter">Mindset<span class="text-indigo-500">OS</span></h1>
-                    <p class="text-slate-400 text-sm font-bold tracking-widest uppercase">පද්ධතිය පූරණය වෙමින් පවතී...</p>
-                </div>`;
-                return;
-            }
-
-            // 2. Welcome Screen
+            // 1. Welcome Screen
             if (state.isNewUser) { 
                 root.innerHTML = renderWelcome(); 
                 return;
             } 
             
-            // 3. Main Application View
+            // 2. Main Application View
             let content = state.selectedArticleId ? renderArticleView() : ( state.activeTab==='home' ? renderHome() : state.activeTab==='planner' ? renderPlanner() : state.activeTab==='timer' ? renderTimer() : state.activeTab==='flashcards' ? renderFlashcards() : state.activeTab==='library' ? renderLibrary() : state.activeTab==='stats' ? renderStats() : renderSettings() );
             
             root.innerHTML = `
@@ -683,7 +612,7 @@
         }
 
         function renderLibrary() {
-            return `<div class="space-y-10 pb-20"><header><h2 class="text-4xl font-black mb-2">පර්යේෂණ පුස්තකාලය</h2><p class="text-slate-500 font-bold">ඔබේ මනස දියුණු කරන නවතම ලිපි එකතුව</p></header><div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">${articles.map(a => `<div onclick="viewArticle('${a.id}')" class="bg-white dark:bg-darkcard rounded-[2.5rem] p-8 border border-slate-100 dark:border-slate-800 shadow-sm cursor-pointer card-hover"><div><div class="w-16 h-16 bg-slate-50 dark:bg-slate-800 rounded-2xl flex items-center justify-center mb-6 text-3xl ${a.color}">${a.icon}</div><h3 class="text-2xl font-black mb-3">${a.title}</h3><p class="text-slate-500 text-sm mb-6 line-clamp-3">${a.excerpt}</p></div><button class="w-full py-3 bg-slate-50 dark:bg-slate-800 font-bold rounded-xl text-slate-700 dark:text-slate-300">කියවන්න (+5 XP)</button></div>`).join('')}</div></div>`;
+            return `<div class="space-y-10 pb-20"><header><h2 class="text-4xl font-black mb-2">පර්යේෂණ පුස්තකාලය</h2><p class="text-slate-500 font-bold">ඔබේ මනස දියුණු කරන නවතම ලිපි එකතුව (Cloud Sync)</p></header><div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">${articles.map(a => `<div onclick="viewArticle('${a.id}')" class="bg-white dark:bg-darkcard rounded-[2.5rem] p-8 border border-slate-100 dark:border-slate-800 shadow-sm cursor-pointer card-hover"><div><div class="w-16 h-16 bg-slate-50 dark:bg-slate-800 rounded-2xl flex items-center justify-center mb-6 text-3xl ${a.color}">${a.icon}</div><h3 class="text-2xl font-black mb-3">${a.title}</h3><p class="text-slate-500 text-sm mb-6 line-clamp-3">${a.excerpt}</p></div><button class="w-full py-3 bg-slate-50 dark:bg-slate-800 font-bold rounded-xl text-slate-700 dark:text-slate-300">කියවන්න (+5 XP)</button></div>`).join('')}</div></div>`;
         }
 
         function renderArticleView() {
@@ -699,16 +628,6 @@
 
         function renderSettings() {
             const adminMode = isAdmin();
-            
-            const publishedArticles = articles.filter(a => a.id.startsWith('custom-'));
-            const renderedArticleList = publishedArticles.length === 0 ? 
-                '<p class="text-slate-400 text-sm text-center py-4">දැනට ඔබ විසින් පළකළ ලිපි කිසිවක් නැත.</p>' : 
-                publishedArticles.map(a => `
-                    <div class="flex justify-between items-center p-3 bg-slate-800 rounded-lg border border-slate-700">
-                        <span class="text-sm font-bold text-slate-200 truncate pr-4">${a.title}</span>
-                        <button onclick="deleteAdminArticle('${a.id}')" class="text-rose-500 hover:text-rose-400 p-2 bg-slate-900 rounded-md transition-colors" title="Delete Article"><span class="text-lg">🗑️</span></button>
-                    </div>
-                `).join('');
 
             return `
             <div class="max-w-2xl mx-auto space-y-10 pb-20">
@@ -723,44 +642,22 @@
                                 <span class="text-2xl bg-indigo-500/20 p-3 rounded-xl border border-indigo-500/30">🖥️</span>
                                 <div>
                                     <h3 class="text-2xl font-black tracking-tight">Admin Panel</h3>
-                                    <p class="text-xs font-bold uppercase tracking-widest text-indigo-400 mt-1">Cloud Dashboard</p>
+                                    <p class="text-xs font-bold uppercase tracking-widest text-indigo-400 mt-1">Google Sheets Sync</p>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- 1. MANAGE USERS TABLE -->
-                        <div class="mb-10">
-                            <h4 class="font-bold text-blue-400 mb-4 flex items-center gap-2 text-lg"><span>👥</span> ලියාපදිංචි පරිශීලකයන්ගේ දත්ත</h4>
-                            <div class="overflow-x-auto rounded-2xl border border-slate-700 bg-slate-800 custom-scrollbar shadow-inner">
-                                <table class="w-full text-left text-sm text-slate-300 min-w-[600px]">
-                                    <thead class="bg-slate-950 text-[10px] font-black uppercase text-slate-400 tracking-wider">
-                                        <tr>
-                                            <th class="px-5 py-4">නම සහ විද්‍යුත් තැපෑල</th>
-                                            <th class="px-5 py-4">Level / XP</th>
-                                            <th class="px-5 py-4">Focus Time</th>
-                                            <th class="px-5 py-4">Streak</th>
-                                            <th class="px-5 py-4">Joined Date</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody class="divide-y divide-slate-700/50">
-                                        ${window.adminUsersData.map(u => `
-                                            <tr class="hover:bg-slate-700/50 transition-colors">
-                                                <td class="px-5 py-4"><p class="font-bold text-white text-base">${u.name || 'Unknown'}</p><p class="text-xs text-slate-400">${u.email || 'No email'}</p></td>
-                                                <td class="px-5 py-4"><span class="bg-indigo-500/20 text-indigo-300 px-2 py-1 rounded-lg text-xs font-black border border-indigo-500/30">Lvl ${u.level||1}</span> <span class="text-xs ml-2 text-slate-400 font-bold">${u.xp||0} XP</span></td>
-                                                <td class="px-5 py-4 text-emerald-400 font-bold">${Math.floor((u.totalFocusMinutes||0)/60)}h ${(u.totalFocusMinutes||0)%60}m</td>
-                                                <td class="px-5 py-4 text-orange-400 font-bold">${u.streakCount||0} 🔥</td>
-                                                <td class="px-5 py-4 text-xs text-slate-400 font-medium">${u.joined || '-'}</td>
-                                            </tr>
-                                        `).join('')}
-                                        ${window.adminUsersData.length === 0 ? '<tr><td colspan="5" class="text-center py-8 text-slate-500 font-bold">පරිශීලකයන් පූරණය වෙමින් පවතී හෝ කිසිවෙකු නොමැත...</td></tr>' : ''}
-                                    </tbody>
-                                </table>
-                            </div>
+                        <!-- 1. MANAGE USERS INFO -->
+                        <div class="mb-10 p-5 bg-indigo-950/50 rounded-2xl border border-indigo-900">
+                            <h4 class="font-bold text-blue-400 mb-2 flex items-center gap-2 text-lg"><span>👥</span> පරිශීලක දත්ත බලාගැනීම</h4>
+                            <p class="text-sm text-slate-300 leading-relaxed">
+                                දැන් පද්ධතිය සම්පූර්ණයෙන්ම Google Sheets සමග සම්බන්ධ වී ඇත. ලියාපදිංචි වන සියලුම පරිශීලකයන්ගේ නම, Email, Level සහ වෙනත් දත්ත ඔබට <strong class="text-white">ඔබගේ Google Sheet එකෙහි "Users" නම් sheet එකක් සාදා ගැනීමෙන්</strong> සෘජුවම බලාගත හැක.
+                            </p>
                         </div>
                         
                         <!-- 2. PUBLISH ARTICLES -->
                         <div class="pt-6 border-t border-slate-800 space-y-4">
-                            <h4 class="font-bold text-emerald-400 mb-4 flex items-center gap-2 text-lg"><span>📢</span> Cloud Database වෙත නව ලිපියක් Publish කරන්න</h4>
+                            <h4 class="font-bold text-emerald-400 mb-4 flex items-center gap-2 text-lg"><span>📢</span> Google Sheets වෙත නව ලිපියක් Publish කරන්න</h4>
                             <input type="text" id="admin-art-title" placeholder="මාතෘකාව (Title)" class="w-full p-4 bg-slate-950 rounded-xl outline-none border border-slate-800 text-sm focus:border-indigo-500 transition-colors font-bold"/>
                             <input type="text" id="admin-art-author" placeholder="කර්තෘ (Author - විකල්ප)" value="MindsetOS Admin" class="w-full p-4 bg-slate-950 rounded-xl outline-none border border-slate-800 text-sm focus:border-indigo-500 transition-colors font-bold"/>
                             <div class="flex space-x-3">
@@ -770,14 +667,6 @@
                             <textarea id="admin-art-intro" placeholder="කෙටි හැඳින්වීම (Intro)..." class="w-full p-4 bg-slate-950 rounded-xl outline-none border border-slate-800 text-sm h-20 resize-none focus:border-indigo-500 transition-colors font-bold"></textarea>
                             <textarea id="admin-art-text" placeholder="සම්පූර්ණ අන්තර්ගතය (Main Content)..." class="w-full p-4 bg-slate-950 rounded-xl outline-none border border-slate-800 text-sm h-32 resize-none focus:border-indigo-500 transition-colors font-bold"></textarea>
                             <button id="publish-btn" onclick="publishAdminArticle()" class="w-full bg-emerald-600 hover:bg-emerald-500 py-4 rounded-xl font-black transition-colors shadow-lg">ලිපිය Publish කරන්න (Global)</button>
-                        </div>
-
-                        <!-- 3. MANAGE PUBLISHED ARTICLES -->
-                        <div class="pt-8 mt-8 border-t border-slate-800 space-y-4">
-                            <h4 class="font-bold text-rose-400 mb-4 flex items-center gap-2 text-lg"><span>🗑️</span> පළකළ ලිපි කළමනාකරණය</h4>
-                            <div class="space-y-2 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
-                                ${renderedArticleList}
-                            </div>
                         </div>
                     </div>
                     <!-- ADMIN PANEL END -->
@@ -804,11 +693,14 @@
 
                     <div class="pt-6 border-t border-slate-200 dark:border-slate-700 space-y-4">
                         <button onclick="logout()" class="w-full py-4 bg-slate-100 dark:bg-slate-800 font-black rounded-2xl hover:bg-slate-200 dark:hover:bg-slate-700">ගිණුමෙන් ඉවත් වන්න (Logout)</button>
-                        <button onclick="showConfirmModal('ඔබගේ සියලුම දත්ත මකා දැමීමට අවශ්‍යද? මෙය නැවත ලබා ගත නොහැක.', () => { localStorage.removeItem('mindsetos_fallback_db'); location.reload(); })" class="w-full py-4 border-2 border-red-200 text-red-500 font-black rounded-2xl hover:bg-red-50 dark:hover:bg-red-900/20">සම්පූර්ණ ගිණුම මකා දමන්න</button>
+                        <button onclick="showConfirmModal('ඔබගේ සියලුම දත්ත මකා දැමීමට අවශ්‍යද? මෙය නැවත ලබා ගත නොහැක.', () => { localStorage.removeItem(USER_DATA_KEY); location.reload(); })" class="w-full py-4 border-2 border-red-200 text-red-500 font-black rounded-2xl hover:bg-red-50 dark:hover:bg-red-900/20">සම්පූර්ණ ගිණුම මකා දමන්න</button>
                     </div>
                 </div>
             </div>`;
         }
+
+        // Start Application
+        initApp();
     </script>
 </body>
 </html>
