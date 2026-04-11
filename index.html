@@ -82,13 +82,13 @@
         window.authMode = 'login'; 
         
         // 1. Articles CSV Link ("Sheet1" හි CSV Link එක)
-        const GOOGLE_SHEET_ARTICLES_CSV_URL = "YOUR_ARTICLE_CSV_LINK_HERE";
+        const GOOGLE_SHEET_ARTICLES_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vShQaas57qfq3ElS57vD9c85buElPk8F7o6EDs4JjNFY-JKBZpOCBUIFg4tgex7Ojy6TxUsh3tuyzdf/pub?gid=0&single=true&output=csv";
         
         // 2. Users CSV Link ("Users" sheet හි CSV Link එක)
-        const GOOGLE_SHEET_USERS_CSV_URL = "YOUR_USERS_CSV_LINK_HERE"; 
+        const GOOGLE_SHEET_USERS_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vShQaas57qfq3ElS57vD9c85buElPk8F7o6EDs4JjNFY-JKBZpOCBUIFg4tgex7Ojy6TxUsh3tuyzdf/pub?gid=1423780323&single=true&output=csv"; 
         
         // 3. Apps Script Web App URL (Deploy කිරීමෙන් ලැබෙන URL එක)
-        const GOOGLE_SCRIPT_URL = "YOUR_GOOGLE_SCRIPT_URL_HERE";
+        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz23yhqTY10Yokdnwyj2EbVOK-SKmnnJCzuxrridHzSS_L6ZmbVF-Axv5kO2NmjIB5p/exec";
 
         // ==========================================
         // 2. DICTIONARY (BILINGUAL)
@@ -349,7 +349,7 @@
         // 6. GOOGLE SHEETS
         // ==========================================
         async function fetchArticlesFromGoogleSheet() {
-            if (!GOOGLE_SHEET_ARTICLES_CSV_URL || GOOGLE_SHEET_ARTICLES_CSV_URL.includes("YOUR_")) return;
+            if (!GOOGLE_SHEET_ARTICLES_CSV_URL || GOOGLE_SHEET_ARTICLES_CSV_URL.includes("https://docs.google.com/spreadsheets/d/e/2PACX-1vShQaas57qfq3ElS57vD9c85buElPk8F7o6EDs4JjNFY-JKBZpOCBUIFg4tgex7Ojy6TxUsh3tuyzdf/pub?gid=0&single=true&output=csv")) return;
             try {
                 const response = await fetch(GOOGLE_SHEET_ARTICLES_CSV_URL + "&t=" + Date.now(), { cache: 'no-store' });
                 const csvData = await response.text();
@@ -361,7 +361,7 @@
         }
 
         async function fetchUsersFromGoogleSheet() {
-            if (!isAdmin() || !GOOGLE_SHEET_USERS_CSV_URL || GOOGLE_SHEET_USERS_CSV_URL.includes("YOUR_")) return;
+            if (!isAdmin() || !GOOGLE_SHEET_USERS_CSV_URL || GOOGLE_SHEET_USERS_CSV_URL.includes("https://docs.google.com/spreadsheets/d/e/2PACX-1vShQaas57qfq3ElS57vD9c85buElPk8F7o6EDs4JjNFY-JKBZpOCBUIFg4tgex7Ojy6TxUsh3tuyzdf/pub?gid=1423780323&single=true&output=csv")) return;
             try {
                 const response = await fetch(GOOGLE_SHEET_USERS_CSV_URL + "&t=" + Date.now(), { cache: 'no-store' });
                 const csvData = await response.text();
@@ -374,7 +374,7 @@
         }
 
         function syncUserStatsToGoogleSheet() {
-            if (!GOOGLE_SCRIPT_URL || GOOGLE_SCRIPT_URL.includes("YOUR_") || state.isNewUser || isAdmin()) return;
+            if (!GOOGLE_SCRIPT_URL || GOOGLE_SCRIPT_URL.includes("https://script.google.com/macros/s/AKfycbz23yhqTY10Yokdnwyj2EbVOK-SKmnnJCzuxrridHzSS_L6ZmbVF-Axv5kO2NmjIB5p/exec") || state.isNewUser || isAdmin()) return;
             const formData = new URLSearchParams();
             formData.append('action', 'saveUser'); formData.append('name', state.user.name); formData.append('email', state.user.email); formData.append('level', state.user.level); formData.append('xp', state.user.xp); formData.append('focusMinutes', state.stats.totalFocusMinutes || 0); formData.append('joinedDate', state.user.joined);
             fetch(GOOGLE_SCRIPT_URL, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: formData.toString(), mode: 'no-cors' }).catch(e=>e);
