@@ -483,10 +483,25 @@
         }
 
         function toggleTimer() {
-            // Unlock AudioContext safely on user click
-            if (!globalAudioCtx) {
-                globalAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            }
+    if (!globalAudioCtx) {
+        globalAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    if (globalAudioCtx.state === 'suspended') {
+        globalAudioCtx.resume();
+    }
+
+    if (timerState.phase === 'running' || timerState.phase === 'break-running') { 
+        clearInterval(timerState.interval); 
+        timerState.phase = timerState.phase === 'running' ? 'paused' : 'break-paused'; 
+    } else if (timerState.phase === 'paused' || timerState.phase === 'break-paused') {
+        timerState.phase = timerState.phase === 'paused' ? 'running' : 'break-running';
+        startTimerInterval();
+    } else {
+        // focus-ended අවස්ථාවේදී පවා ටයිමරය ක්‍රියා කරන ලෙස සකසා ඇත
+        timerState.phase = timerState.mode === 'focus' ? 'running' : 'break-running';
+        startTimerInterval();
+    }
+    render();}
             if (globalAudioCtx.state === 'suspended') {
                 globalAudioCtx.resume();
             }
@@ -529,7 +544,20 @@
         }
         
         function resetTimer() { clearInterval(timerState.interval); timerState.mode = 'focus'; timerState.phase = 'idle'; timerState.timeLeft = 25 * 60; render(); }
-        function startBreakManual() { timerState.mode = 'break'; timerState.timeLeft = 5 * 60; toggleTimer(); }
+        function startBreakManual() {
+    timerState.mode = 'break';
+    timerState.timeLeft = 5 * 60;
+    timerState.phase = 'break-running'; 
+    
+    if (!globalAudioCtx) {
+        globalAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    if (globalAudioCtx.state === 'suspended') {
+        globalAudioCtx.resume();
+    }
+
+    startTimerInterval(); 
+    render();}
         function skipBreakManual() { resetTimer(); render(); }
         
         function updateTimerUI() {
