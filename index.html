@@ -123,7 +123,11 @@
             'clear_all': { si: 'සියලුම ලැයිස්තු හිස් කරන්න', en: 'Clear All Lists' },
             'del_acc': { si: 'සම්පූර්ණ ගිණුම මකා දමන්න', en: 'Delete Account Entirely' },
             'target_date': { si: 'විභාගය/ඉලක්ක දිනය:', en: 'Target / Exam Date:' },
-            'add_category': { si: 'අලුත් කාණ්ඩයක් එක් කරන්න', en: 'Add Custom Category' }
+            'add_category': { si: 'අලුත් කාණ්ඩයක් එක් කරන්න', en: 'Add Custom Category' },
+            'login': { si: 'ලොග් වන්න', en: 'Login' },
+            'register': { si: 'ලියාපදිංචි වන්න', en: 'Register' },
+            'no_account': { si: 'ගිණුමක් නැද්ද?', en: 'No account?' },
+            'have_account': { si: 'දැනටමත් ගිණුමක් තිබේද?', en: 'Have an account?' }
         };
 
         function t(key) { return dict[key] ? dict[key][state.language || 'si'] : key; }
@@ -149,7 +153,9 @@
         
         let timerState = { mode: 'focus', phase: 'idle', timeLeft: 25 * 60, interval: null };
         let progressChartInstance = null, focusChartInstance = null;
-        let articles = [{ id: "default-1", title: "මනස සන්සුන් කරගැනීමේ විද්‍යාව", author: "MindsetOS Team", category: "Health", icon: "🧘‍♂️", color: "text-blue-500", readTime: "විනාඩි 3", excerpt: "මානසික ආතතිය අවම කරගැනීමට හා අවධානය වැඩි කරගැනීමට...", intro: "ඔබේ මනස සන්සුන් කිරීම යනු හුදු විවේකයක් පමණක් නොව, මොළයේ ක්‍රියාකාරීත්වය වර්ධනය කරන විද්‍යාත්මක ක්‍රියාවලියකි.", sections: [{title: "හුස්ම ගැනීමේ වැදගත්කම", text: "ගැඹුරු හුස්ම ගැනීම් මගින් රුධිර පීඩනය පාලනය කර ස්නායු පද්ධතිය සන්සුන් කරයි."}], science: "Deep breathing activates the parasympathetic nervous system, lowering cortisol levels." }];
+
+        const defaultArticles = [{ id: "default-1", title: "මනස සන්සුන් කරගැනීමේ විද්‍යාව", author: "MindsetOS Team", category: "Health", icon: "🧘‍♂️", color: "text-blue-500", readTime: "විනාඩි 3", excerpt: "මානසික ආතතිය අවම කරගැනීමට හා අවධානය වැඩි කරගැනීමට...", intro: "ඔබේ මනස සන්සුන් කිරීම යනු හුදු විවේකයක් පමණක් නොව, මොළයේ ක්‍රියාකාරීත්වය වර්ධනය කරන විද්‍යාත්මක ක්‍රියාවලියකි.", sections: [{title: "හුස්ම ගැනීමේ වැදගත්කම", text: "ගැඹුරු හුස්ම ගැනීම් මගින් රුධිර පීඩනය පාලනය කර ස්නායු පද්ධතිය සන්සුන් කරයි."}], science: "Deep breathing activates the parasympathetic nervous system, lowering cortisol levels." }];
+        let articles = [...defaultArticles];
 
         // ==========================================
         // 4. UI HELPERS & AUDIO API
@@ -160,7 +166,7 @@
         function showToast(msg, type='info') {
             const container = document.getElementById('toast-container'); const el = document.createElement('div');
             let bgClass = type === 'success' ? 'bg-emerald-500' : type === 'error' ? 'bg-rose-500' : 'bg-indigo-600';
-            el.className = `px-6 py-3 rounded-2xl font-bold shadow-lg animate-slide-up text-white ${bgClass} glass-panel border-none`;
+            el.className = `px-6 py-3 rounded-2xl font-bold shadow-lg animate-slide-up text-white ${bgClass} glass-panel border-none z-[110]`;
             el.innerHTML = msg; container.appendChild(el);
             setTimeout(() => { el.style.opacity = '0'; setTimeout(() => el.remove(), 300); }, 3000);
         }
@@ -209,6 +215,7 @@
                 let registry = JSON.parse(localStorage.getItem(USERS_REGISTRY_KEY)) || {};
                 let savedData = localStorage.getItem(USER_DATA_KEY);
                 
+                // Old App Migration
                 let oldAppLegacy = localStorage.getItem('mindsetos-app-v6') || localStorage.getItem('mindset-os-secure-v2');
                 if(!savedData && oldAppLegacy) savedData = oldAppLegacy; 
 
@@ -304,7 +311,15 @@
                 const csvData = await response.text();
                 Papa.parse(csvData, { header: true, skipEmptyLines: true, complete: function(results) {
                         const fetchedArticles = results.data.map(row => ({ id: row.ID, title: row.Title, author: row.Author || 'MindsetOS', category: row.Category || 'General', icon: row.Icon || '📚', color: row.Color || 'text-indigo-500', readTime: row.ReadTime || '5m', excerpt: row.Excerpt, intro: row.Intro, sections: [{title: row.Sec1Title || 'අන්තර්ගතය', text: row.Sec1Text || ''}], science: row.Science || '' })).filter(a => a.id && a.title);
-                        if(fetchedArticles.length > 0) { articles = [...fetchedArticles, ...defaultArticles]; if(state.activeTab === 'library' || state.selectedArticleId) render(); }
+                        
+                        // FIX: Ensure locally optimistically added articles are not overwritten immediately
+                        const fetchedIds = new Set(fetchedArticles.map(a => a.id));
+                        const localOnlyArticles = articles.filter(a => a.id.startsWith('art-') && !fetchedIds.has(a.id));
+
+                        if(fetchedArticles.length > 0) { 
+                            articles = [...localOnlyArticles, ...fetchedArticles, ...defaultArticles]; 
+                            if(state.activeTab === 'library' || state.selectedArticleId) render(); 
+                        }
                     } });
             } catch (error) { console.error(error); }
         }
@@ -332,12 +347,20 @@
         function publishAdminArticle() {
             const title = document.getElementById('admin-art-title')?.value; const intro = document.getElementById('admin-art-intro')?.value; const text = document.getElementById('admin-art-text')?.value;
             if(!title || !intro || !text) return showToast("Fill all fields.", "error");
+            
             const newArtID = 'art-' + Date.now();
+            const newArtObj = { id: newArtID, title: title, author: document.getElementById('admin-art-author')?.value || 'Admin', category: document.getElementById('admin-art-cat')?.value || 'General', icon: '⭐', color: 'text-yellow-500', readTime: document.getElementById('admin-art-time')?.value || '5m', excerpt: intro.substring(0, 100) + '...', intro: intro, sections: [{title: 'අන්තර්ගතය', text: text}], science: 'Admin Data' };
+            
+            // FIX: Optimistic UI Update (Shows immediately)
+            articles.unshift(newArtObj);
+            render();
+
             const formData = new URLSearchParams();
-            formData.append('action', 'saveArticle'); formData.append('ID', newArtID); formData.append('Title', title); formData.append('Author', document.getElementById('admin-art-author')?.value || 'Admin'); formData.append('Category', document.getElementById('admin-art-cat')?.value || 'General'); formData.append('Icon', '⭐'); formData.append('Color', 'text-yellow-500'); formData.append('ReadTime', document.getElementById('admin-art-time')?.value || '5m'); formData.append('Excerpt', intro.substring(0, 100) + '...'); formData.append('Intro', intro); formData.append('Sec1Title', 'අන්තර්ගතය'); formData.append('Sec1Text', text); formData.append('Science', 'Admin Data');
+            formData.append('action', 'saveArticle'); formData.append('ID', newArtID); formData.append('Title', newArtObj.title); formData.append('Author', newArtObj.author); formData.append('Category', newArtObj.category); formData.append('Icon', newArtObj.icon); formData.append('Color', newArtObj.color); formData.append('ReadTime', newArtObj.readTime); formData.append('Excerpt', newArtObj.excerpt); formData.append('Intro', newArtObj.intro); formData.append('Sec1Title', newArtObj.sections[0].title); formData.append('Sec1Text', newArtObj.sections[0].text); formData.append('Science', newArtObj.science);
+            
             if(GOOGLE_SCRIPT_URL && !GOOGLE_SCRIPT_URL.includes("YOUR_")) {
                 fetch(GOOGLE_SCRIPT_URL, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: formData.toString(), mode: 'no-cors' })
-                .then(() => { showToast("Article Published!", "success"); setTimeout(fetchArticlesFromGoogleSheet, 2000); })
+                .then(() => { showToast("Article Published! Google Sheet will update in 5 mins.", "success"); setTimeout(fetchArticlesFromGoogleSheet, 2000); })
             } else { showToast("Google Script URL is missing.", "error"); }
         }
 
@@ -543,7 +566,7 @@
         function render() {
             const root = document.getElementById('app-root');
             if (isAppLoading) {
-                root.innerHTML = `<div class="min-h-screen flex items-center justify-center"><div class="w-16 h-16 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div></div>`;
+                root.innerHTML = `<div class="min-h-screen flex flex-col items-center justify-center"><div class="w-16 h-16 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mb-4"></div><p class="font-bold text-slate-500">Loading...</p></div>`;
                 return;
             }
             if (state.isNewUser) { root.innerHTML = renderWelcome(); return; } 
@@ -603,7 +626,7 @@
                     if (d === today) return; 
                     historyHTML += `<div class="glass-panel p-6 rounded-3xl"><h4 class="font-bold text-indigo-600 dark:text-indigo-400 mb-3">${d}</h4>`;
                     if (state.pastTasks[d] && state.pastTasks[d].length > 0) {
-                        historyHTML += `<div class="mb-3"><p class="text-xs uppercase font-bold text-slate-500 mb-2">Tasks</p><ul class="list-disc list-inside pl-4 text-sm font-medium space-y-1 opacity-80">`;
+                        historyHTML += `<div class="mb-3"><p class="text-xs uppercase font-bold text-slate-500 mb-2">Completed Tasks</p><ul class="list-disc list-inside pl-4 text-sm font-medium space-y-1 opacity-80">`;
                         state.pastTasks[d].forEach(task => { historyHTML += `<li>${task.text}</li>`; });
                         historyHTML += `</ul></div>`;
                     }
@@ -621,7 +644,7 @@
         function renderTimer() {
             let controlButtons = '';
             if (timerState.phase === 'focus-ended') {
-                controlButtons = `<div class="flex justify-center space-x-4 mt-8 animate-fade-in"><button onclick="window.startBreakManual()" class="px-8 py-4 bg-emerald-500 text-white rounded-2xl font-black shadow-lg text-lg hover:bg-emerald-400">${t('start_break')}</button><button onclick="window.skipBreakManual()" class="px-8 py-4 glass-btn rounded-2xl font-black text-slate-500 dark:text-slate-300 transition-colors">${t('skip_break')}</button></div>`;
+                controlButtons = `<div class="flex justify-center space-x-4 mt-8 animate-fade-in"><button onclick="window.startBreakManual()" class="px-8 py-4 bg-emerald-500 text-white rounded-2xl font-black shadow-lg text-lg hover:bg-emerald-400">${t('start_break')}</button><button onclick="window.skipBreakManual()" class="px-8 py-4 glass-btn rounded-2xl font-black text-slate-500 transition-colors">${t('skip_break')}</button></div>`;
             } else {
                 let icon = (timerState.phase === 'running' || timerState.phase === 'break-running') ? '⏸️' : '▶️';
                 controlButtons = `<div class="flex justify-center space-x-6 mt-8"><button onclick="window.toggleTimer()" class="w-20 h-20 rounded-full flex items-center justify-center text-white text-3xl shadow-xl transition-transform hover:scale-105 ${(timerState.phase==='running'||timerState.phase==='break-running')?'bg-rose-500':'bg-indigo-600'}"><span>${icon}</span></button><button onclick="window.resetTimer()" class="w-20 h-20 rounded-full flex items-center justify-center bg-slate-300 text-slate-700 text-3xl shadow-xl transition-transform hover:scale-105" title="${t('reset_timer')}"><span>⏹️</span></button></div>`;
@@ -653,7 +676,6 @@
             return `<div class="max-w-2xl mx-auto space-y-10 pb-20">
                 <header class="text-center"><h2 class="text-4xl font-black drop-shadow-md">${t('profile')}</h2></header>
                 
-                <!-- Profile Card -->
                 <div class="glass-panel p-8 md:p-10 rounded-[3rem] shadow-sm text-center">
                     <div class="w-24 h-24 bg-gradient-to-tr from-indigo-500 to-purple-500 rounded-full flex items-center justify-center mx-auto mb-4 shadow-xl text-4xl text-white font-black">${state.user.name.charAt(0).toUpperCase()}</div>
                     <h3 class="text-3xl font-black mb-1">${state.user.name}</h3>
