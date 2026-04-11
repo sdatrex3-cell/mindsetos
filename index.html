@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MindsetOS - Ultimate Glassmorphism</title>
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -11,25 +12,31 @@
             theme: { extend: { colors: { darkbg: '#0f172a', darkcard: '#1e293b' } } }
         }
     </script>
+    <!-- Chart.js for Analytics -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- PapaParse for Google Sheets Database -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&family=Noto+Sans+Sinhala:wght@400;600;800;900&display=swap" rel="stylesheet">
     
     <style>
         :root { --font-main: 'Inter', 'Noto Sans Sinhala', sans-serif; }
         body { 
-            font-family: var(--font-main); scroll-behavior: smooth; 
+            font-family: var(--font-main); 
+            scroll-behavior: smooth; 
             background-color: #f8fafc;
             background-image: radial-gradient(at 0% 0%, hsla(253,100%,96%,1) 0, transparent 50%), radial-gradient(at 50% 0%, hsla(225,100%,93%,1) 0, transparent 50%), radial-gradient(at 100% 0%, hsla(339,100%,94%,1) 0, transparent 50%);
-            background-attachment: fixed; min-height: 100vh;
+            background-attachment: fixed;
+            min-height: 100vh;
         }
+        
         .dark body {
             background-color: #0f172a;
             background-image: radial-gradient(at 0% 0%, hsla(253,26%,12%,1) 0, transparent 50%), radial-gradient(at 50% 0%, hsla(225,39%,15%,1) 0, transparent 50%), radial-gradient(at 100% 0%, hsla(339,49%,15%,1) 0, transparent 50%);
             background-attachment: fixed;
         }
 
-        /* Glassmorphism Styles */
+        /* Glassmorphism Styles (Mac OS Style) */
         .glass-panel { background: rgba(255, 255, 255, 0.45); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); border: 1px solid rgba(255, 255, 255, 0.6); box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.05); }
         .dark .glass-panel { background: rgba(15, 23, 42, 0.55); border: 1px solid rgba(255, 255, 255, 0.08); box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3); }
         .glass-nav { background: rgba(255, 255, 255, 0.6); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
@@ -73,7 +80,7 @@
 
     <script>
         // ==========================================
-        // 1. CONFIGURATION
+        // 1. CONFIGURATION & LINKS (Replace with yours if needed)
         // ==========================================
         const USER_DATA_KEY = "mindsetos_local_db_final"; 
         const USERS_REGISTRY_KEY = "mindsetos_users_registry"; 
@@ -82,11 +89,15 @@
         window.authMode = 'login'; 
         
         const GOOGLE_SHEET_ARTICLES_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRtYayYbGhMgMBMePHJbss8RZQYF7JPD6xeVH4qqpk8U8JSK-nxmeLzvWIqYecJrFPGBAujVd34Gh8n/pub?gid=0&single=true&output=csv";
+        
+        // ADMIN ONLY: To view users table inside app (CSV link of "Users" sheet)
         const GOOGLE_SHEET_USERS_CSV_URL = "YOUR_USERS_CSV_LINK_HERE"; 
+        
+        // CRITICAL FOR SYNCING: The Google Apps Script Web App URL
         const GOOGLE_SCRIPT_URL = "YOUR_GOOGLE_SCRIPT_URL_HERE";
 
         // ==========================================
-        // 2. DICTIONARY (BILINGUAL)
+        // 2. DICTIONARY & STATE
         // ==========================================
         const dict = {
             'greeting_m': { si: 'සුබ උදෑසනක්', en: 'Good Morning' },
@@ -94,7 +105,6 @@
             'greeting_e': { si: 'සුබ රාත්‍රියක්', en: 'Good Evening' },
             'home': { si: 'මුල් පිටුව', en: 'Home' },
             'planner': { si: 'සැලසුම්කරු', en: 'Planner' },
-            'flashcards': { si: 'Flashcards', en: 'Flashcards' },
             'library': { si: 'පුස්තකාලය', en: 'Library' },
             'stats': { si: 'ප්‍රගතිය', en: 'Analytics' },
             'profile': { si: 'ප්‍රොෆයිලය', en: 'Profile' },
@@ -122,21 +132,14 @@
             'logout': { si: 'ගිණුමෙන් ඉවත් වන්න', en: 'Logout' },
             'clear_all': { si: 'සියලුම ලැයිස්තු හිස් කරන්න', en: 'Clear All Lists' },
             'del_acc': { si: 'සම්පූර්ණ ගිණුම මකා දමන්න', en: 'Delete Account Entirely' },
-            'target_date': { si: 'විභාගය/ඉලක්ක දිනය:', en: 'Target / Exam Date:' },
-            'add_category': { si: 'අලුත් කාණ්ඩයක් එක් කරන්න', en: 'Add Custom Category' },
-            'login': { si: 'ලොග් වන්න', en: 'Login' },
-            'register': { si: 'ලියාපදිංචි වන්න', en: 'Register' },
-            'no_account': { si: 'ගිණුමක් නැද්ද?', en: 'No account?' },
-            'have_account': { si: 'දැනටමත් ගිණුමක් තිබේද?', en: 'Have an account?' }
+            'forgot_password': { si: 'මුරපදය අමතකද?', en: 'Forgot Password?' }
         };
 
         function t(key) { return dict[key] ? dict[key][state.language || 'si'] : key; }
 
-        // ==========================================
-        // 3. STATE MANAGEMENT
-        // ==========================================
         let state = {
-            language: 'si', activeTab: 'home', selectedArticleId: null, flippedCards: {}, isNewUser: true,
+            language: 'si', 
+            activeTab: 'home', selectedArticleId: null, flippedCards: {}, isNewUser: true,
             user: { name: '', email: '', password: '', joined: '', targetDate: '', theme: 'light', xp: 0, level: 1 },
             habits: [], history: [], reflections: {}, moods: {}, flashcards: [], pastTasks: {}, dailyFocus: {}, 
             stats: { totalFocusMinutes: 0 }, streak: { count: 0, lastDate: null },
@@ -158,7 +161,7 @@
         let articles = [...defaultArticles];
 
         // ==========================================
-        // 4. UI HELPERS & AUDIO API
+        // 3. UI HELPERS & AUDIO API
         // ==========================================
         function escapeHTML(str) { return str ? str.replace(/[&<>'"]/g, tag => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'}[tag])) : ''; }
         function isAdmin() { return state.user.email === 'admin@mindsetos.com' && state.user.password === 'sadew12125'; }
@@ -215,8 +218,7 @@
                 let registry = JSON.parse(localStorage.getItem(USERS_REGISTRY_KEY)) || {};
                 let savedData = localStorage.getItem(USER_DATA_KEY);
                 
-                // Old App Migration
-                let oldAppLegacy = localStorage.getItem('mindsetos-app-v6') || localStorage.getItem('mindset-os-secure-v2');
+                let oldAppLegacy = localStorage.getItem('mindsetos-app-v6') || localStorage.getItem('mindset-os-secure-v2') || localStorage.getItem('mindsetos_local_db_v3');
                 if(!savedData && oldAppLegacy) savedData = oldAppLegacy; 
 
                 if (savedData) {
@@ -301,6 +303,27 @@
         function switchAuthMode() { window.authMode = window.authMode === 'login' ? 'register' : 'login'; render(); }
         function logout() { localStorage.removeItem(USER_DATA_KEY); state.isNewUser = true; window.authMode = 'login'; render(); }
 
+        function handleForgotPassword() {
+            showPromptModal("ඔබගේ විද්‍යුත් තැපෑල (Email) ඇතුළත් කරන්න:", (email) => {
+                const e = email.trim();
+                if (!e) return;
+                let registry = JSON.parse(localStorage.getItem(USERS_REGISTRY_KEY)) || {};
+                if (!registry[e]) {
+                    return showToast("මෙම Email එකට අදාළ ගිණුමක් නොමැත.", "error");
+                }
+                
+                // Allow a small delay so the first modal closes properly before opening the next
+                setTimeout(() => {
+                    showPromptModal("නව මුරපදය ඇතුළත් කරන්න:", (newPass) => {
+                        if (!newPass || newPass.length < 6) return showToast("අවම වශයෙන් අකුරු/ඉලක්කම් 6ක් අවශ්‍යයි.", "error");
+                        registry[e].user.password = newPass;
+                        localStorage.setItem(USERS_REGISTRY_KEY, JSON.stringify(registry));
+                        showToast("මුරපදය සාර්ථකව වෙනස් කරන ලදී. කරුණාකර ලොග් වන්න.", "success");
+                    });
+                }, 300);
+            });
+        }
+
         // ==========================================
         // 6. GOOGLE SHEETS
         // ==========================================
@@ -311,15 +334,7 @@
                 const csvData = await response.text();
                 Papa.parse(csvData, { header: true, skipEmptyLines: true, complete: function(results) {
                         const fetchedArticles = results.data.map(row => ({ id: row.ID, title: row.Title, author: row.Author || 'MindsetOS', category: row.Category || 'General', icon: row.Icon || '📚', color: row.Color || 'text-indigo-500', readTime: row.ReadTime || '5m', excerpt: row.Excerpt, intro: row.Intro, sections: [{title: row.Sec1Title || 'අන්තර්ගතය', text: row.Sec1Text || ''}], science: row.Science || '' })).filter(a => a.id && a.title);
-                        
-                        // FIX: Ensure locally optimistically added articles are not overwritten immediately
-                        const fetchedIds = new Set(fetchedArticles.map(a => a.id));
-                        const localOnlyArticles = articles.filter(a => a.id.startsWith('art-') && !fetchedIds.has(a.id));
-
-                        if(fetchedArticles.length > 0) { 
-                            articles = [...localOnlyArticles, ...fetchedArticles, ...defaultArticles]; 
-                            if(state.activeTab === 'library' || state.selectedArticleId) render(); 
-                        }
+                        if(fetchedArticles.length > 0) { articles = [...fetchedArticles, ...defaultArticles]; if(state.activeTab === 'library' || state.selectedArticleId) render(); }
                     } });
             } catch (error) { console.error(error); }
         }
@@ -347,20 +362,12 @@
         function publishAdminArticle() {
             const title = document.getElementById('admin-art-title')?.value; const intro = document.getElementById('admin-art-intro')?.value; const text = document.getElementById('admin-art-text')?.value;
             if(!title || !intro || !text) return showToast("Fill all fields.", "error");
-            
             const newArtID = 'art-' + Date.now();
-            const newArtObj = { id: newArtID, title: title, author: document.getElementById('admin-art-author')?.value || 'Admin', category: document.getElementById('admin-art-cat')?.value || 'General', icon: '⭐', color: 'text-yellow-500', readTime: document.getElementById('admin-art-time')?.value || '5m', excerpt: intro.substring(0, 100) + '...', intro: intro, sections: [{title: 'අන්තර්ගතය', text: text}], science: 'Admin Data' };
-            
-            // FIX: Optimistic UI Update (Shows immediately)
-            articles.unshift(newArtObj);
-            render();
-
             const formData = new URLSearchParams();
-            formData.append('action', 'saveArticle'); formData.append('ID', newArtID); formData.append('Title', newArtObj.title); formData.append('Author', newArtObj.author); formData.append('Category', newArtObj.category); formData.append('Icon', newArtObj.icon); formData.append('Color', newArtObj.color); formData.append('ReadTime', newArtObj.readTime); formData.append('Excerpt', newArtObj.excerpt); formData.append('Intro', newArtObj.intro); formData.append('Sec1Title', newArtObj.sections[0].title); formData.append('Sec1Text', newArtObj.sections[0].text); formData.append('Science', newArtObj.science);
-            
+            formData.append('action', 'saveArticle'); formData.append('ID', newArtID); formData.append('Title', title); formData.append('Author', document.getElementById('admin-art-author')?.value || 'Admin'); formData.append('Category', document.getElementById('admin-art-cat')?.value || 'General'); formData.append('Icon', '⭐'); formData.append('Color', 'text-yellow-500'); formData.append('ReadTime', document.getElementById('admin-art-time')?.value || '5m'); formData.append('Excerpt', intro.substring(0, 100) + '...'); formData.append('Intro', intro); formData.append('Sec1Title', 'අන්තර්ගතය'); formData.append('Sec1Text', text); formData.append('Science', 'Admin Data');
             if(GOOGLE_SCRIPT_URL && !GOOGLE_SCRIPT_URL.includes("YOUR_")) {
                 fetch(GOOGLE_SCRIPT_URL, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: formData.toString(), mode: 'no-cors' })
-                .then(() => { showToast("Article Published! Google Sheet will update in 5 mins.", "success"); setTimeout(fetchArticlesFromGoogleSheet, 2000); })
+                .then(() => { showToast("Article Published!", "success"); setTimeout(fetchArticlesFromGoogleSheet, 2000); })
             } else { showToast("Google Script URL is missing.", "error"); }
         }
 
@@ -557,7 +564,7 @@
             addHabit, toggleHabit, deleteHabit, setMood, saveJournal, addFlashcard,
             deleteFlashcard, flipCardDOM, toggleFocusSound, toggleTimer, resetTimer, startBreakManual,
             skipBreakManual, shareToWhatsApp, publishAdminArticle, deleteAdminArticle,
-            exportData, importData, updateTargetDate, addCustomCategory, clearAllData, deleteAccount
+            exportData, importData, updateTargetDate, addCustomCategory, clearAllData, deleteAccount, handleForgotPassword
         });
 
         // ==========================================
@@ -566,7 +573,7 @@
         function render() {
             const root = document.getElementById('app-root');
             if (isAppLoading) {
-                root.innerHTML = `<div class="min-h-screen flex flex-col items-center justify-center"><div class="w-16 h-16 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mb-4"></div><p class="font-bold text-slate-500">Loading...</p></div>`;
+                root.innerHTML = `<div class="min-h-screen flex items-center justify-center"><div class="w-16 h-16 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div></div>`;
                 return;
             }
             if (state.isNewUser) { root.innerHTML = renderWelcome(); return; } 
@@ -597,7 +604,7 @@
 
         function renderWelcome() { 
             const isLogin = window.authMode === 'login';
-            return `<div class="min-h-screen flex items-center justify-center p-6"><div class="max-w-md w-full glass-panel rounded-[3rem] p-10 text-center animate-slide-up"><div class="w-24 h-24 bg-gradient-to-tr from-indigo-500 to-purple-500 rounded-[2rem] flex items-center justify-center mx-auto mb-6 shadow-xl text-5xl">☁️</div><h1 class="text-4xl font-black mb-2">Mindset<span class="text-indigo-600 dark:text-indigo-400">OS</span></h1><p class="text-slate-500 font-bold mb-8">${isLogin ? t('login') : t('register')}</p><div class="space-y-4 mb-8 text-left mt-8">${!isLogin ? `<input type="text" id="init-name" placeholder="Name" class="w-full p-4 glass-btn rounded-2xl outline-none font-bold text-base focus:border-indigo-500 transition-colors"/>` : ''}<input type="email" id="init-email" placeholder="Email" class="w-full p-4 glass-btn rounded-2xl outline-none font-bold text-base focus:border-indigo-500 transition-colors"/><input type="password" id="init-password" placeholder="Password" class="w-full p-4 glass-btn rounded-2xl outline-none font-bold text-base focus:border-indigo-500 transition-colors"/></div><button onclick="${isLogin ? 'window.handleLogin()' : 'window.handleRegister()'}" class="w-full bg-indigo-600 text-white hover:bg-indigo-500 font-black py-4 rounded-2xl shadow-lg mb-4">${isLogin ? t('login') : 'Start'}</button><button onclick="window.switchAuthMode()" class="text-sm font-bold text-indigo-600 hover:underline">${isLogin ? t('no_account') + ' ' + t('register') : t('have_account') + ' ' + t('login')}</button></div></div>`; 
+            return `<div class="min-h-screen flex items-center justify-center p-6"><div class="max-w-md w-full glass-panel rounded-[3rem] p-10 text-center animate-slide-up"><div class="w-24 h-24 bg-gradient-to-tr from-indigo-500 to-purple-500 rounded-[2rem] flex items-center justify-center mx-auto mb-6 shadow-xl text-5xl">☁️</div><h1 class="text-4xl font-black mb-2">Mindset<span class="text-indigo-600 dark:text-indigo-400">OS</span></h1><p class="text-slate-500 font-bold mb-8">${isLogin ? t('login') : t('register')}</p><div class="space-y-4 mb-8 text-left mt-8">${!isLogin ? `<input type="text" id="init-name" placeholder="Name" class="w-full p-4 glass-btn rounded-2xl outline-none font-bold text-base focus:border-indigo-500 transition-colors"/>` : ''}<input type="email" id="init-email" placeholder="Email" class="w-full p-4 glass-btn rounded-2xl outline-none font-bold text-base focus:border-indigo-500 transition-colors"/><input type="password" id="init-password" placeholder="Password" class="w-full p-4 glass-btn rounded-2xl outline-none font-bold text-base focus:border-indigo-500 transition-colors"/></div><button onclick="${isLogin ? 'window.handleLogin()' : 'window.handleRegister()'}" class="w-full bg-indigo-600 text-white hover:bg-indigo-500 font-black py-4 rounded-2xl shadow-lg mb-4">${isLogin ? t('login') : 'Start'}</button><button onclick="window.switchAuthMode()" class="text-sm font-bold text-indigo-600 hover:underline mb-2">${isLogin ? t('no_account') + ' ' + t('register') : t('have_account') + ' ' + t('login')}</button>${isLogin ? `<br><button onclick="window.handleForgotPassword()" class="text-sm font-bold text-slate-500 hover:underline mt-4">${t('forgot_password')}</button>` : ''}</div></div>`; 
         }
         
         function renderSidebar() {
@@ -626,7 +633,7 @@
                     if (d === today) return; 
                     historyHTML += `<div class="glass-panel p-6 rounded-3xl"><h4 class="font-bold text-indigo-600 dark:text-indigo-400 mb-3">${d}</h4>`;
                     if (state.pastTasks[d] && state.pastTasks[d].length > 0) {
-                        historyHTML += `<div class="mb-3"><p class="text-xs uppercase font-bold text-slate-500 mb-2">Completed Tasks</p><ul class="list-disc list-inside pl-4 text-sm font-medium space-y-1 opacity-80">`;
+                        historyHTML += `<div class="mb-3"><p class="text-xs uppercase font-bold text-slate-500 mb-2">Tasks</p><ul class="list-disc list-inside pl-4 text-sm font-medium space-y-1 opacity-80">`;
                         state.pastTasks[d].forEach(task => { historyHTML += `<li>${task.text}</li>`; });
                         historyHTML += `</ul></div>`;
                     }
@@ -644,7 +651,7 @@
         function renderTimer() {
             let controlButtons = '';
             if (timerState.phase === 'focus-ended') {
-                controlButtons = `<div class="flex justify-center space-x-4 mt-8 animate-fade-in"><button onclick="window.startBreakManual()" class="px-8 py-4 bg-emerald-500 text-white rounded-2xl font-black shadow-lg text-lg hover:bg-emerald-400">${t('start_break')}</button><button onclick="window.skipBreakManual()" class="px-8 py-4 glass-btn rounded-2xl font-black text-slate-500 transition-colors">${t('skip_break')}</button></div>`;
+                controlButtons = `<div class="flex justify-center space-x-4 mt-8 animate-fade-in"><button onclick="window.startBreakManual()" class="px-8 py-4 bg-emerald-500 text-white rounded-2xl font-black shadow-lg text-lg hover:bg-emerald-400">${t('start_break')}</button><button onclick="window.skipBreakManual()" class="px-8 py-4 glass-btn rounded-2xl font-black text-slate-500 dark:text-slate-300 transition-colors">${t('skip_break')}</button></div>`;
             } else {
                 let icon = (timerState.phase === 'running' || timerState.phase === 'break-running') ? '⏸️' : '▶️';
                 controlButtons = `<div class="flex justify-center space-x-6 mt-8"><button onclick="window.toggleTimer()" class="w-20 h-20 rounded-full flex items-center justify-center text-white text-3xl shadow-xl transition-transform hover:scale-105 ${(timerState.phase==='running'||timerState.phase==='break-running')?'bg-rose-500':'bg-indigo-600'}"><span>${icon}</span></button><button onclick="window.resetTimer()" class="w-20 h-20 rounded-full flex items-center justify-center bg-slate-300 text-slate-700 text-3xl shadow-xl transition-transform hover:scale-105" title="${t('reset_timer')}"><span>⏹️</span></button></div>`;
@@ -676,6 +683,7 @@
             return `<div class="max-w-2xl mx-auto space-y-10 pb-20">
                 <header class="text-center"><h2 class="text-4xl font-black drop-shadow-md">${t('profile')}</h2></header>
                 
+                <!-- Profile Card -->
                 <div class="glass-panel p-8 md:p-10 rounded-[3rem] shadow-sm text-center">
                     <div class="w-24 h-24 bg-gradient-to-tr from-indigo-500 to-purple-500 rounded-full flex items-center justify-center mx-auto mb-4 shadow-xl text-4xl text-white font-black">${state.user.name.charAt(0).toUpperCase()}</div>
                     <h3 class="text-3xl font-black mb-1">${state.user.name}</h3>
