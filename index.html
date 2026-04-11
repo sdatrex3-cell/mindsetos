@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MindsetOS - Ultimate Framework</title>
+    <title>MindsetOS - Ultimate Glassmorphism</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -17,20 +17,68 @@
     
     <style>
         :root { --font-main: 'Inter', 'Noto Sans Sinhala', sans-serif; }
-        body { font-family: var(--font-main); scroll-behavior: smooth; }
+        body { 
+            font-family: var(--font-main); 
+            scroll-behavior: smooth; 
+            background-color: #f8fafc;
+            background-image: radial-gradient(at 0% 0%, hsla(253,100%,96%,1) 0, transparent 50%), radial-gradient(at 50% 0%, hsla(225,100%,93%,1) 0, transparent 50%), radial-gradient(at 100% 0%, hsla(339,100%,94%,1) 0, transparent 50%);
+            background-attachment: fixed;
+            min-height: 100vh;
+        }
+        
+        .dark body {
+            background-color: #0f172a;
+            background-image: radial-gradient(at 0% 0%, hsla(253,26%,12%,1) 0, transparent 50%), radial-gradient(at 50% 0%, hsla(225,39%,15%,1) 0, transparent 50%), radial-gradient(at 100% 0%, hsla(339,49%,15%,1) 0, transparent 50%);
+            background-attachment: fixed;
+        }
+
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.45);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.05);
+        }
+        .dark .glass-panel {
+            background: rgba(15, 23, 42, 0.55);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+        }
+        
+        .glass-nav {
+            background: rgba(255, 255, 255, 0.6);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+        }
+        .dark .glass-nav {
+            background: rgba(30, 41, 59, 0.65);
+            border-right: 1px solid rgba(51, 65, 85, 0.3);
+            border-bottom: 1px solid rgba(51, 65, 85, 0.3);
+        }
+
+        .glass-btn {
+            background: rgba(255, 255, 255, 0.5);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+        }
+        .dark .glass-btn {
+            background: rgba(30, 41, 59, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .glass-btn:hover { background: rgba(255, 255, 255, 0.8); }
+        .dark .glass-btn:hover { background: rgba(51, 65, 85, 0.8); }
+
         .animate-fade-in { animation: fadeIn 0.5s ease-out forwards; }
         .animate-slide-up { animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
         
-        .glass-nav { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(16px); }
-        .dark .glass-nav { background: rgba(30, 41, 59, 0.85); border-right: 1px solid rgba(51, 65, 85, 0.8); }
         .card-hover:hover { transform: translateY(-5px); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); }
         
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-        .dark ::-webkit-scrollbar-thumb { background: #475569; }
+        ::-webkit-scrollbar-thumb { background: rgba(156, 163, 175, 0.5); border-radius: 10px; }
+        .dark ::-webkit-scrollbar-thumb { background: rgba(71, 85, 105, 0.5); }
         .custom-scrollbar::-webkit-scrollbar { height: 8px; width: 8px; }
         
         .timer-circle { border-radius: 50%; }
@@ -39,7 +87,7 @@
         .backface-hidden { backface-visibility: hidden; }
         .rotate-y-180 { transform: rotateY(180deg); }
         
-        .chart-container { position: relative; width: 100%; max-width: 800px; margin-left: auto; margin-right: auto; height: 300px; max-height: 400px; }
+        .chart-container { position: relative; width: 100%; max-width: 800px; margin-left: auto; margin-right: auto; height: 250px; max-height: 300px; }
         
         @media print {
             body { background: white !important; color: black !important; }
@@ -50,55 +98,88 @@
         }
     </style>
 </head>
-<body class="bg-slate-50 dark:bg-darkbg text-slate-900 dark:text-slate-100 overflow-x-hidden transition-colors duration-300 print:bg-white">
+<body class="text-slate-900 dark:text-slate-100 overflow-x-hidden transition-colors duration-300 print:bg-white">
 
     <div id="app-root"></div>
     <div id="toast-container" class="fixed top-24 right-6 z-50 flex flex-col space-y-2 pointer-events-none print-hidden"></div>
-    <div id="modal-container" class="fixed inset-0 z-[100] hidden items-center justify-center bg-slate-900/60 backdrop-blur-sm print-hidden transition-opacity"></div>
+    <div id="modal-container" class="fixed inset-0 z-[100] hidden items-center justify-center bg-slate-900/60 backdrop-blur-md print-hidden transition-opacity z-50"></div>
 
     <script>
         // ==========================================
-        // 1. SYSTEM CONFIGURATION (LINKS)
+        // 1. CONFIGURATION & BILINGUAL DICTIONARY
         // ==========================================
-        const USER_DATA_KEY = "mindsetos_local_db_v2"; 
+        const USER_DATA_KEY = "mindsetos_local_db_v3"; 
         let isAppLoading = true; 
         
-        // 1. Articles CSV Link (ඔබ ලබාදුන් Link එක)
         const GOOGLE_SHEET_ARTICLES_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRtYayYbGhMgMBMePHJbss8RZQYF7JPD6xeVH4qqpk8U8JSK-nxmeLzvWIqYecJrFPGBAujVd34Gh8n/pub?gid=0&single=true&output=csv";
-        
-        // 2. Users CSV Link (පසුව මෙතනට දාන්න)
         const GOOGLE_SHEET_USERS_CSV_URL = "YOUR_USERS_CSV_LINK_HERE";
-        
-        // 3. Apps Script Web App URL (පසුව මෙතනට දාන්න)
         const GOOGLE_SCRIPT_URL = "YOUR_GOOGLE_SCRIPT_URL_HERE";
+
+        const dict = {
+            'greeting_m': { si: 'සුබ උදෑසනක්', en: 'Good Morning' },
+            'greeting_a': { si: 'සුබ දහවලක්', en: 'Good Afternoon' },
+            'greeting_e': { si: 'සුබ රාත්‍රියක්', en: 'Good Evening' },
+            'home': { si: 'මුල් පිටුව', en: 'Home' },
+            'planner': { si: 'සැලසුම්කරු', en: 'Planner' },
+            'library': { si: 'පුස්තකාලය', en: 'Library' },
+            'stats': { si: 'ප්‍රගතිය', en: 'Analytics' },
+            'settings': { si: 'සැකසුම්', en: 'Settings' },
+            'deep_work': { si: 'Deep Work', en: 'Deep Work' },
+            'new_task': { si: 'නව කාර්යයක්', en: 'New Task' },
+            'daily_progress': { si: 'අද දෛනික ප්‍රගතිය', en: 'Daily Progress' },
+            'up_next': { si: 'මීළඟට කළ යුතු', en: 'Up Next' },
+            'view_all': { si: 'සියල්ල බලන්න', en: 'View All' },
+            'all_done': { si: 'නියමයි! වැඩ අවසන්.', en: 'Awesome! All tasks done.' },
+            'add_task': { si: 'වැඩක් ඇතුළත් කරන්න...', en: 'Enter a task...' },
+            'add_btn': { si: 'එක් කරන්න', en: 'Add' },
+            'journal': { si: 'දවසේ සටහන (Journal)', en: 'Daily Journal' },
+            'journal_ph': { si: 'අද දවස ගැන ලියන්න...', en: 'Write about today...' },
+            'save_journal': { si: 'සටහන සුරකින්න', en: 'Save Journal' },
+            'history': { si: 'පසුගිය දිනවල දත්ත', en: 'Past History' },
+            'timer_title': { si: 'බාධාවකින් තොරව අවධානය', en: 'Uninterrupted Focus Timer' },
+            'start_break': { si: 'විවේකය අරඹන්න (5m)', en: 'Start Break (5m)' },
+            'skip_break': { si: 'විවේකය මඟහරින්න', en: 'Skip Break' },
+            'focus_chart': { si: 'දෛනික Focus කාලය (විනාඩි)', en: 'Daily Focus Time (mins)' },
+            'progress_chart': { si: 'ප්‍රගති සටහන', en: 'Progress Chart' },
+            'total_focus': { si: 'Total Focus Time', en: 'Total Focus Time' },
+            'backup_data': { si: 'Backup ගන්න', en: 'Backup Data' },
+            'restore_data': { si: 'Restore කරන්න', en: 'Restore Data' },
+            'logout': { si: 'ගිණුමෙන් ඉවත් වන්න (Logout)', en: 'Logout' }
+        };
+
+        function t(key) {
+            const lang = state.language || 'si';
+            return dict[key] ? dict[key][lang] : key;
+        }
 
         // ==========================================
         // 2. STATE MANAGEMENT
         // ==========================================
         let state = {
+            language: 'si', 
             activeTab: 'home', selectedArticleId: null, flippedCards: {}, isNewUser: true,
             user: { name: '', email: '', password: '', joined: '', targetDate: '', theme: 'light', xp: 0, level: 1 },
             habits: [], history: [], reflections: {}, moods: {}, flashcards: [],
+            pastTasks: {}, dailyFocus: {}, 
             stats: { totalFocusMinutes: 0 }, streak: { count: 0, lastDate: null },
             categories: {
-                'Study': { name: 'අධ්‍යාපනය', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300 border-blue-200 dark:border-blue-800' },
-                'Health': { name: 'සෞඛ්‍යය', color: 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300 border-green-200 dark:border-green-800' },
-                'Work': { name: 'ව්‍යාපාර', color: 'bg-orange-100 text-orange-700 dark:bg-orange-900/50 dark:text-orange-300 border-orange-200 dark:border-orange-800' },
-                'Other': { name: 'වෙනත්', color: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border-slate-200 dark:border-slate-700' }
+                'Study': { name: 'අධ්‍යාපනය / Study', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300 border-blue-200 dark:border-blue-800' },
+                'Health': { name: 'සෞඛ්‍යය / Health', color: 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300 border-green-200 dark:border-green-800' },
+                'Work': { name: 'ව්‍යාපාර / Work', color: 'bg-orange-100 text-orange-700 dark:bg-orange-900/50 dark:text-orange-300 border-orange-200 dark:border-orange-800' }
             },
-            adminUsersData: [] // Store admin user data safely in state
+            adminUsersData: []
         };
 
         const priorities = {
-            'Q1': { name: 'හදිසි + වැදගත්', class: 'bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400' },
+            'Q1': { name: 'හදිසි/වැදගත්', class: 'bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400' },
             'Q2': { name: 'වැදගත් පමණි', class: 'bg-indigo-50 text-indigo-600 dark:bg-indigo-900/20 dark:text-indigo-400' },
-            'Q3': { name: 'හදිසි පමණි', class: 'bg-yellow-50 text-yellow-600 dark:bg-yellow-900/20 dark:text-yellow-400' },
-            'Q4': { name: 'සාමාන්‍ය', class: 'bg-slate-50 text-slate-600 dark:bg-slate-800 dark:text-slate-400' }
+            'Q3': { name: 'සාමාන්‍ය', class: 'bg-slate-50 text-slate-600 dark:bg-slate-800 dark:text-slate-400' }
         };
 
         const moodEmojis = { 'great': '🤩', 'good': '😊', 'neutral': '😐', 'bad': '😫' };
-        let timerState = { mode: 'focus', timeLeft: 25 * 60, isRunning: false, interval: null };
+        let timerState = { mode: 'focus', phase: 'idle', timeLeft: 25 * 60, interval: null };
         let progressChartInstance = null;
+        let focusChartInstance = null;
 
         const defaultArticles = [
             { id: "default-1", title: "මනස සන්සුන් කරගැනීමේ විද්‍යාව", author: "MindsetOS Team", category: "Health", icon: "🧘‍♂️", color: "text-blue-500", readTime: "විනාඩි 3", excerpt: "මානසික ආතතිය අවම කරගැනීමට හා අවධානය වැඩි කරගැනීමට...", intro: "ඔබේ මනස සන්සුන් කිරීම යනු හුදු විවේකයක් පමණක් නොව, මොළයේ ක්‍රියාකාරීත්වය වර්ධනය කරන විද්‍යාත්මක ක්‍රියාවලියකි.", sections: [{title: "හුස්ම ගැනීමේ වැදගත්කම", text: "ගැඹුරු හුස්ම ගැනීම් මගින් රුධිර පීඩනය පාලනය කර ස්නායු පද්ධතිය සන්සුන් කරයි."}], science: "Deep breathing activates the parasympathetic nervous system, lowering cortisol levels." },
@@ -106,7 +187,7 @@
         let articles = [...defaultArticles];
 
         // ==========================================
-        // 3. UI HELPERS & MODALS
+        // 3. UI HELPERS & AUDIO API
         // ==========================================
         function escapeHTML(str) { return str ? str.replace(/[&<>'"]/g, tag => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'}[tag])) : ''; }
         function isAdmin() { return state.user.email === 'admin@mindsetos.com' && state.user.password === 'sadew12125'; }
@@ -117,14 +198,14 @@
             let bgClass = 'bg-indigo-600';
             if (type === 'success') bgClass = 'bg-emerald-500';
             else if (type === 'error') bgClass = 'bg-rose-500';
-            el.className = `px-6 py-3 rounded-2xl font-bold shadow-lg animate-slide-up text-white ${bgClass}`;
+            el.className = `px-6 py-3 rounded-2xl font-bold shadow-lg animate-slide-up text-white ${bgClass} glass-panel border-none z-[110]`;
             el.innerHTML = msg; container.appendChild(el);
             setTimeout(() => { el.style.opacity = '0'; setTimeout(() => el.remove(), 300); }, 3000);
         }
 
         function showConfirmModal(message, onConfirm) {
             const container = document.getElementById('modal-container');
-            container.innerHTML = `<div class="bg-white dark:bg-darkcard p-8 rounded-[2rem] shadow-2xl max-w-sm w-full mx-4 animate-slide-up border border-slate-200 dark:border-slate-700"><h3 class="text-xl font-black mb-4 text-slate-900 dark:text-white">තහවුරු කරන්න</h3><p class="text-slate-600 dark:text-slate-300 mb-8">${message}</p><div class="flex space-x-4"><button id="modal-cancel" class="flex-1 py-3 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">අවලංගු කරන්න</button><button id="modal-confirm" class="flex-1 py-3 bg-rose-600 text-white font-bold rounded-xl hover:bg-rose-700 transition-colors">තහවුරුයි</button></div></div>`;
+            container.innerHTML = `<div class="bg-white dark:bg-darkcard p-8 rounded-[2rem] shadow-2xl max-w-sm w-full mx-4 animate-slide-up border border-slate-200 dark:border-slate-700"><h3 class="text-xl font-black mb-4 text-slate-900 dark:text-white">Confirm</h3><p class="text-slate-600 dark:text-slate-300 mb-8">${message}</p><div class="flex space-x-4"><button id="modal-cancel" class="flex-1 py-3 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">Cancel</button><button id="modal-confirm" class="flex-1 py-3 bg-rose-600 text-white font-bold rounded-xl hover:bg-rose-700 transition-colors">Confirm</button></div></div>`;
             container.classList.remove('hidden'); container.classList.add('flex');
             document.getElementById('modal-cancel').onclick = () => { container.classList.add('hidden'); container.classList.remove('flex'); };
             document.getElementById('modal-confirm').onclick = () => { container.classList.add('hidden'); container.classList.remove('flex'); onConfirm(); };
@@ -132,7 +213,7 @@
 
         function showPromptModal(message, onConfirm) {
             const container = document.getElementById('modal-container');
-            container.innerHTML = `<div class="bg-white dark:bg-darkcard p-8 rounded-[2rem] shadow-2xl max-w-sm w-full mx-4 animate-slide-up border border-slate-200 dark:border-slate-700"><h3 class="text-xl font-black mb-4 text-slate-900 dark:text-white">${message}</h3><input type="text" id="modal-input" class="w-full px-4 py-3 mb-8 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 outline-none font-bold text-slate-800 dark:text-white"/><div class="flex space-x-4"><button id="modal-cancel" class="flex-1 py-3 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">අවලංගු කරන්න</button><button id="modal-confirm" class="flex-1 py-3 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-colors">එක් කරන්න</button></div></div>`;
+            container.innerHTML = `<div class="bg-white dark:bg-darkcard p-8 rounded-[2rem] shadow-2xl max-w-sm w-full mx-4 animate-slide-up border border-slate-200 dark:border-slate-700"><h3 class="text-xl font-black mb-4 text-slate-900 dark:text-white">${message}</h3><input type="text" id="modal-input" class="w-full px-4 py-3 mb-8 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 outline-none font-bold text-slate-800 dark:text-white"/><div class="flex space-x-4"><button id="modal-cancel" class="flex-1 py-3 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">Cancel</button><button id="modal-confirm" class="flex-1 py-3 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-colors">Add</button></div></div>`;
             container.classList.remove('hidden'); container.classList.add('flex');
             document.getElementById('modal-cancel').onclick = () => { container.classList.add('hidden'); container.classList.remove('flex'); };
             document.getElementById('modal-confirm').onclick = () => {
@@ -142,33 +223,48 @@
             };
         }
 
+        function playAlarm() {
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const playTone = (freq, startTime, duration) => {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.connect(gain); gain.connect(ctx.destination);
+                    osc.type = 'sine'; osc.frequency.setValueAtTime(freq, startTime);
+                    gain.gain.setValueAtTime(1, startTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, startTime + duration);
+                    osc.start(startTime); osc.stop(startTime + duration);
+                };
+                const now = ctx.currentTime;
+                playTone(880, now, 0.2); // Double chime
+                playTone(1046, now + 0.3, 0.4); 
+            } catch(e) { console.log("Audio not supported"); }
+        }
+
         // ==========================================
-        // 4. CORE APP LOGIC (Fixed Loading Bug)
+        // 4. CORE APP LOGIC
         // ==========================================
         function initApp() {
-            render(); // Show loader immediately
-            
+            render(); 
             try {
                 const savedData = localStorage.getItem(USER_DATA_KEY);
                 if (savedData) {
                     const parsed = JSON.parse(savedData);
                     if (parsed.user && parsed.user.email) {
                         state = { ...state, ...parsed, isNewUser: false };
-                        if(!state.adminUsersData) state.adminUsersData = [];
+                        if(!state.pastTasks) state.pastTasks = {};
+                        if(!state.dailyFocus) state.dailyFocus = {};
+                        if(!state.language) state.language = 'si';
                     }
                 }
                 checkNewDay();
                 applyTheme();
                 
-                // Fetch data asynchronously without blocking UI
                 fetchArticlesFromGoogleSheet();
                 if (isAdmin()) fetchUsersFromGoogleSheet();
                 if (!state.isNewUser) syncUserStatsToGoogleSheet();
-                
-            } catch(e) {
-                console.error("Init Error:", e);
-            } finally {
-                // Ensure loading screen ALWAYS disappears
+            } catch(e) { console.error("Init Error:", e); } 
+            finally {
                 isAppLoading = false; 
                 render(); 
             }
@@ -183,8 +279,15 @@
             } else if (state.streak.lastDate !== today) {
                 const yest = new Date(); yest.setDate(yest.getDate() - 1);
                 if (state.streak.lastDate !== yest.toLocaleDateString('si-LK')) { state.streak.count = 0; }
-                state.habits = state.habits.map(h => ({ ...h, completed: false }));
-                state.streak.lastDate = today; updateHistory(); saveData();
+                
+                const completedYesterday = state.habits.filter(h => h.completed);
+                if(completedYesterday.length > 0) {
+                    state.pastTasks[state.streak.lastDate] = completedYesterday;
+                }
+                
+                state.habits = state.habits.filter(h => !h.completed).map(h => ({ ...h, completed: false }));
+                state.streak.lastDate = today; 
+                updateHistory(); saveData();
             }
         }
 
@@ -199,35 +302,18 @@
             const n = document.getElementById('init-name')?.value.trim(); 
             const e = document.getElementById('init-email')?.value.trim(); 
             const p = document.getElementById('init-password')?.value; 
-            const d = document.getElementById('init-date')?.value;
-            
-            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            
-            if(!n) return showToast("කරුණාකර ඔබගේ නම ඇතුළත් කරන්න.", "error");
-            if(!e || !emailRegex.test(e)) return showToast("කරුණාකර නිවැරදි ඊමේල් ලිපිනයක් ඇතුළත් කරන්න.", "error");
-            if(!p || p.length < 6) return showToast("කරුණාකර මුරපදයක් ඇතුළත් කරන්න.", "error");
+            if(!n || !e || p.length < 6) return showToast("දත්ත නිවැරදිව ඇතුළත් කරන්න / Check inputs.", "error");
             
             state.user.name = n; state.user.email = e; state.user.password = p; 
-            state.user.targetDate = d; state.user.joined = new Date().toLocaleDateString('si-LK'); 
+            state.user.joined = new Date().toLocaleDateString('si-LK'); 
             state.isNewUser = false; 
 
-            saveData(); 
-            syncUserStatsToGoogleSheet(); 
-            render(); 
-            showToast("සාර්ථකව පද්ධතියට එක්විය!", "success");
-            
+            saveData(); syncUserStatsToGoogleSheet(true); render(); 
             if(isAdmin()) fetchUsersFromGoogleSheet();
         }
 
-        function logout() {
-            showConfirmModal("ඔබට නිසැකවම ගිණුමෙන් ඉවත් වීමට අවශ්‍යද?", () => {
-                localStorage.removeItem(USER_DATA_KEY);
-                location.reload();
-            });
-        }
-
         // ==========================================
-        // 5. GOOGLE SHEETS INTEGRATION
+        // 5. GOOGLE SHEETS
         // ==========================================
         async function fetchArticlesFromGoogleSheet() {
             if (!GOOGLE_SHEET_ARTICLES_CSV_URL || GOOGLE_SHEET_ARTICLES_CSV_URL.includes("YOUR_")) return;
@@ -237,24 +323,20 @@
                 Papa.parse(csvData, {
                     header: true, skipEmptyLines: true,
                     complete: function(results) {
-                        const fetchedArticles = results.data.map(row => {
-                            return {
-                                id: row.ID, title: row.Title, author: row.Author || 'MindsetOS', 
-                                category: row.Category || 'General', icon: row.Icon || '📚', 
-                                color: row.Color || 'text-indigo-500', readTime: row.ReadTime || 'විනාඩි 5', 
-                                excerpt: row.Excerpt, intro: row.Intro, 
-                                sections: [{title: row.Sec1Title || 'අන්තර්ගතය', text: row.Sec1Text || ''}], 
-                                science: row.Science || ''
-                            };
-                        }).filter(a => a.id && a.title);
+                        const fetchedArticles = results.data.map(row => ({
+                            id: row.ID, title: row.Title, author: row.Author || 'MindsetOS', 
+                            category: row.Category || 'General', icon: row.Icon || '📚', color: row.Color || 'text-indigo-500', 
+                            readTime: row.ReadTime || '5m', excerpt: row.Excerpt, intro: row.Intro, 
+                            sections: [{title: row.Sec1Title || 'අන්තර්ගතය', text: row.Sec1Text || ''}], science: row.Science || ''
+                        })).filter(a => a.id && a.title);
 
                         if(fetchedArticles.length > 0) {
                             articles = [...fetchedArticles, ...defaultArticles];
-                            if(state.activeTab === 'library' || state.selectedArticleId || state.activeTab === 'settings') render();
+                            if(state.activeTab === 'library' || state.selectedArticleId) render();
                         }
                     }
                 });
-            } catch (error) { console.error("Articles Fetch Error:", error); }
+            } catch (error) { console.error(error); }
         }
 
         async function fetchUsersFromGoogleSheet() {
@@ -266,165 +348,94 @@
                     header: true, skipEmptyLines: true,
                     complete: function(results) {
                         state.adminUsersData = results.data.map(row => ({
-                            name: row.Name, email: row.Email, level: row.Level, 
-                            xp: row.XP, totalFocusMinutes: row.FocusMinutes, joined: row.JoinedDate
+                            name: row.Name, email: row.Email, level: row.Level, xp: row.XP, totalFocusMinutes: row.FocusMinutes, joined: row.JoinedDate
                         })).filter(u => u.email);
-                        
                         state.adminUsersData.sort((a,b) => (parseInt(b.xp) || 0) - (parseInt(a.xp) || 0));
                         if(state.activeTab === 'settings') render();
                     }
                 });
-            } catch (error) { console.error("Users Fetch Error:", error); }
+            } catch (error) { console.error(error); }
         }
 
         function syncUserStatsToGoogleSheet() {
             if (!GOOGLE_SCRIPT_URL || GOOGLE_SCRIPT_URL.includes("YOUR_") || state.isNewUser || isAdmin()) return;
             const formData = new URLSearchParams();
-            formData.append('action', 'saveUser');
-            formData.append('name', state.user.name);
-            formData.append('email', state.user.email);
-            formData.append('level', state.user.level);
-            formData.append('xp', state.user.xp);
-            formData.append('focusMinutes', state.stats.totalFocusMinutes || 0);
+            formData.append('action', 'saveUser'); formData.append('name', state.user.name);
+            formData.append('email', state.user.email); formData.append('level', state.user.level);
+            formData.append('xp', state.user.xp); formData.append('focusMinutes', state.stats.totalFocusMinutes || 0);
             formData.append('joinedDate', state.user.joined);
-
-            fetch(GOOGLE_SCRIPT_URL, {
-                method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: formData.toString(), mode: 'no-cors' 
-            }).catch(e => console.log("Silent Sync Error", e));
+            fetch(GOOGLE_SCRIPT_URL, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: formData.toString(), mode: 'no-cors' }).catch(e=>e);
         }
 
-        async function publishAdminArticle() {
+        function publishAdminArticle() {
             const title = document.getElementById('admin-art-title')?.value;
             const intro = document.getElementById('admin-art-intro')?.value;
             const text = document.getElementById('admin-art-text')?.value;
 
-            if(!title || !intro || !text) return showToast("කරුණාකර මාතෘකාව, හැඳින්වීම සහ අන්තර්ගතය ඇතුළත් කරන්න.", "error");
-
-            const btn = document.getElementById('publish-btn');
-            btn.innerText = "Google Sheet වෙත යවමින් පවතී...";
-            btn.disabled = true;
+            if(!title || !intro || !text) return showToast("Fill all fields.", "error");
 
             const newArtID = 'art-' + Date.now();
             const formData = new URLSearchParams();
-            formData.append('action', 'saveArticle');
-            formData.append('ID', newArtID);
-            formData.append('Title', title);
-            formData.append('Author', document.getElementById('admin-art-author')?.value || 'Admin');
+            formData.append('action', 'saveArticle'); formData.append('ID', newArtID);
+            formData.append('Title', title); formData.append('Author', document.getElementById('admin-art-author')?.value || 'Admin');
             formData.append('Category', document.getElementById('admin-art-cat')?.value || 'General');
-            formData.append('Icon', '⭐');
-            formData.append('Color', 'text-yellow-500');
-            formData.append('ReadTime', document.getElementById('admin-art-time')?.value || 'විනාඩි 5');
-            formData.append('Excerpt', intro.substring(0, 100) + '...');
-            formData.append('Intro', intro);
-            formData.append('Sec1Title', 'අන්තර්ගතය');
-            formData.append('Sec1Text', text);
-            formData.append('Science', 'Admin Data');
+            formData.append('Icon', '⭐'); formData.append('Color', 'text-yellow-500');
+            formData.append('ReadTime', document.getElementById('admin-art-time')?.value || '5m');
+            formData.append('Excerpt', intro.substring(0, 100) + '...'); formData.append('Intro', intro);
+            formData.append('Sec1Title', 'අන්තර්ගතය'); formData.append('Sec1Text', text); formData.append('Science', 'Admin Data');
 
-            try {
-                if(GOOGLE_SCRIPT_URL && !GOOGLE_SCRIPT_URL.includes("YOUR_")) {
-                    await fetch(GOOGLE_SCRIPT_URL, {
-                        method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                        body: formData.toString(), mode: 'no-cors'
-                    });
-                    showToast("ලිපිය සාර්ථකව Google Sheets වෙත යවන ලදී!", "success");
-                    
-                    // Optimistic local update
-                    articles.unshift({
-                        id: newArtID, title: title, author: 'Admin', category: 'General', icon: '⭐', color: 'text-yellow-500', readTime: 'විනාඩි 5', excerpt: intro.substring(0, 100) + '...', intro: intro, sections: [{title: 'අන්තර්ගතය', text: text}], science: 'Admin Data'
-                    });
-                    
-                    setTimeout(fetchArticlesFromGoogleSheet, 2000); // refresh from server
-                } else {
-                    showToast("Google Script URL එක සපයා නොමැත. කරුණාකර එය යාවත්කාලීන කරන්න.", "error");
-                }
-                document.getElementById('admin-art-title').value = ''; document.getElementById('admin-art-intro').value = ''; document.getElementById('admin-art-text').value = '';
-            } catch(e) { showToast("අන්තර්ජාල දෝෂයකි.", "error"); }
-            
-            btn.innerText = "ලිපිය Publish කරන්න (Global)"; btn.disabled = false;
-            render();
+            if(GOOGLE_SCRIPT_URL && !GOOGLE_SCRIPT_URL.includes("YOUR_")) {
+                fetch(GOOGLE_SCRIPT_URL, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: formData.toString(), mode: 'no-cors' })
+                .then(() => { showToast("Article Published!", "success"); setTimeout(fetchArticlesFromGoogleSheet, 2000); })
+                .catch(e => showToast("Network error", "error"));
+            } else {
+                showToast("Google Script URL is missing. Publishing failed.", "error");
+            }
         }
 
-        async function deleteAdminArticle(articleId) {
-            showConfirmModal("මෙම ලිපිය සම්පූර්ණයෙන්ම ඉවත් කිරීමට ඔබට අවශ්‍යද?", async () => {
-                // Optimistic Local Delete
+        function deleteAdminArticle(articleId) {
+            showConfirmModal("මෙම ලිපිය සම්පූර්ණයෙන්ම ඉවත් කිරීමට ඔබට අවශ්‍යද? / Delete Article?", () => {
                 articles = articles.filter(a => a.id !== articleId);
                 render();
-                showToast("ලිපිය මකා දමන ලදී.", "success");
-
-                // Send delete request to server
+                showToast("Deleted locally. Sending to Cloud...", "success");
                 if(GOOGLE_SCRIPT_URL && !GOOGLE_SCRIPT_URL.includes("YOUR_")) {
                     const formData = new URLSearchParams();
-                    formData.append('action', 'deleteArticle');
-                    formData.append('ID', articleId);
-                    
-                    fetch(GOOGLE_SCRIPT_URL, {
-                        method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                        body: formData.toString(), mode: 'no-cors'
-                    }).catch(e => console.log("Delete failed", e));
+                    formData.append('action', 'deleteArticle'); formData.append('ID', articleId);
+                    fetch(GOOGLE_SCRIPT_URL, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: formData.toString(), mode: 'no-cors' }).catch(e=>e);
                 }
             });
         }
 
         // ==========================================
-        // 6. APP FEATURES
+        // 6. FEATURES 
         // ==========================================
-        function addXP(amount) {
-            state.user.xp += amount;
-            if (state.user.xp >= state.user.level * 100) {
-                state.user.xp -= state.user.level * 100; state.user.level++;
-                showToast(`🎉 Level Up! ඔබ දැන් Level ${state.user.level} යි.`, 'success');
-            } else showToast(`+${amount} XP ලබා ගත්තා!`);
-            saveData(); render();
-        }
-
-        function applyTheme() { if (state.user.theme === 'dark') document.documentElement.classList.add('dark'); else document.documentElement.classList.remove('dark'); }
-        function toggleTheme() { state.user.theme = state.user.theme === 'dark' ? 'light' : 'dark'; applyTheme(); saveData(); render(); }
-        function switchTab(t) { state.activeTab = t; state.selectedArticleId = null; render(); }
-        function viewArticle(id) { state.selectedArticleId = id; state.activeTab = 'library'; addXP(5); render(); }
-
         function addHabit() {
             const text = document.getElementById('habit-text')?.value.trim();
             const cat = document.getElementById('habit-cat')?.value;
             const pri = document.getElementById('habit-priority')?.value;
-            if (text) { state.habits.unshift({ id: Date.now(), text: escapeHTML(text), category: cat, priority: pri, completed: false }); updateHistory(); render(); }
+            if (text) { state.habits.unshift({ id: Date.now(), text: escapeHTML(text), category: cat, priority: pri, completed: false, date: new Date().toLocaleDateString('si-LK') }); updateHistory(); render(); }
         }
         function toggleHabit(id) {
             let newlyCompleted = false;
             state.habits = state.habits.map(h => { if(h.id === id) { if(!h.completed) newlyCompleted = true; return { ...h, completed: !h.completed }; } return h; });
-            if(newlyCompleted) { updateStreak(); addXP(10); }
+            if(newlyCompleted) addXP(10);
             updateHistory(); render();
         }
         function deleteHabit(id) { state.habits = state.habits.filter(h => h.id !== id); updateHistory(); render(); }
-        
         function updateHistory() {
             const today = new Date().toLocaleDateString('si-LK');
             const score = state.habits.length ? Math.round((state.habits.filter(h => h.completed).length / state.habits.length) * 100) : 0;
             state.history = [...state.history.filter(d => d.date !== today), { date: today, score }].slice(-14); saveData();
         }
-        
-        function addCustomCategory() {
-            showPromptModal("නව කාණ්ඩයේ නම ඇතුළත් කරන්න:", (catName) => {
-                if (catName && catName.trim()) {
-                    const id = 'Cat_' + Date.now();
-                    state.categories[id] = { name: escapeHTML(catName.trim()), color: 'bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300 border-purple-200 dark:border-purple-800' };
-                    saveData(); render(); showToast("නව කාණ්ඩය සාර්ථකව එක් කරන ලදී.", "success");
-                }
-            });
-        }
-        function updateTargetDate(val) { state.user.targetDate = val; saveData(); render(); showToast("විභාග/ඉලක්ක දිනය යාවත්කාලීන විය.", "success"); }
+        function saveJournal() { state.reflections[new Date().toLocaleDateString('si-LK')] = escapeHTML(document.getElementById('journal-text')?.value); saveData(); showToast(t('save_journal'), 'success'); render(); }
         function setMood(mood) { state.moods[new Date().toLocaleDateString('si-LK')] = mood; saveData(); render(); }
-        function saveJournal() { state.reflections[new Date().toLocaleDateString('si-LK')] = escapeHTML(document.getElementById('journal-text')?.value); saveData(); showToast('දවසේ සටහන සුරැකිණි.', 'success'); }
-        
-        function addFlashcard() { 
-            const q = document.getElementById('fc-q')?.value.trim(); const a = document.getElementById('fc-a')?.value.trim(); 
-            if(q && a) { state.flashcards.unshift({ id: Date.now(), q: escapeHTML(q), a: escapeHTML(a) }); saveData(); render(); } 
-        }
+
+        function addFlashcard() { const q = document.getElementById('fc-q')?.value.trim(); const a = document.getElementById('fc-a')?.value.trim(); if(q && a) { state.flashcards.unshift({ id: Date.now(), q: escapeHTML(q), a: escapeHTML(a) }); saveData(); render(); } }
         function deleteFlashcard(id) { state.flashcards = state.flashcards.filter(f => f.id !== id); saveData(); render(); }
         function flipCardDOM(id, element) { state.flippedCards[id] = !state.flippedCards[id]; element.querySelector('.preserve-3d').classList.toggle('rotate-y-180'); }
 
         let audioCtxObj = null; let noiseSourceNode = null;
-        function toggleFocusSound(type) {
+        function toggleFocusSound() {
             if (audioCtxObj) { audioCtxObj.close(); audioCtxObj = null; noiseSourceNode = null; return; }
             try {
                 audioCtxObj = new (window.AudioContext || window.webkitAudioContext)();
@@ -432,29 +443,52 @@
                 const data = buffer.getChannelData(0);
                 for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
                 noiseSourceNode = audioCtxObj.createBufferSource(); noiseSourceNode.buffer = buffer; noiseSourceNode.loop = true;
-                const filter = audioCtxObj.createBiquadFilter(); filter.type = 'lowpass'; filter.frequency.value = type === 'rain' ? 400 : (type === 'forest' ? 800 : 2500);
+                const filter = audioCtxObj.createBiquadFilter(); filter.type = 'lowpass'; filter.frequency.value = 400; 
                 noiseSourceNode.connect(filter); filter.connect(audioCtxObj.destination); noiseSourceNode.start();
-                showToast(type + ' sound on', 'success');
-            } catch(e) { console.log(e); showToast("ශ්‍රව්‍ය පහසුකම භාවිතා කිරීමට Play බොත්තම ඔබන්න.", "error"); }
+                showToast('Focus sound on', 'success');
+            } catch(e) { console.log(e); }
         }
-        
+
         function toggleTimer() {
-            if (timerState.isRunning) { clearInterval(timerState.interval); timerState.isRunning = false; } 
-            else {
-                timerState.isRunning = true;
+            if (timerState.phase === 'running' || timerState.phase === 'break-running') { 
+                clearInterval(timerState.interval); timerState.phase = 'idle'; 
+            } else {
+                if(timerState.phase === 'focus-ended') return; 
+                
+                timerState.phase = timerState.mode === 'focus' ? 'running' : 'break-running';
                 timerState.interval = setInterval(() => {
                     if (timerState.timeLeft > 0) { timerState.timeLeft--; updateTimerUI(); } 
                     else {
-                        clearInterval(timerState.interval); timerState.isRunning = false;
+                        clearInterval(timerState.interval); 
+                        playAlarm(); 
+                        
                         if(audioCtxObj) { audioCtxObj.close(); audioCtxObj=null; }
-                        if(timerState.mode === 'focus') { addXP(25); state.stats.totalFocusMinutes += 25; saveData(); showToast("Focus Time එක අවසන්. 25 XP ලබාගත්තා.", "success"); switchTimerMode('break'); }
-                        else { showToast("විවේකය අවසන්! නැවත වැඩ පටන් ගනිමු.", "info"); switchTimerMode('focus'); }
+                        
+                        if(timerState.mode === 'focus') { 
+                            addXP(25); 
+                            state.stats.totalFocusMinutes += 25; 
+                            
+                            const today = new Date().toLocaleDateString('si-LK');
+                            state.dailyFocus[today] = (state.dailyFocus[today] || 0) + 25;
+                            
+                            saveData(); 
+                            timerState.phase = 'focus-ended';
+                            showToast("Focus Time Complete!", "success"); 
+                        } else { 
+                            showToast("Break Complete!", "info"); 
+                            resetTimerToFocus();
+                        }
+                        render();
                     }
                 }, 1000);
             }
             render();
         }
-        function switchTimerMode(mode) { clearInterval(timerState.interval); timerState.isRunning = false; timerState.mode = mode; timerState.timeLeft = mode === 'focus' ? 25 * 60 : 5 * 60; render(); }
+        
+        function resetTimerToFocus() { timerState.mode = 'focus'; timerState.phase = 'idle'; timerState.timeLeft = 25 * 60; }
+        function startBreakManual() { timerState.mode = 'break'; timerState.timeLeft = 5 * 60; toggleTimer(); }
+        function skipBreakManual() { resetTimerToFocus(); render(); }
+        
         function updateTimerUI() {
             const el = document.getElementById('timer-display');
             if(el) el.innerText = `${Math.floor(timerState.timeLeft / 60).toString().padStart(2, '0')}:${(timerState.timeLeft % 60).toString().padStart(2, '0')}`;
@@ -462,68 +496,22 @@
             if(circle) circle.style.background = `conic-gradient(${timerState.mode === 'focus' ? (state.user.theme === 'dark' ? '#6366f1' : '#4f46e5') : '#10b981'} ${(( (timerState.mode === 'focus' ? 25*60 : 5*60) - timerState.timeLeft) / (timerState.mode === 'focus' ? 25*60 : 5*60)) * 100}%, transparent 0deg)`;
         }
 
-        function exportData() {
-            const dataStr = JSON.stringify(state);
-            const blob = new Blob([dataStr], { type: "application/json" });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url; a.download = `MindsetOS_Backup_${state.user.email}_${new Date().toISOString().split('T')[0]}.json`;
-            a.click(); URL.revokeObjectURL(url);
-            showToast("Backup ගොනුව සාර්ථකව Download විය.", "success");
-        }
-        
-        function importData(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = async function(e) {
-                try {
-                    const data = JSON.parse(e.target.result);
-                    if (data && data.user) {
-                        state = { ...state, ...data };
-                        saveData(); 
-                        showToast("දත්ත සාර්ථකව Restore කරන ලදී!", "success");
-                        render();
-                    } else showToast("මෙය නිවැරදි Backup ගොනුවක් නොවේ!", "error");
-                } catch (err) { showToast("ගොනුව කියවීමේ දෝෂයකි!", "error"); }
-            };
-            reader.readAsText(file);
-        }
-
-        function initProgressChart() {
-            const ctx = document.getElementById('progressChart');
-            if(!ctx) return;
-            if(progressChartInstance) progressChartInstance.destroy();
-
-            const isDark = state.user.theme === 'dark';
-            const textColor = isDark ? '#cbd5e1' : '#475569';
-            const gridColor = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)';
-
-            const labels = state.history.length ? state.history.map(d => d.date) : ['අද'];
-            const data = state.history.length ? state.history.map(d => d.score) : [0];
-
-            progressChartInstance = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: 'දෛනික ප්‍රගතිය (%)', data: data, borderColor: '#6366f1', backgroundColor: 'rgba(99, 102, 241, 0.2)', borderWidth: 3,
-                        pointBackgroundColor: '#4f46e5', pointBorderColor: '#ffffff', pointRadius: 5, pointHoverRadius: 8, tension: 0.4, fill: true
-                    }]
-                },
-                options: {
-                    responsive: true, maintainAspectRatio: false,
-                    plugins: { legend: { display: false }, tooltip: { backgroundColor: isDark ? '#1e293b' : '#ffffff', titleColor: isDark ? '#ffffff' : '#0f172a', bodyColor: isDark ? '#cbd5e1' : '#475569', borderColor: isDark ? '#334155' : '#e2e8f0', borderWidth: 1, padding: 12, boxPadding: 4, callbacks: { label: function(context) { return ` ප්‍රගතිය: ${context.raw}%`; } } } },
-                    scales: { y: { beginAtZero: true, max: 100, grid: { color: gridColor }, ticks: { color: textColor, callback: function(value) { return value + "%"; } } }, x: { grid: { display: false }, ticks: { color: textColor, maxRotation: 45, minRotation: 45 } } }
-                }
-            });
-        }
-
-        function getDaysRemaining() {
-            if(!state.user.targetDate) return null;
-            const diff = new Date(state.user.targetDate) - new Date();
-            const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
-            return days > 0 ? days : 0;
+        // Charts
+        function initCharts() {
+            const ctx1 = document.getElementById('progressChart');
+            if(ctx1) {
+                if(progressChartInstance) progressChartInstance.destroy();
+                const labels = state.history.length ? state.history.map(d => d.date) : ['Today'];
+                const data = state.history.length ? state.history.map(d => d.score) : [0];
+                progressChartInstance = new Chart(ctx1, { type: 'line', data: { labels: labels, datasets: [{ label: 'Score %', data: data, borderColor: '#6366f1', backgroundColor: 'rgba(99, 102, 241, 0.2)', borderWidth: 3, tension: 0.4, fill: true }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { max: 100, beginAtZero: true } } } });
+            }
+            const ctx2 = document.getElementById('focusChart');
+            if(ctx2) {
+                if(focusChartInstance) focusChartInstance.destroy();
+                const focusDates = Object.keys(state.dailyFocus).slice(-7); 
+                const focusData = focusDates.map(d => state.dailyFocus[d]);
+                focusChartInstance = new Chart(ctx2, { type: 'bar', data: { labels: focusDates, datasets: [{ label: 'Mins', data: focusData, backgroundColor: '#10b981', borderRadius: 8 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } } });
+            }
         }
 
         function shareToWhatsApp() {
@@ -538,230 +526,188 @@
             window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
         }
 
+        function exportData() {
+            const dataStr = JSON.stringify(state);
+            const blob = new Blob([dataStr], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = `MindsetOS_Backup_${state.user.email}_${new Date().toISOString().split('T')[0]}.json`;
+            a.click(); URL.revokeObjectURL(url);
+            showToast("Backup Success.", "success");
+        }
+        
+        function importData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if (data && data.user) {
+                        state = { ...state, ...data };
+                        saveData(); showToast("Restore Success!", "success"); render();
+                    } else showToast("Invalid Backup File!", "error");
+                } catch (err) { showToast("Error reading file!", "error"); }
+            };
+            reader.readAsText(file);
+        }
+
+        function updateTargetDate(val) { state.user.targetDate = val; saveData(); render(); showToast("Target Date Updated.", "success"); }
+        function addCustomCategory() {
+            showPromptModal("Enter Category Name:", (catName) => {
+                if (catName && catName.trim()) {
+                    const id = 'Cat_' + Date.now();
+                    state.categories[id] = { name: escapeHTML(catName.trim()), color: 'bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300 border-purple-200 dark:border-purple-800' };
+                    saveData(); render(); showToast("Category Added.", "success");
+                }
+            });
+        }
+        function logout() { localStorage.removeItem(USER_DATA_KEY); location.reload(); }
+        function toggleLang() { state.language = state.language === 'si' ? 'en' : 'si'; saveData(); render(); }
+        function toggleTheme() { state.user.theme = state.user.theme === 'dark' ? 'light' : 'dark'; applyTheme(); saveData(); render(); }
+        function applyTheme() { if (state.user.theme === 'dark') document.documentElement.classList.add('dark'); else document.documentElement.classList.remove('dark'); }
+        function switchTab(t) { state.activeTab = t; state.selectedArticleId = null; render(); }
+        function viewArticle(id) { state.selectedArticleId = id; state.activeTab = 'library'; addXP(5); render(); }
+        function addXP(amount) { state.user.xp += amount; if (state.user.xp >= state.user.level * 100) { state.user.xp -= state.user.level * 100; state.user.level++; showToast(`🎉 Level Up! Level ${state.user.level}`, 'success'); } saveData(); render(); }
+
+        // ==========================================
+        // WINDOW EXPORTS (FIXES ALL REFERENCE ERRORS)
+        // ==========================================
+        Object.assign(window, {
+            handleStart, logout, toggleLang, toggleTheme, switchTab, viewArticle,
+            addHabit, toggleHabit, deleteHabit, setMood, saveJournal, addFlashcard,
+            deleteFlashcard, flipCardDOM, toggleFocusSound, toggleTimer, startBreakManual,
+            skipBreakManual, shareToWhatsApp, publishAdminArticle, deleteAdminArticle,
+            exportData, importData, updateTargetDate, addCustomCategory,
+            showToast, showConfirmModal, showPromptModal
+        });
+
         // ==========================================
         // 7. RENDERING HTML
         // ==========================================
         function render() {
             const root = document.getElementById('app-root');
+            if (isAppLoading) return;
+            if (state.isNewUser) { root.innerHTML = renderWelcome(); return; } 
             
-            if (isAppLoading) {
-                root.innerHTML = `
-                <div class="min-h-screen bg-slate-900 flex flex-col items-center justify-center p-6 text-white">
-                    <div class="w-16 h-16 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mb-6 shadow-[0_0_15px_rgba(99,102,241,0.5)]"></div>
-                    <h1 class="text-3xl font-black mb-2 animate-pulse tracking-tighter">Mindset<span class="text-indigo-500">OS</span></h1>
-                    <p class="text-slate-400 text-sm font-bold tracking-widest uppercase mt-4">පද්ධතිය පූරණය වෙමින් පවතී...</p>
-                </div>`;
-                return;
-            }
+            let content = state.activeTab==='home' ? renderHome() : state.activeTab==='planner' ? renderPlanner() : state.activeTab==='timer' ? renderTimer() : state.activeTab==='library' ? renderLibrary() : state.activeTab==='stats' ? renderStats() : renderSettings();
+            if(state.selectedArticleId) content = renderArticleView();
 
-            if (state.isNewUser) { 
-                root.innerHTML = renderWelcome(); 
-                return;
-            } 
-            
-            let content = state.selectedArticleId ? renderArticleView() : ( state.activeTab==='home' ? renderHome() : state.activeTab==='planner' ? renderPlanner() : state.activeTab==='timer' ? renderTimer() : state.activeTab==='flashcards' ? renderFlashcards() : state.activeTab==='library' ? renderLibrary() : state.activeTab==='stats' ? renderStats() : renderSettings() );
-            
             root.innerHTML = `
             <div class="min-h-screen md:pl-24 lg:pl-72 pb-24 md:pb-0 flex flex-col print-content">
                 ${renderSidebar()}
                 <div class="fixed top-0 right-0 p-4 md:p-6 z-40 flex items-center space-x-3 md:space-x-4 print-hidden">
-                    <div class="glass-nav px-4 py-2 rounded-2xl flex items-center space-x-4 shadow-sm border border-slate-200 dark:border-slate-700">
-                        <div class="flex items-center space-x-2" title="Streak"><span class="text-xl">🔥</span><span class="font-black text-slate-800 dark:text-white">${state.streak.count}</span></div>
+                    <button onclick="window.toggleLang()" class="px-3 py-1 font-black text-xs uppercase glass-nav rounded-xl border border-slate-300 dark:border-slate-600 shadow-sm">${state.language === 'si' ? 'EN' : 'SI'}</button>
+                    <button onclick="window.toggleTheme()" class="w-10 h-10 glass-nav rounded-full flex items-center justify-center shadow-sm border border-slate-300 dark:border-slate-600"><span class="text-xl">${state.user.theme === 'dark' ? '☀️' : '🌙'}</span></button>
+                    <div class="glass-nav px-4 py-2 rounded-2xl flex items-center space-x-4 shadow-sm border border-slate-300 dark:border-slate-600">
+                        <div class="flex items-center space-x-2"><span class="text-xl">🔥</span><span class="font-black text-slate-800 dark:text-white">${state.streak.count}</span></div>
                         <div class="h-6 w-px bg-slate-300 dark:bg-slate-600"></div>
                         <div class="flex flex-col items-center w-24">
-                            <span class="text-[10px] font-bold text-slate-500 uppercase">Level ${state.user.level}</span>
-                            <div class="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full mt-1 overflow-hidden"><div class="h-full bg-yellow-400 transition-all duration-500" style="width:${(state.user.xp / (state.user.level * 100)) * 100}%"></div></div>
+                            <span class="text-[10px] font-bold text-slate-500 uppercase">Lvl ${state.user.level}</span>
+                            <div class="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full mt-1 overflow-hidden"><div class="h-full bg-yellow-400" style="width:${(state.user.xp / (state.user.level * 100)) * 100}%"></div></div>
                         </div>
                     </div>
-                    <button onclick="toggleTheme()" class="w-12 h-12 glass-nav rounded-full flex items-center justify-center shadow-sm border border-slate-200 dark:border-slate-700"><span class="text-xl">${state.user.theme === 'dark' ? '☀️' : '🌙'}</span></button>
                 </div>
                 <main class="flex-1 max-w-7xl mx-auto w-full p-6 mt-16 md:mt-0 md:p-10 lg:p-12 animate-slide-up print-content">${content}</main>
             </div>`;
             if(state.activeTab === 'timer' && !state.selectedArticleId) updateTimerUI();
-            if(state.activeTab === 'stats') setTimeout(initProgressChart, 50);
+            if(state.activeTab === 'stats') setTimeout(initCharts, 50);
         }
 
-        // --- View Functions ---
         function renderWelcome() { 
-            return `
-            <div class="min-h-screen bg-slate-900 flex items-center justify-center p-6 text-white">
-                <div class="max-w-md w-full bg-slate-800/40 backdrop-blur-2xl rounded-[3rem] p-10 text-center shadow-2xl border border-slate-700 animate-slide-up">
-                    <div class="w-24 h-24 bg-gradient-to-tr from-indigo-500 to-purple-500 rounded-[2rem] flex items-center justify-center mx-auto mb-6 shadow-xl text-5xl">☁️</div>
-                    <h1 class="text-4xl font-black mb-2">Mindset<span class="text-indigo-400">OS</span></h1>
-                    <p class="text-slate-400 text-sm mb-8">ඔබේ මනස නවතම මට්ටමකට</p>
-                    
-                    <div class="space-y-4 mb-8 text-left">
-                        <label class="text-xs font-bold text-indigo-400 uppercase tracking-widest pl-2">ලියාපදිංචි වන්න / ලොග් වන්න</label>
-                        <input type="text" id="init-name" placeholder="ඔබේ නම (Name)" class="w-full p-4 bg-slate-900/60 rounded-2xl outline-none font-bold text-base border border-slate-700 focus:border-indigo-500 transition-colors"/>
-                        <input type="email" id="init-email" placeholder="විද්‍යුත් තැපෑල (Email)" class="w-full p-4 bg-slate-900/60 rounded-2xl outline-none font-bold text-base border border-slate-700 focus:border-indigo-500 transition-colors"/>
-                        <input type="password" id="init-password" placeholder="මුරපදය (Password)" class="w-full p-4 bg-slate-900/60 rounded-2xl outline-none font-bold text-base border border-slate-700 focus:border-indigo-500 transition-colors"/>
-                        
-                        <label class="text-xs font-bold text-indigo-400 uppercase tracking-widest pl-2 mt-4 block">මීළඟ ඉලක්ක දිනය (විකල්ප)</label>
-                        <input type="date" id="init-date" class="w-full p-4 bg-slate-900/60 rounded-2xl outline-none font-bold text-slate-400 [color-scheme:dark] border border-slate-700 focus:border-indigo-500 transition-colors"/>
-                    </div>
-                    
-                    <button onclick="handleStart()" class="w-full bg-indigo-600 hover:bg-indigo-500 font-black py-4 rounded-2xl transition-colors shadow-lg">ගමන ආරම්භ කරමු</button>
-                </div>
-            </div>`; 
+            return `<div class="min-h-screen flex items-center justify-center p-6"><div class="max-w-md w-full glass-panel rounded-[3rem] p-10 text-center animate-slide-up"><div class="w-24 h-24 bg-gradient-to-tr from-indigo-500 to-purple-500 rounded-[2rem] flex items-center justify-center mx-auto mb-6 shadow-xl text-5xl">☁️</div><h1 class="text-4xl font-black mb-2">Mindset<span class="text-indigo-600 dark:text-indigo-400">OS</span></h1><div class="space-y-4 mb-8 text-left mt-8"><input type="text" id="init-name" placeholder="Name" class="w-full p-4 glass-btn rounded-2xl outline-none font-bold text-base focus:border-indigo-500 transition-colors"/><input type="email" id="init-email" placeholder="Email" class="w-full p-4 glass-btn rounded-2xl outline-none font-bold text-base focus:border-indigo-500 transition-colors"/><input type="password" id="init-password" placeholder="Password" class="w-full p-4 glass-btn rounded-2xl outline-none font-bold text-base focus:border-indigo-500 transition-colors"/></div><button onclick="window.handleStart()" class="w-full bg-indigo-600 text-white hover:bg-indigo-500 font-black py-4 rounded-2xl shadow-lg">Start</button></div></div>`; 
         }
         
         function renderSidebar() {
-            const tabs = [{ id:'home', icon:'📊', l:'මුල් පිටුව' }, { id:'planner', icon:'✅', l:'සැලසුම්කරු' }, { id:'timer', icon:'⏱️', l:'Deep Work', activePulse: timerState.isRunning }, { id:'flashcards', icon:'🗂️', l:'Flashcards' }, { id:'library', icon:'📖', l:'පුස්තකාලය' }, { id:'stats', icon:'📈', l:'ප්‍රගතිය' }, { id:'settings', icon:'⚙️', l:'සැකසුම්' }];
-            return `<nav class="fixed bottom-0 left-0 w-full md:top-0 md:w-24 lg:w-72 md:h-full glass-nav z-50 flex md:flex-col p-3 md:p-6 lg:p-8 justify-around md:justify-start space-y-0 md:space-y-2 shadow-lg print-hidden"><div class="hidden md:flex items-center space-x-4 mb-8 cursor-pointer" onclick="switchTab('home')"><div class="bg-indigo-600 p-3 rounded-2xl text-2xl">🧠</div><div class="hidden lg:block"><h1 class="font-black text-2xl tracking-tighter text-slate-900 dark:text-white">Mindset<span class="text-indigo-600">OS</span></h1></div></div>${tabs.map(t => `<button onclick="switchTab('${t.id}')" class="flex flex-col lg:flex-row items-center lg:space-x-4 p-2 lg:p-4 rounded-2xl transition-all w-full group relative ${state.activeTab === t.id && !state.selectedArticleId ? 'bg-indigo-600 text-white shadow-xl' : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800'}"><div class="relative"><span class="text-xl ${state.activeTab===t.id?'scale-125 inline-block transition-transform':''}">${t.icon}</span>${t.activePulse ? '<span class="absolute -top-1 -right-1 w-2.5 h-2.5 bg-rose-500 rounded-full border-2 border-white dark:border-slate-900"></span>' : ''}</div><span class="text-[10px] lg:text-[15px] font-bold mt-1 lg:mt-0 ${state.activeTab===t.id && !state.selectedArticleId?'text-white':''} hidden sm:block">${t.l}</span></button>`).join('')}</nav>`;
+            const tabs = [{ id:'home', icon:'📊', l:t('home') }, { id:'planner', icon:'✅', l:t('planner') }, { id:'timer', icon:'⏱️', l:t('deep_work') }, { id:'library', icon:'📖', l:t('library') }, { id:'stats', icon:'📈', l:t('stats') }, { id:'settings', icon:'⚙️', l:t('settings') }];
+            return `<nav class="fixed bottom-0 left-0 w-full md:top-0 md:w-24 lg:w-72 md:h-full glass-nav z-50 flex md:flex-col p-3 md:p-6 lg:p-8 justify-around md:justify-start space-y-0 md:space-y-2 shadow-lg print-hidden"><div class="hidden md:flex items-center space-x-4 mb-8 cursor-pointer" onclick="window.switchTab('home')"><div class="bg-indigo-600 p-3 rounded-2xl text-2xl shadow-lg">🧠</div><div class="hidden lg:block"><h1 class="font-black text-2xl tracking-tighter text-slate-900 dark:text-white">Mindset<span class="text-indigo-600">OS</span></h1></div></div>${tabs.map(tab => `<button onclick="window.switchTab('${tab.id}')" class="flex flex-col lg:flex-row items-center lg:space-x-4 p-2 lg:p-4 rounded-2xl transition-all w-full group relative ${state.activeTab === tab.id && !state.selectedArticleId ? 'bg-indigo-600/90 text-white shadow-xl' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-200/50 dark:hover:bg-slate-800/50'}"><div class="relative"><span class="text-xl ${state.activeTab===tab.id?'scale-125 inline-block transition-transform':''}">${tab.icon}</span></div><span class="text-[10px] lg:text-[15px] font-bold mt-1 lg:mt-0 ${state.activeTab===tab.id && !state.selectedArticleId?'text-white':''} hidden sm:block">${tab.l}</span></button>`).join('')}</nav>`;
         }
 
         function renderHome() {
             const score = state.habits.length ? Math.round((state.habits.filter(h => h.completed).length / state.habits.length) * 100) : 0;
-            const daysLeft = getDaysRemaining();
             const hour = new Date().getHours();
-            let greeting = "ආයුබෝවන්";
-            if (hour < 12) greeting = "සුබ උදෑසනක්"; else if (hour < 18) greeting = "සුබ දහවලක්"; else greeting = "සුබ රාත්‍රියක්";
-
-            const quotes = ["විනය යනු ඔබට මේ මොහොතේ අවශ්‍ය දේ සහ ඔබට වඩාත්ම අවශ්‍ය දේ අතර තෝරාගැනීමයි.", "කුඩා වෙනස්කම්, විශාල ප්‍රතිඵල ගෙන දෙයි.", "අද දවස ඔබේ ජීවිතයේ ඉතිරි කාලයේ පළමු දවසයි.", "කාලය කළමනාකරණය යනු හැඟීම් කළමනාකරණයයි."];
-            const todayQuote = quotes[new Date().getDay() % quotes.length];
+            let greeting = t('greeting_m'); if (hour >= 12 && hour < 18) greeting = t('greeting_a'); else if (hour >= 18) greeting = t('greeting_e');
             const pendingTasks = state.habits.filter(h => !h.completed).slice(0, 3);
             const dateString = new Date().toLocaleDateString('si-LK', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
-            return `<div class="space-y-8 animate-fade-in pb-10"><header class="flex flex-col md:flex-row md:items-end justify-between space-y-4 md:space-y-0"><div><p class="text-indigo-600 dark:text-indigo-400 font-bold tracking-widest uppercase text-sm mb-2">${dateString}</p><h2 class="text-4xl md:text-5xl font-black tracking-tight">${greeting}, ${escapeHTML(state.user.name)}! ✨</h2></div>${daysLeft !== null ? `<div class="bg-white dark:bg-darkcard px-6 py-4 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-800 flex items-center space-x-4"><div class="p-3 bg-red-50 dark:bg-red-900/20 rounded-2xl text-2xl text-red-500">🔥</div><div><p class="text-xs font-bold text-slate-400 uppercase tracking-widest">ඉලක්කයට තවත්</p><p class="text-2xl font-black text-slate-800 dark:text-white">${daysLeft} <span class="text-sm text-slate-500">දිනයි</span></p></div></div>` : ''}</header><div class="grid grid-cols-2 md:grid-cols-4 gap-4"><button onclick="switchTab('timer')" class="bg-white dark:bg-darkcard p-4 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 flex items-center justify-center space-x-3 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors group"><span class="text-xl group-hover:scale-110 transition-transform">▶️</span><span class="font-bold text-sm">Deep Work</span></button><button onclick="switchTab('planner')" class="bg-white dark:bg-darkcard p-4 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 flex items-center justify-center space-x-3 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors group"><span class="text-xl group-hover:scale-110 transition-transform">➕</span><span class="font-bold text-sm">නව කාර්යයක්</span></button><button onclick="switchTab('flashcards')" class="bg-white dark:bg-darkcard p-4 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 flex items-center justify-center space-x-3 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors group"><span class="text-xl group-hover:scale-110 transition-transform">🗂️</span><span class="font-bold text-sm">Flashcards</span></button><button onclick="shareToWhatsApp()" class="bg-[#25D366]/10 dark:bg-[#25D366]/20 p-4 rounded-2xl shadow-sm flex items-center justify-center space-x-3 hover:bg-[#25D366]/30 transition-colors group"><span class="text-xl group-hover:scale-110 transition-transform text-[#25D366]">🔗</span><span class="font-bold text-sm text-[#25D366]">Share Progress</span></button></div><div class="grid grid-cols-1 lg:grid-cols-3 gap-8"><div class="space-y-8"><div class="bg-white dark:bg-darkcard rounded-[3rem] p-10 border border-slate-100 dark:border-slate-800 shadow-sm relative overflow-hidden"><div class="absolute top-0 right-0 p-8 opacity-5 dark:opacity-10 text-9xl">🎯</div><h4 class="font-black text-slate-400 uppercase text-xs tracking-widest mb-6 relative z-10">අද දෛනික ප්‍රගතිය</h4><div class="flex items-baseline relative z-10"><span class="text-7xl font-black">${score}</span><span class="text-3xl font-black text-slate-300">%</span></div><div class="w-full bg-slate-100 dark:bg-slate-800 h-6 rounded-full overflow-hidden p-1 mt-8 relative z-10"><div class="bg-gradient-to-r from-indigo-500 to-purple-500 h-full rounded-full transition-all duration-1000 shadow-[0_0_15px_rgba(99,102,241,0.5)]" style="width:${score}%"></div></div></div><div class="bg-gradient-to-br from-indigo-600 to-purple-700 rounded-[2.5rem] p-8 text-white shadow-lg relative overflow-hidden"><span class="absolute right-[-10%] bottom-[-10%] text-9xl text-white/10 rotate-12">"</span><p class="text-lg font-medium italic relative z-10">"${todayQuote}"</p><p class="text-xs font-bold text-indigo-200 mt-4 uppercase tracking-widest relative z-10">— Daily Insight</p></div></div><div class="lg:col-span-2 space-y-8"><div class="bg-white dark:bg-darkcard rounded-[3rem] p-8 md:p-10 border border-slate-100 dark:border-slate-800 shadow-sm"><div class="flex justify-between items-center mb-6"><h4 class="font-black text-lg flex items-center space-x-3"><div class="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg text-lg">🕒</div><span>මීළඟට කළ යුතු (Up Next)</span></h4><button onclick="switchTab('planner')" class="text-sm font-bold text-indigo-600 dark:text-indigo-400 hover:underline">සියල්ල බලන්න</button></div><div class="space-y-3">${pendingTasks.length === 0 ? `<div class="text-center py-8 text-slate-400 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-dashed border-slate-200 dark:border-slate-700"><p class="font-bold">නියමයි! අදට නියමිත සියලුම වැඩ අවසන්.</p></div>` : pendingTasks.map(h => { const pri = priorities[h.priority] || priorities['Q4']; return `<div class="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors group cursor-pointer" onclick="toggleHabit(${h.id})"><div class="flex items-center space-x-4"><div class="w-8 h-8 rounded-lg border-2 flex items-center justify-center border-slate-300 dark:border-slate-600 group-hover:border-indigo-500 transition-colors"></div><div><p class="font-bold text-slate-800 dark:text-white truncate max-w-[200px] md:max-w-md">${h.text}</p><span class="text-[9px] font-black uppercase ${pri.class} px-2 py-0.5 rounded border border-transparent">${pri.name}</span></div></div><button onclick="event.stopPropagation(); switchTab('timer')" class="text-slate-400 hover:text-indigo-600 p-2 text-xl" title="Start Timer">▶️</button></div>` }).join('')}</div></div><div class="bg-slate-900 dark:bg-slate-800 rounded-[3rem] p-8 md:p-10 text-white cursor-pointer relative overflow-hidden shadow-xl hover:shadow-2xl transition-shadow group" onclick="switchTab('library')"><div class="absolute inset-0 bg-gradient-to-r from-blue-600/20 to-purple-600/20"></div><div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between"><div class="mb-6 md:mb-0 md:mr-6"><span class="bg-blue-500/20 text-blue-300 px-3 py-1 rounded-full text-[10px] font-black uppercase mb-4 inline-block border border-blue-500/30">නව දැනුම</span><h3 class="text-2xl md:text-3xl font-black mb-2 group-hover:text-blue-300 transition-colors">ඔබේ මනස තියුණු කරන්න.</h3><p class="text-slate-400 text-sm md:text-base">Cloud පුස්තකාලය වෙත ගොස් අලුත්ම මනෝවිද්‍යාත්මක ලිපි කියවන්න.</p></div><div class="shrink-0 bg-white/10 p-4 rounded-2xl backdrop-blur-md border border-white/20 group-hover:bg-white/20 transition-colors text-3xl">📖</div></div><span class="absolute right-[5%] bottom-[5%] text-6xl opacity-10 group-hover:rotate-12 transition-transform duration-700">✨</span></div></div></div></div>`;
+            return `<div class="space-y-8 animate-fade-in pb-10"><header class="flex flex-col md:flex-row md:items-end justify-between space-y-4 md:space-y-0"><div><p class="text-indigo-600 dark:text-indigo-400 font-bold tracking-widest uppercase text-sm mb-2 drop-shadow-sm">${dateString}</p><h2 class="text-4xl md:text-5xl font-black tracking-tight drop-shadow-sm">${greeting}, ${escapeHTML(state.user.name)}! ✨</h2></div></header><div class="grid grid-cols-2 md:grid-cols-4 gap-4"><button onclick="window.switchTab('timer')" class="glass-panel p-4 rounded-2xl shadow-sm flex items-center justify-center space-x-3 hover:bg-indigo-50/50 dark:hover:bg-indigo-900/50 transition-colors group"><span class="text-xl group-hover:scale-110 transition-transform drop-shadow">▶️</span><span class="font-bold text-sm">${t('deep_work')}</span></button><button onclick="window.switchTab('planner')" class="glass-panel p-4 rounded-2xl shadow-sm flex items-center justify-center space-x-3 hover:bg-indigo-50/50 transition-colors group"><span class="text-xl group-hover:scale-110 transition-transform drop-shadow">➕</span><span class="font-bold text-sm">${t('new_task')}</span></button><button onclick="window.switchTab('flashcards')" class="glass-panel p-4 rounded-2xl shadow-sm flex items-center justify-center space-x-3 hover:bg-indigo-50/50 transition-colors group"><span class="text-xl group-hover:scale-110 transition-transform drop-shadow">🗂️</span><span class="font-bold text-sm">Flashcards</span></button><button onclick="window.shareToWhatsApp()" class="glass-panel p-4 rounded-2xl shadow-sm flex items-center justify-center space-x-3 hover:bg-[#25D366]/10 transition-colors group"><span class="text-xl group-hover:scale-110 transition-transform text-[#25D366]">🔗</span><span class="font-bold text-sm text-[#25D366]">Share Progress</span></button></div><div class="grid grid-cols-1 lg:grid-cols-3 gap-8"><div class="space-y-8"><div class="glass-panel rounded-[3rem] p-10 shadow-sm relative overflow-hidden"><div class="absolute top-0 right-0 p-8 opacity-10 text-9xl">🎯</div><h4 class="font-black text-slate-500 dark:text-slate-400 uppercase text-xs tracking-widest mb-6 relative z-10">${t('daily_progress')}</h4><div class="flex items-baseline relative z-10 drop-shadow-md"><span class="text-7xl font-black">${score}</span><span class="text-3xl font-black text-slate-400">%</span></div><div class="w-full bg-slate-200/50 dark:bg-slate-800/50 h-6 rounded-full overflow-hidden p-1 mt-8 relative z-10"><div class="bg-gradient-to-r from-indigo-500 to-purple-500 h-full rounded-full transition-all duration-1000 shadow-[0_0_15px_rgba(99,102,241,0.5)]" style="width:${score}%"></div></div></div></div><div class="lg:col-span-2 space-y-8"><div class="glass-panel rounded-[3rem] p-8 md:p-10 shadow-sm"><div class="flex justify-between items-center mb-6"><h4 class="font-black text-lg flex items-center space-x-3 drop-shadow-sm"><span class="text-2xl">🕒</span><span>${t('up_next')}</span></h4><button onclick="window.switchTab('planner')" class="text-sm font-bold text-indigo-600 dark:text-indigo-400 hover:underline">${t('view_all')}</button></div><div class="space-y-3">${pendingTasks.length === 0 ? `<div class="text-center py-8 text-slate-500 font-bold">${t('all_done')}</div>` : pendingTasks.map(h => `<div class="flex items-center justify-between p-4 glass-btn rounded-2xl cursor-pointer" onclick="window.toggleHabit(${h.id})"><div class="flex items-center space-x-4"><div class="w-8 h-8 rounded-lg border-2 border-slate-300 dark:border-slate-500"></div><div><p class="font-bold drop-shadow-sm">${h.text}</p></div></div><button onclick="event.stopPropagation(); window.switchTab('timer')" class="text-xl">▶️</button></div>`).join('')}</div></div></div></div></div>`;
         }
 
         function renderPlanner() {
             const today = new Date().toLocaleDateString('si-LK');
-            return `<div class="max-w-4xl mx-auto space-y-10 pb-10"><header class="text-center"><h2 class="text-4xl font-black tracking-tight">දෛනික සැලසුම්කරු (Matrix)</h2><p class="mt-4 text-slate-500">අද දිනය සඳහා ඔබගේ අරමුණු පෙළගස්වා කළමනාකරණය කරන්න.</p></header><div class="bg-white dark:bg-darkcard p-4 rounded-[2rem] shadow-sm border border-slate-100 dark:border-slate-800 flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-3"><input type="text" id="habit-text" onkeydown="if(event.key==='Enter')addHabit()" placeholder="වැඩක් ඇතුළත් කරන්න..." class="flex-1 px-4 py-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl outline-none font-bold text-slate-800 dark:text-white"/><select id="habit-priority" class="px-4 py-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl font-bold text-slate-600 dark:text-slate-300">${Object.keys(priorities).map(k => `<option value="${k}">${priorities[k].name}</option>`).join('')}</select><select id="habit-cat" class="px-4 py-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl font-bold text-slate-600 dark:text-slate-300">${Object.keys(state.categories).map(k => `<option value="${k}">${state.categories[k].name}</option>`).join('')}</select><button onclick="addHabit()" class="bg-indigo-600 text-white px-6 py-3 rounded-xl font-black hover:bg-indigo-700">එක් කරන්න</button></div><div class="space-y-4">${state.habits.map(h => { const pri = priorities[h.priority] || priorities['Q4']; const cat = state.categories[h.category] || state.categories['Other']; return `<div class="flex items-center justify-between p-5 bg-white dark:bg-darkcard border rounded-[1.5rem] card-hover ${h.completed ? 'opacity-60 bg-slate-50 dark:bg-slate-900' : 'border-slate-200 dark:border-slate-700'}"><div class="flex items-center space-x-4"><button onclick="toggleHabit(${h.id})" class="w-12 h-12 rounded-xl border-2 flex items-center justify-center text-xl font-black ${h.completed?'bg-indigo-600 border-indigo-600 text-white':'bg-slate-50 dark:bg-slate-800 dark:border-slate-600'}">${h.completed?'✓':''}</button><div><div class="flex space-x-2 mb-1"><span class="px-2 py-0.5 text-[9px] font-black uppercase rounded border ${pri.class}">${pri.name}</span><span class="px-2 py-0.5 text-[9px] font-black uppercase rounded border ${cat.color}">${cat.name}</span></div><p class="font-black text-xl break-all ${h.completed?'line-through text-slate-400':'text-slate-800 dark:text-white'}">${h.text}</p></div></div><button onclick="deleteHabit(${h.id})" class="p-3 text-slate-400 hover:text-red-500 text-xl">🗑️</button></div>`; }).join('')}</div><div class="bg-white dark:bg-darkcard p-8 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 space-y-6"><div><h3 class="text-2xl font-black mb-2">දවසේ සටහන (Journal & Mood)</h3></div><div class="flex space-x-4 mb-4">${Object.keys(moodEmojis).map(m => `<button onclick="setMood('${m}')" class="text-4xl hover:scale-125 transition-transform ${state.moods[today]===m?'scale-125 bg-slate-100 dark:bg-slate-800 rounded-full':''}">${moodEmojis[m]}</button>`).join('')}</div><textarea id="journal-text" placeholder="අද දවස ගැන ලියන්න..." class="w-full bg-slate-50 dark:bg-slate-800 p-6 rounded-2xl outline-none font-medium text-lg h-32 resize-none border-2 border-transparent focus:border-indigo-400">${state.reflections[today]||''}</textarea><button onclick="saveJournal()" class="w-full py-4 bg-indigo-600 text-white font-black rounded-xl hover:bg-indigo-700">සටහන සුරකින්න</button></div></div>`;
+            let historyHTML = '';
+            const pastDates = Object.keys(state.pastTasks).sort((a,b) => new Date(b) - new Date(a));
+            if(pastDates.length > 0 || Object.keys(state.reflections).length > 1) {
+                historyHTML = `<div class="mt-12 pt-8 border-t border-slate-300 dark:border-slate-700"><h3 class="text-2xl font-black mb-6 drop-shadow-sm flex items-center gap-2"><span>🕰️</span> ${t('history')}</h3><div class="space-y-6">`;
+                const allDates = new Set([...pastDates, ...Object.keys(state.reflections)]);
+                Array.from(allDates).sort((a,b) => new Date(b) - new Date(a)).forEach(d => {
+                    if (d === today) return; 
+                    historyHTML += `<div class="glass-panel p-6 rounded-3xl"><h4 class="font-bold text-indigo-600 dark:text-indigo-400 mb-3">${d}</h4>`;
+                    if (state.pastTasks[d] && state.pastTasks[d].length > 0) {
+                        historyHTML += `<div class="mb-3"><p class="text-xs uppercase font-bold text-slate-500 mb-2">Completed Tasks</p><ul class="list-disc list-inside pl-4 text-sm font-medium space-y-1 opacity-80">`;
+                        state.pastTasks[d].forEach(task => { historyHTML += `<li>${task.text}</li>`; });
+                        historyHTML += `</ul></div>`;
+                    }
+                    if (state.reflections[d]) {
+                        historyHTML += `<div><p class="text-xs uppercase font-bold text-slate-500 mb-2">Journal</p><p class="text-sm font-medium italic opacity-90 border-l-2 border-indigo-400 pl-3">${state.reflections[d]}</p></div>`;
+                    }
+                    historyHTML += `</div>`;
+                });
+                historyHTML += `</div></div>`;
+            }
+
+            return `<div class="max-w-4xl mx-auto space-y-8 pb-10"><header class="text-center"><h2 class="text-4xl font-black tracking-tight drop-shadow-md">${t('planner')}</h2></header><div class="glass-panel p-4 rounded-[2rem] shadow-sm flex flex-col md:flex-row gap-3"><input type="text" id="habit-text" onkeydown="if(event.key==='Enter')window.addHabit()" placeholder="${t('add_task')}" class="flex-1 px-4 py-3 glass-btn rounded-xl outline-none font-bold"/><select id="habit-priority" class="px-4 py-3 glass-btn rounded-xl font-bold">${Object.keys(priorities).map(k => `<option value="${k}">${priorities[k].name}</option>`).join('')}</select><select id="habit-cat" class="px-4 py-3 glass-btn rounded-xl font-bold">${Object.keys(state.categories).map(k => `<option value="${k}">${state.categories[k].name}</option>`).join('')}</select><button onclick="window.addHabit()" class="bg-indigo-600 text-white px-6 py-3 rounded-xl font-black shadow-lg hover:bg-indigo-500">${t('add_btn')}</button></div><div class="space-y-4">${state.habits.map(h => `<div class="flex items-center justify-between p-5 glass-panel rounded-[1.5rem] card-hover ${h.completed ? 'opacity-50' : ''}"><div class="flex items-center space-x-4"><button onclick="window.toggleHabit(${h.id})" class="w-12 h-12 rounded-xl border-2 flex items-center justify-center text-xl font-black ${h.completed?'bg-indigo-600 border-indigo-600 text-white':'border-slate-400'}">${h.completed?'✓':''}</button><div><p class="font-black text-xl break-all ${h.completed?'line-through':''}">${h.text}</p></div></div><button onclick="window.deleteHabit(${h.id})" class="p-3 text-slate-400 hover:text-red-500 text-xl">🗑️</button></div>`).join('')}</div><div class="glass-panel p-8 rounded-[2.5rem] shadow-sm space-y-6"><div><h3 class="text-2xl font-black mb-2 drop-shadow-sm">${t('journal')}</h3></div><div class="flex space-x-4 mb-4">${Object.keys(moodEmojis).map(m => `<button onclick="window.setMood('${m}')" class="text-4xl hover:scale-125 transition-transform ${state.moods[today]===m?'scale-125 glass-btn rounded-full':''} drop-shadow">${moodEmojis[m]}</button>`).join('')}</div><textarea id="journal-text" placeholder="${t('journal_ph')}" class="w-full glass-btn p-6 rounded-2xl outline-none font-medium text-lg h-32 resize-none focus:border-indigo-400 shadow-inner">${state.reflections[today]||''}</textarea><button onclick="window.saveJournal()" class="w-full py-4 bg-indigo-600 text-white font-black rounded-xl shadow-lg hover:bg-indigo-500">${t('save_journal')}</button></div>${historyHTML}</div>`;
         }
 
         function renderTimer() {
-            return `<div class="max-w-xl mx-auto space-y-10 text-center pb-20"><header><h2 class="text-4xl font-black">Deep Work Timer</h2><p class="mt-4 text-slate-500">බාධාවකින් තොරව අවධානය යොමු කිරීමට උපකාරී වන කාල ගණනය.</p></header><div class="bg-white dark:bg-darkcard p-12 rounded-[3rem] border border-slate-100 dark:border-slate-800 relative"><div class="flex justify-center space-x-2 mb-8">${['rain','forest','noise'].map(t=>`<button onclick="toggleFocusSound('${t}')" class="px-4 py-2 rounded-lg text-xs font-bold border bg-slate-50 dark:bg-slate-800 focus:bg-indigo-100">${t.toUpperCase()}</button>`).join('')}</div><div class="flex justify-center space-x-4 mb-8"><button onclick="switchTimerMode('focus')" class="px-6 py-2 rounded-xl font-bold text-sm ${timerState.mode==='focus'?'bg-indigo-600 text-white':'bg-slate-100 dark:bg-slate-800 text-slate-500'}">Focus (25m)</button><button onclick="switchTimerMode('break')" class="px-6 py-2 rounded-xl font-bold text-sm ${timerState.mode==='break'?'bg-green-500 text-white':'bg-slate-100 dark:bg-slate-800 text-slate-500'}">Break (5m)</button></div><div class="relative w-64 h-64 mx-auto mb-10 flex items-center justify-center"><div class="absolute inset-0 bg-slate-200 dark:bg-slate-700 rounded-full"></div><div id="timer-circle-bg" class="absolute inset-0 timer-circle transition-all duration-1000"></div><div class="absolute inset-3 bg-white dark:bg-darkcard rounded-full flex items-center justify-center"><span id="timer-display" class="text-6xl font-black">25:00</span></div></div><button onclick="toggleTimer()" class="w-20 h-20 rounded-full mx-auto flex items-center justify-center text-white text-3xl ${timerState.isRunning?'bg-rose-500':'bg-slate-900 dark:bg-slate-700'}"><span>${timerState.isRunning?'⏸️':'▶️'}</span></button></div></div>`;
+            let controlButtons = '';
+            if (timerState.phase === 'focus-ended') {
+                controlButtons = `<div class="flex justify-center space-x-4 mt-8 animate-fade-in"><button onclick="window.startBreakManual()" class="px-8 py-4 bg-emerald-500 text-white rounded-2xl font-black shadow-lg text-lg hover:bg-emerald-400">${t('start_break')}</button><button onclick="window.skipBreakManual()" class="px-8 py-4 glass-btn rounded-2xl font-black text-slate-500 hover:text-slate-800 dark:hover:text-white transition-colors">${t('skip_break')}</button></div>`;
+            } else {
+                let icon = (timerState.phase === 'running' || timerState.phase === 'break-running') ? '⏸️' : '▶️';
+                controlButtons = `<button onclick="window.toggleTimer()" class="w-24 h-24 rounded-full mx-auto mt-8 flex items-center justify-center text-white text-4xl shadow-xl transition-transform hover:scale-105 ${(timerState.phase==='running'||timerState.phase==='break-running')?'bg-rose-500':'bg-indigo-600'}"><span>${icon}</span></button>`;
+            }
+
+            return `<div class="max-w-xl mx-auto space-y-10 text-center pb-20"><header><h2 class="text-4xl font-black drop-shadow-md">${t('timer_title')}</h2></header><div class="glass-panel p-12 rounded-[3rem] relative shadow-xl"><div class="flex justify-center space-x-2 mb-8"><button onclick="window.toggleFocusSound()" class="px-4 py-2 rounded-lg text-xs font-bold border glass-btn shadow-sm">SOUND (BETA)</button></div><div class="relative w-72 h-72 mx-auto mb-10 flex items-center justify-center"><div class="absolute inset-0 bg-slate-200/50 dark:bg-slate-700/50 rounded-full shadow-inner"></div><div id="timer-circle-bg" class="absolute inset-0 timer-circle transition-all duration-1000"></div><div class="absolute inset-4 glass-panel rounded-full flex flex-col items-center justify-center"><span class="text-sm font-bold text-slate-500 uppercase tracking-widest mb-1">${timerState.mode} MODE</span><span id="timer-display" class="text-7xl font-black drop-shadow-md">25:00</span></div></div>${controlButtons}</div></div>`;
         }
 
         function renderFlashcards() {
-            return `<div class="max-w-4xl mx-auto space-y-10 pb-20"><header class="text-center"><h2 class="text-4xl font-black">Active Recall Flashcards</h2><p class="mt-4 text-slate-500">කෙටි කාලීන මතකය දිගු කාලීනව තහවුරු කරගැනීමට.</p></header><div class="bg-white dark:bg-darkcard p-6 rounded-[2rem] border border-slate-100 dark:border-slate-800 flex flex-col md:flex-row gap-4"><input type="text" id="fc-q" placeholder="ප්‍රශ්නය..." class="flex-1 px-4 py-3 bg-slate-50 dark:bg-slate-800 rounded-xl outline-none font-bold"/><input type="text" id="fc-a" placeholder="පිළිතුර..." class="flex-1 px-4 py-3 bg-slate-50 dark:bg-slate-800 rounded-xl outline-none font-bold"/><button onclick="addFlashcard()" class="bg-indigo-600 text-white px-6 py-3 rounded-xl font-black">එක් කරන්න</button></div><div class="grid grid-cols-1 md:grid-cols-2 gap-6 perspective">${state.flashcards.length === 0 ? `<div class="col-span-full text-center py-10 text-slate-400">Card එකක් සාදා ඉගෙනීම අරඹන්න.</div>` : state.flashcards.map(f => `<div class="relative h-48 w-full group cursor-pointer" onclick="flipCardDOM(${f.id}, this)"><div class="absolute inset-0 w-full h-full preserve-3d ${state.flippedCards[f.id] ? 'rotate-y-180' : ''}"><div class="absolute inset-0 backface-hidden bg-white dark:bg-darkcard border border-slate-200 dark:border-slate-700 rounded-[2rem] p-6 flex flex-col justify-center items-center shadow-sm"><span class="text-xs font-bold text-indigo-500 mb-2">ප්‍රශ්නය</span><h3 class="text-xl font-black text-center break-words w-full">${f.q}</h3><button onclick="event.stopPropagation(); deleteFlashcard(${f.id})" class="absolute top-4 right-4 text-slate-300 hover:text-red-500 text-lg">🗑️</button></div><div class="absolute inset-0 backface-hidden rotate-y-180 bg-indigo-600 text-white rounded-[2rem] p-6 flex flex-col justify-center items-center shadow-md"><span class="text-xs font-bold text-indigo-200 mb-2">පිළිතුර</span><h3 class="text-2xl font-black text-center break-words w-full">${f.a}</h3></div></div></div>`).join('')}</div></div>`;
+            return `<div class="max-w-4xl mx-auto space-y-10 pb-20"><header class="text-center"><h2 class="text-4xl font-black drop-shadow-md">Active Recall Flashcards</h2></header><div class="glass-panel p-6 rounded-[2rem] flex flex-col md:flex-row gap-4"><input type="text" id="fc-q" placeholder="Question..." class="flex-1 px-4 py-3 glass-btn rounded-xl outline-none font-bold"/><input type="text" id="fc-a" placeholder="Answer..." class="flex-1 px-4 py-3 glass-btn rounded-xl outline-none font-bold"/><button onclick="window.addFlashcard()" class="bg-indigo-600 text-white px-6 py-3 rounded-xl font-black">Add</button></div><div class="grid grid-cols-1 md:grid-cols-2 gap-6 perspective">${state.flashcards.length === 0 ? `<div class="col-span-full text-center py-10 text-slate-400">Create a card to start learning.</div>` : state.flashcards.map(f => `<div class="relative h-48 w-full group cursor-pointer" onclick="window.flipCardDOM(${f.id}, this)"><div class="absolute inset-0 w-full h-full preserve-3d ${state.flippedCards[f.id] ? 'rotate-y-180' : ''}"><div class="absolute inset-0 backface-hidden glass-panel rounded-[2rem] p-6 flex flex-col justify-center items-center shadow-sm"><span class="text-xs font-bold text-indigo-500 mb-2">Question</span><h3 class="text-xl font-black text-center break-words w-full">${f.q}</h3><button onclick="event.stopPropagation(); window.deleteFlashcard(${f.id})" class="absolute top-4 right-4 text-slate-400 hover:text-red-500 text-lg">🗑️</button></div><div class="absolute inset-0 backface-hidden rotate-y-180 bg-indigo-600/90 text-white rounded-[2rem] p-6 flex flex-col justify-center items-center shadow-md"><span class="text-xs font-bold text-indigo-200 mb-2">Answer</span><h3 class="text-2xl font-black text-center break-words w-full">${f.a}</h3></div></div></div>`).join('')}</div></div>`;
         }
 
         function renderLibrary() {
-            return `<div class="space-y-10 pb-20"><header><h2 class="text-4xl font-black mb-2">පර්යේෂණ පුස්තකාලය</h2><p class="text-slate-500 font-bold">ඔබේ මනස දියුණු කරන නවතම ලිපි එකතුව</p></header><div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">${articles.map(a => `<div onclick="viewArticle('${a.id}')" class="bg-white dark:bg-darkcard rounded-[2.5rem] p-8 border border-slate-100 dark:border-slate-800 shadow-sm cursor-pointer card-hover"><div><div class="w-16 h-16 bg-slate-50 dark:bg-slate-800 rounded-2xl flex items-center justify-center mb-6 text-3xl ${a.color}">${a.icon}</div><h3 class="text-2xl font-black mb-3">${a.title}</h3><p class="text-slate-500 text-sm mb-6 line-clamp-3">${a.excerpt}</p></div><button class="w-full py-3 bg-slate-50 dark:bg-slate-800 font-bold rounded-xl text-slate-700 dark:text-slate-300">කියවන්න (+5 XP)</button></div>`).join('')}</div></div>`;
+            return `<div class="space-y-10 pb-20"><header><h2 class="text-4xl font-black mb-2 drop-shadow-md">${t('library')}</h2></header><div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">${articles.map(a => `<div onclick="window.viewArticle('${a.id}')" class="glass-panel rounded-[2.5rem] p-8 shadow-sm cursor-pointer card-hover"><div><div class="w-16 h-16 glass-btn rounded-2xl flex items-center justify-center mb-6 text-3xl drop-shadow-md">${a.icon}</div><h3 class="text-2xl font-black mb-3 drop-shadow-sm">${a.title}</h3><p class="text-slate-600 dark:text-slate-400 text-sm mb-6 line-clamp-3">${a.excerpt}</p></div><button class="w-full py-3 glass-btn font-bold rounded-xl text-indigo-600 dark:text-indigo-400 shadow-sm">Read (+5 XP)</button></div>`).join('')}</div></div>`;
         }
 
         function renderArticleView() {
             const a = articles.find(x => x.id === state.selectedArticleId);
             if(!a) return '';
-            return `<div class="max-w-3xl mx-auto space-y-10 pb-20 print-content"><div class="flex justify-between items-center print-hidden"><button onclick="switchTab('library')" class="bg-white dark:bg-darkcard px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 flex items-center space-x-2 font-bold"><span class="text-xl">⬅️</span><span>ආපසු</span></button><button onclick="window.print()" class="bg-slate-900 text-white px-4 py-2 rounded-xl flex items-center space-x-2 font-bold shadow-lg"><span class="text-xl">🖨️</span><span>PDF / Print</span></button></div><h2 class="text-4xl font-black print-text-black">${a.title}</h2><div class="flex space-x-4 text-sm text-slate-500 font-bold"><span>කර්තෘ: ${a.author}</span><span>• කාලය: ${a.readTime}</span></div><p class="text-xl text-slate-600 dark:text-slate-300 italic border-l-4 border-indigo-400 pl-6 print-text-black print-border-light">${a.intro}</p>${a.sections.map(s=>`<div class="space-y-2"><h3 class="text-xl font-black text-indigo-600">${s.title}</h3><p class="text-lg text-slate-700 dark:text-slate-300 print-text-black whitespace-pre-wrap">${s.text}</p></div>`).join('')}<div class="bg-slate-900 rounded-[2rem] p-8 text-white shadow-xl mt-8 print:bg-white print:text-black print:border-2 print-border-light print:shadow-none"><div class="flex items-center space-x-3 mb-4"><span class="text-indigo-400 text-2xl">🧬</span><h4 class="text-xl font-black uppercase">විද්‍යාත්මක පදනම</h4></div><p class="text-slate-300 text-lg leading-relaxed print-text-black">${a.science}</p></div></div>`;
+            return `<div class="max-w-3xl mx-auto space-y-10 pb-20 print-content"><div class="flex justify-between items-center print-hidden"><button onclick="window.switchTab('library')" class="glass-btn px-4 py-2 rounded-xl flex items-center space-x-2 font-bold shadow-sm"><span class="text-xl">⬅️</span><span>Back</span></button></div><h2 class="text-5xl font-black drop-shadow-md print-text-black">${a.title}</h2><div class="flex space-x-4 text-sm font-bold opacity-70"><span>Author: ${a.author}</span></div><p class="text-xl italic border-l-4 border-indigo-400 pl-6 print-text-black font-medium">${a.intro}</p>${a.sections.map(s=>`<div class="space-y-2"><h3 class="text-2xl font-black text-indigo-600 drop-shadow-sm">${s.title}</h3><p class="text-lg font-medium leading-relaxed whitespace-pre-wrap">${s.text}</p></div>`).join('')}</div>`;
         }
 
         function renderStats() {
-            const moodCounts = Object.values(state.moods).reduce((acc, emoji) => { acc[emoji] = (acc[emoji] || 0) + 1; return acc; }, {});
-            return `<div class="space-y-10 pb-20"><header class="text-center"><h2 class="text-4xl font-black">Detailed Analytics</h2><p class="mt-4 text-slate-500">ඔබගේ වර්ධනය පිළිබඳ දත්ත හා සංඛ්‍යානමය විශ්ලේෂණ</p></header><div class="grid grid-cols-1 md:grid-cols-3 gap-6"><div class="bg-indigo-600 text-white p-8 rounded-[2rem] text-center shadow-lg"><h4 class="text-5xl font-black mb-2">${state.user.level}</h4><p class="font-bold uppercase tracking-widest text-xs opacity-80">දැනට පවතින Level එක</p><p class="mt-4 text-sm font-bold bg-white/20 rounded-full py-1">${state.user.xp} XP / ${state.user.level*100} XP</p></div><div class="bg-white dark:bg-darkcard p-8 rounded-[2rem] border border-slate-100 dark:border-slate-800 text-center"><h4 class="text-5xl font-black text-slate-900 dark:text-white mb-2">${Math.round(state.stats.totalFocusMinutes/60)}<span class="text-2xl text-slate-400">h</span></h4><p class="font-bold uppercase tracking-widest text-xs text-slate-500">Total Focus Time</p></div><div class="bg-white dark:bg-darkcard p-8 rounded-[2rem] border border-slate-100 dark:border-slate-800 text-center"><div class="flex justify-center space-x-2 text-3xl mb-4">${Object.keys(moodCounts).length ? Object.keys(moodCounts).slice(0,3).map(m=>`<span>${moodEmojis[m]}</span>`).join('') : '➖'}</div><p class="font-bold uppercase tracking-widest text-xs text-slate-500">ප්‍රධාන මානසික මට්ටම්</p></div></div><div class="bg-white dark:bg-darkcard p-10 rounded-[3rem] border border-slate-100 dark:border-slate-800 shadow-sm"><h4 class="font-black mb-6 text-center text-slate-600 dark:text-slate-300">පසුගිය දින 14 ක ප්‍රස්ථාරය (Daily Progress Chart)</h4><div class="chart-container"><canvas id="progressChart"></canvas></div></div></div>`;
+            return `<div class="space-y-10 pb-20"><header class="text-center"><h2 class="text-4xl font-black drop-shadow-md">${t('stats')}</h2></header><div class="grid grid-cols-1 md:grid-cols-2 gap-6"><div class="glass-panel p-8 rounded-[2rem] text-center shadow-sm"><h4 class="text-5xl font-black mb-2 drop-shadow-md">${Math.round(state.stats.totalFocusMinutes/60)}<span class="text-2xl text-slate-500">h</span> ${(state.stats.totalFocusMinutes%60)}<span class="text-2xl text-slate-500">m</span></h4><p class="font-bold uppercase tracking-widest text-xs text-slate-500">${t('total_focus')}</p></div><div class="glass-panel p-8 rounded-[2rem] text-center shadow-sm"><h4 class="text-5xl font-black mb-2 drop-shadow-md text-orange-500">${state.streak.count}</h4><p class="font-bold uppercase tracking-widest text-xs text-slate-500">Current Streak (Days)</p></div></div><div class="grid grid-cols-1 lg:grid-cols-2 gap-8"><div class="glass-panel p-8 rounded-[3rem] shadow-sm"><h4 class="font-black mb-6 text-center text-slate-600 dark:text-slate-300 drop-shadow-sm">${t('progress_chart')}</h4><div class="chart-container"><canvas id="progressChart"></canvas></div></div><div class="glass-panel p-8 rounded-[3rem] shadow-sm"><h4 class="font-black mb-6 text-center text-slate-600 dark:text-slate-300 drop-shadow-sm">${t('focus_chart')}</h4><div class="chart-container"><canvas id="focusChart"></canvas></div></div></div></div>`;
         }
 
         function renderSettings() {
             const adminMode = isAdmin();
-            
-            const publishedArticles = articles.filter(a => a.id.startsWith('art-') || a.id.startsWith('custom-'));
-            const renderedArticleList = publishedArticles.length === 0 ? 
-                '<p class="text-slate-400 text-sm text-center py-4">දැනට ඔබ විසින් පළකළ ලිපි කිසිවක් නැත.</p>' : 
-                publishedArticles.map(a => `
-                    <div class="flex justify-between items-center p-3 bg-slate-800 rounded-lg border border-slate-700">
-                        <span class="text-sm font-bold text-slate-200 truncate pr-4">${a.title}</span>
-                        <button onclick="deleteAdminArticle('${a.id}')" class="text-rose-500 hover:text-rose-400 p-2 bg-slate-900 rounded-md transition-colors" title="Delete Article"><span class="text-lg">🗑️</span></button>
-                    </div>
-                `).join('');
-
-            return `
-            <div class="max-w-2xl mx-auto space-y-10 pb-20">
-                <header><h2 class="text-4xl font-black text-center">සැකසුම්</h2></header>
-                <div class="bg-white dark:bg-darkcard p-8 md:p-10 rounded-[3rem] border border-slate-100 dark:border-slate-800 space-y-6 shadow-sm">
-                    
-                    ${adminMode ? `
-                    <!-- ADMIN PANEL START -->
-                    <div class="p-6 md:p-8 bg-slate-900 rounded-3xl border border-slate-800 mb-6 text-white shadow-xl animate-fade-in">
-                        <div class="flex items-center justify-between mb-8">
-                            <div class="flex items-center space-x-3">
-                                <span class="text-2xl bg-indigo-500/20 p-3 rounded-xl border border-indigo-500/30">🖥️</span>
-                                <div>
-                                    <h3 class="text-2xl font-black tracking-tight">Admin Panel</h3>
-                                    <p class="text-xs font-bold uppercase tracking-widest text-indigo-400 mt-1">Google Sheets Sync</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- 1. MANAGE USERS TABLE -->
-                        <div class="mb-10">
-                            <h4 class="font-bold text-blue-400 mb-4 flex items-center gap-2 text-lg"><span>👥</span> ලියාපදිංචි පරිශීලකයන්ගේ දත්ත</h4>
-                            <div class="overflow-x-auto rounded-2xl border border-slate-700 bg-slate-800 custom-scrollbar shadow-inner">
-                                <table class="w-full text-left text-sm text-slate-300 min-w-[600px]">
-                                    <thead class="bg-slate-950 text-[10px] font-black uppercase text-slate-400 tracking-wider">
-                                        <tr>
-                                            <th class="px-5 py-4">නම සහ විද්‍යුත් තැපෑල</th>
-                                            <th class="px-5 py-4">Level / XP</th>
-                                            <th class="px-5 py-4">Focus Time</th>
-                                            <th class="px-5 py-4">Joined Date</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody class="divide-y divide-slate-700/50">
-                                        ${state.adminUsersData.map(u => `
-                                            <tr class="hover:bg-slate-700/50 transition-colors">
-                                                <td class="px-5 py-4"><p class="font-bold text-white text-base">${u.name || 'Unknown'}</p><p class="text-xs text-slate-400">${u.email || 'No email'}</p></td>
-                                                <td class="px-5 py-4"><span class="bg-indigo-500/20 text-indigo-300 px-2 py-1 rounded-lg text-xs font-black border border-indigo-500/30">Lvl ${u.level||1}</span> <span class="text-xs ml-2 text-slate-400 font-bold">${u.xp||0} XP</span></td>
-                                                <td class="px-5 py-4 text-emerald-400 font-bold">${Math.floor((u.totalFocusMinutes||0)/60)}h ${(u.totalFocusMinutes||0)%60}m</td>
-                                                <td class="px-5 py-4 text-xs text-slate-400 font-medium">${u.joined || '-'}</td>
-                                            </tr>
-                                        `).join('')}
-                                        ${state.adminUsersData.length === 0 ? '<tr><td colspan="4" class="text-center py-8 text-slate-500 font-bold">පරිශීලකයන් පූරණය වෙමින් පවතී... Users Sheet එක නිවැරදිදැයි පරීක්ෂා කරන්න.</td></tr>' : ''}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                        
-                        <!-- 2. PUBLISH ARTICLES -->
-                        <div class="pt-6 border-t border-slate-800 space-y-4">
-                            <h4 class="font-bold text-emerald-400 mb-4 flex items-center gap-2 text-lg"><span>📢</span> Google Sheets වෙත නව ලිපියක් Publish කරන්න</h4>
-                            <input type="text" id="admin-art-title" placeholder="මාතෘකාව (Title)" class="w-full p-4 bg-slate-950 rounded-xl outline-none border border-slate-800 text-sm focus:border-indigo-500 transition-colors font-bold"/>
-                            <input type="text" id="admin-art-author" placeholder="කර්තෘ (Author - විකල්ප)" value="MindsetOS Admin" class="w-full p-4 bg-slate-950 rounded-xl outline-none border border-slate-800 text-sm focus:border-indigo-500 transition-colors font-bold"/>
-                            <div class="flex space-x-3">
-                                <input type="text" id="admin-art-cat" placeholder="කාණ්ඩය (උදා: Study, Health)" class="w-full p-4 bg-slate-950 rounded-xl outline-none border border-slate-800 text-sm focus:border-indigo-500 transition-colors font-bold"/>
-                                <input type="text" id="admin-art-time" placeholder="කියවීමට කාලය (උදා: විනාඩි 5)" class="w-full p-4 bg-slate-950 rounded-xl outline-none border border-slate-800 text-sm focus:border-indigo-500 transition-colors font-bold"/>
-                            </div>
-                            <textarea id="admin-art-intro" placeholder="කෙටි හැඳින්වීම (Intro)..." class="w-full p-4 bg-slate-950 rounded-xl outline-none border border-slate-800 text-sm h-20 resize-none focus:border-indigo-500 transition-colors font-bold"></textarea>
-                            <textarea id="admin-art-text" placeholder="සම්පූර්ණ අන්තර්ගතය (Main Content)..." class="w-full p-4 bg-slate-950 rounded-xl outline-none border border-slate-800 text-sm h-32 resize-none focus:border-indigo-500 transition-colors font-bold"></textarea>
-                            <button id="publish-btn" onclick="publishAdminArticle()" class="w-full bg-emerald-600 hover:bg-emerald-500 py-4 rounded-xl font-black transition-colors shadow-lg">ලිපිය Publish කරන්න (Global)</button>
-                        </div>
-
-                        <!-- 3. MANAGE PUBLISHED ARTICLES -->
-                        <div class="pt-8 mt-8 border-t border-slate-800 space-y-4">
-                            <h4 class="font-bold text-rose-400 mb-4 flex items-center gap-2 text-lg"><span>🗑️</span> පළකළ ලිපි කළමනාකරණය</h4>
-                            <div class="space-y-2 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
-                                ${renderedArticleList}
-                            </div>
-                        </div>
-                    </div>
-                    <!-- ADMIN PANEL END -->
-                    ` : ''}
-
-                    <div class="p-6 bg-indigo-50 dark:bg-indigo-900/20 rounded-2xl border border-indigo-100 dark:border-indigo-800/50 mb-6">
-                        <h3 class="text-xl font-black mb-2 text-indigo-900 dark:text-indigo-300">දත්ත ආරක්ෂිතව තබාගන්න</h3>
-                        <p class="text-sm text-slate-600 dark:text-slate-400 mb-4">ඔබේ වැඩ සහ ප්‍රගතිය (JSON) Download කර තබාගන්න.</p>
-                        <div class="flex flex-col sm:flex-row gap-3">
-                            <button onclick="exportData()" class="flex-1 py-3 bg-indigo-600 text-white font-black rounded-xl hover:bg-indigo-700 flex items-center justify-center space-x-2"><span class="text-lg">⬇️</span><span>Backup ගන්න</span></button>
-                            <label class="flex-1 py-3 bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 font-black rounded-xl border-2 border-indigo-200 dark:border-indigo-800 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 flex items-center justify-center space-x-2 cursor-pointer">
-                                <span class="text-lg">⬆️</span><span>Restore කරන්න</span><input type="file" accept=".json" class="hidden" onchange="importData(event)" />
-                            </label>
-                        </div>
-                    </div>
-
-                    <div>
-                        <label class="font-black text-sm block mb-2">විභාගය/ඉලක්ක දිනය:</label>
-                        <input type="date" value="${state.user.targetDate}" onchange="updateTargetDate(this.value)" class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 outline-none mb-4 font-bold" />
-                    </div>
-                    <div>
-                        <button onclick="addCustomCategory()" class="w-full py-4 border-2 border-indigo-200 dark:border-indigo-900 text-indigo-600 dark:text-indigo-400 font-black rounded-2xl hover:bg-indigo-50 dark:hover:bg-indigo-900/30">අලුත් කාණ්ඩයක් (Category) එක් කරන්න</button>
-                    </div>
-
-                    <div class="pt-6 border-t border-slate-200 dark:border-slate-700 space-y-4">
-                        <button onclick="logout()" class="w-full py-4 bg-slate-100 dark:bg-slate-800 font-black rounded-2xl hover:bg-slate-200 dark:hover:bg-slate-700">ගිණුමෙන් ඉවත් වන්න (Logout)</button>
-                        <button onclick="showConfirmModal('ඔබගේ සියලුම දත්ත මකා දැමීමට අවශ්‍යද? මෙය නැවත ලබා ගත නොහැක.', () => { localStorage.removeItem(USER_DATA_KEY); location.reload(); })" class="w-full py-4 border-2 border-red-200 text-red-500 font-black rounded-2xl hover:bg-red-50 dark:hover:bg-red-900/20">සම්පූර්ණ ගිණුම මකා දමන්න</button>
-                    </div>
+            return `<div class="max-w-2xl mx-auto space-y-10 pb-20"><header><h2 class="text-4xl font-black text-center drop-shadow-md">${t('settings')}</h2></header><div class="glass-panel p-8 md:p-10 rounded-[3rem] space-y-6 shadow-sm">
+                ${adminMode ? `<div class="p-6 bg-slate-900/80 backdrop-blur-md rounded-3xl border border-slate-700 mb-6 text-white shadow-2xl"><h3 class="text-2xl font-black text-indigo-400 mb-4">Admin Core</h3><input type="text" id="admin-art-title" placeholder="Title" class="w-full p-4 bg-slate-950 rounded-xl outline-none mb-3 font-bold border border-slate-800"/><textarea id="admin-art-intro" placeholder="Intro..." class="w-full p-4 bg-slate-950 rounded-xl outline-none mb-3 h-20 border border-slate-800"></textarea><textarea id="admin-art-text" placeholder="Content..." class="w-full p-4 bg-slate-950 rounded-xl outline-none mb-4 h-32 border border-slate-800"></textarea><button id="publish-btn" onclick="window.publishAdminArticle()" class="w-full bg-indigo-600 hover:bg-indigo-500 py-4 rounded-xl font-black shadow-lg">Publish Global Article</button></div>` : ''}
+                
+                <div class="flex flex-col sm:flex-row gap-3 mt-8">
+                    <button onclick="window.exportData()" class="flex-1 py-3 bg-indigo-600 text-white font-black rounded-xl hover:bg-indigo-700 flex items-center justify-center space-x-2"><span class="text-lg">⬇️</span><span>${t('backup_data')}</span></button>
+                    <label class="flex-1 py-3 glass-btn text-indigo-600 dark:text-indigo-400 font-black rounded-xl hover:bg-indigo-50 dark:hover:bg-indigo-900/30 flex items-center justify-center space-x-2 cursor-pointer"><span class="text-lg">⬆️</span><span>${t('restore_data')}</span><input type="file" accept=".json" class="hidden" onchange="window.importData(event)" /></label>
                 </div>
-            </div>`;
+                
+                <div>
+                    <label class="font-black text-sm block mb-2 mt-4 text-slate-700 dark:text-slate-300">Target Date:</label>
+                    <input type="date" value="${state.user.targetDate}" onchange="window.updateTargetDate(this.value)" class="w-full px-4 py-3 glass-btn rounded-xl outline-none mb-4 font-bold" />
+                </div>
+                <div>
+                    <button onclick="window.addCustomCategory()" class="w-full py-4 border-2 border-indigo-200 dark:border-indigo-900 text-indigo-600 dark:text-indigo-400 font-black rounded-2xl hover:bg-indigo-50 dark:hover:bg-indigo-900/30">Add Custom Category</button>
+                </div>
+
+                <div class="pt-6 space-y-4 border-t border-slate-300 dark:border-slate-700"><button onclick="window.logout()" class="w-full py-4 glass-btn font-black rounded-2xl shadow-sm text-rose-500">${t('logout')}</button></div></div></div>`;
         }
 
         initApp();
