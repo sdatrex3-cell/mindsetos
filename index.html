@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MindsetOS - Ultimate Scientific Framework</title>
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -11,47 +12,65 @@
             theme: { extend: { colors: { darkbg: '#0f172a', darkcard: '#1e293b' } } }
         }
     </script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <!-- Chart.js for Analytics -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Google Fonts for Sinhala & English -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&family=Noto+Sans+Sinhala:wght@400;600;800;900&display=swap" rel="stylesheet">
+    
     <style>
         :root { --font-main: 'Inter', 'Noto Sans Sinhala', sans-serif; }
         body { font-family: var(--font-main); scroll-behavior: smooth; }
-       .animate-fade-in { animation: fadeIn 0.5s ease-out forwards; }
-       .animate-slide-up { animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        .animate-fade-in { animation: fadeIn 0.5s ease-out forwards; }
+        .animate-slide-up { animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-       .glass-nav { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(16px); }
-       .dark.glass-nav { background: rgba(30, 41, 59, 0.85); border-right: 1px solid rgba(51, 65, 85, 0.8); }
-       .card-hover:hover { transform: translateY(-5px); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); }
+        
+        .glass-nav { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(16px); }
+        .dark .glass-nav { background: rgba(30, 41, 59, 0.85); border-right: 1px solid rgba(51, 65, 85, 0.8); }
+        .card-hover:hover { transform: translateY(-5px); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); }
+        
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-       .dark ::-webkit-scrollbar-thumb { background: #475569; }
-       .timer-circle { border-radius: 50%; }
-       .perspective { perspective: 1000px; }
-       .preserve-3d { transform-style: preserve-3d; transition: transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1); }
-       .backface-hidden { backface-visibility: hidden; }
-       .rotate-y-180 { transform: rotateY(180deg); }
-       .chart-container { position: relative; width: 100%; max-width: 800px; margin-left: auto; margin-right: auto; height: 300px; max-height: 400px; }
+        .dark ::-webkit-scrollbar-thumb { background: #475569; }
+        
+        .timer-circle { border-radius: 50%; }
+        
+        /* 3D Flashcard Effects */
+        .perspective { perspective: 1000px; }
+        .preserve-3d { transform-style: preserve-3d; transition: transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1); }
+        .backface-hidden { backface-visibility: hidden; }
+        .rotate-y-180 { transform: rotateY(180deg); }
+        
+        /* Chart Container Strict Bounds */
+        .chart-container { position: relative; width: 100%; max-width: 800px; margin-left: auto; margin-right: auto; height: 300px; max-height: 400px; }
+        
+        /* Print Styles */
         @media print {
-            body { background: white!important; color: black!important; }
-           .print-hidden { display: none!important; }
-           .print-content { padding: 0!important; margin: 0!important; max-width: 100%!important; }
-           .print-text-black { color: black!important; }
-           .print-border-light { border-color: #e2e8f0!important; }
+            body { background: white !important; color: black !important; }
+            .print-hidden { display: none !important; }
+            .print-content { padding: 0 !important; margin: 0 !important; max-width: 100% !important; }
+            .print-text-black { color: black !important; }
+            .print-border-light { border-color: #e2e8f0 !important; }
+            canvas { max-width: 100% !important; height: auto !important; }
         }
     </style>
 </head>
 <body class="bg-slate-50 dark:bg-darkbg text-slate-900 dark:text-slate-100 overflow-x-hidden transition-colors duration-300 print:bg-white">
 
+    <!-- App Mount Point -->
     <div id="app-root"></div>
+    
+    <!-- Floating Components -->
     <div id="toast-container" class="fixed top-24 right-6 z-50 flex flex-col space-y-2 pointer-events-none print-hidden"></div>
-    <div id="modal-container" class="fixed inset-0 z- hidden items-center justify-center bg-slate-900/60 backdrop-blur-sm print-hidden transition-opacity"></div>
+    <div id="modal-container" class="fixed inset-0 z-[100] hidden items-center justify-center bg-slate-900/60 backdrop-blur-sm print-hidden transition-opacity"></div>
 
     <script>
-        const appId = "mindset-os-secure-v2";
-        const GOOGLE_SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQFbQGRAZ0-oVmelxStjuVQKVT7QcXvyp8udwNdDhWRwBUPa5a9Qyh7i0IEufIZ5ODi8owLHhXszqkW/pub?output=csv";
+        // ==========================================
+        // 1. DATA & STATE MANAGEMENT
+        // ==========================================
+        const USER_DATA_KEY = "mindsetos_active_user"; 
+        const PUBLIC_ARTICLES_KEY = "mindsetos_public_articles"; 
 
         let state = {
             activeTab: 'home',
@@ -59,7 +78,7 @@
             flippedCards: {},
             isNewUser: true,
             user: { name: '', email: '', password: '', joined: '', targetDate: '', theme: 'light', xp: 0, level: 1 },
-            habits:, history:, reflections: {}, moods: {}, flashcards:,
+            habits: [], history: [], reflections: {}, moods: {}, flashcards: [],
             stats: { totalFocusMinutes: 0 }, streak: { count: 0, lastDate: null },
             categories: {
                 'Study': { name: 'අධ්‍යාපනය', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300 border-blue-200 dark:border-blue-800' },
@@ -77,25 +96,28 @@
         };
 
         const moodEmojis = { 'great': '🤩', 'good': '😊', 'neutral': '😐', 'bad': '😫' };
-        let timerState = { mode: 'focus', timeLeft: 25 * 60, isRunning: false, interval: null, lockFocus: false };
+        let timerState = { mode: 'focus', timeLeft: 25 * 60, isRunning: false, interval: null };
         let progressChartInstance = null;
 
-        let articles =, science: "Loading..." }
+        const defaultArticles = [
+            { id: "default-1", title: "මනස සන්සුන් කරගැනීමේ විද්‍යාව", author: "MindsetOS Team", category: "Health", icon: "🧘‍♂️", color: "text-blue-500", readTime: "විනාඩි 3", excerpt: "මානසික ආතතිය අවම කරගැනීමට හා අවධානය වැඩි කරගැනීමට...", intro: "ඔබේ මනස සන්සුන් කිරීම යනු හුදු විවේකයක් පමණක් නොව, මොළයේ ක්‍රියාකාරීත්වය වර්ධනය කරන විද්‍යාත්මක ක්‍රියාවලියකි.", sections: [{title: "හුස්ම ගැනීමේ වැදගත්කම", text: "ගැඹුරු හුස්ම ගැනීම් මගින් රුධිර පීඩනය පාලනය කර ස්නායු පද්ධතිය සන්සුන් කරයි."}], science: "Deep breathing activates the parasympathetic nervous system, lowering cortisol levels." },
+            { id: "default-2", title: "සාර්ථකත්වයේ රහස: 1% Rule", author: "James Clear", category: "Study", icon: "📈", color: "text-green-500", readTime: "විනාඩි 5", excerpt: "දිනපතා 1% කින් දියුණු වීම හරහා වසරක් අවසානයේ 37 ගුණයක වර්ධනයක් ලබා ගන්නේ කෙසේද?", intro: "විශාල වෙනස්කම් එකවර කිරීමට යාමෙන් බොහෝ දෙනා අසාර්ථක වේ. නමුත් කුඩා පුරුදු දිගුකාලීනව පවත්වා ගැනීමෙන් ඉහළ ප්‍රතිඵල ලබාගත හැක.", sections: [{title: "Continuous Improvement", text: "ඔබ සෑම දිනකම 1% කින් දියුණු වුවහොත්, දින 365 කට පසු ඔබ සිටින්නේ විශාල ඉදිරි පිම්මකය."}], science: "Habit formation relies on neuroplasticity. Small, consistent actions create strong neural pathways." }
         ];
+        
+        let articles = [];
 
-        // Security check for Admin Panel
-        function checkAdmin() {
-            const _e = .map(c=>String.fromCharCode(c)).join('');
-            const _p = .map(c=>String.fromCharCode(c)).join('');
-            return state.user.email === _e && state.user.password === _p;
-        }
-
-        function escapeHTML(str) { return str? str.replace(/[&<>'"]/g, tag => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'}[tag])) : ''; }
+        // ==========================================
+        // 2. UI HELPERS & MODALS
+        // ==========================================
+        function escapeHTML(str) { return str ? str.replace(/[&<>'"]/g, tag => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'}[tag])) : ''; }
 
         function showToast(msg, type='info') {
             const container = document.getElementById('toast-container');
             const el = document.createElement('div');
-            let bgClass = type === 'success'? 'bg-green-500' : type === 'error'? 'bg-red-500' : 'bg-indigo-600';
+            let bgClass = 'bg-indigo-600';
+            if (type === 'success') bgClass = 'bg-emerald-500';
+            else if (type === 'error') bgClass = 'bg-rose-500';
+            
             el.className = `px-6 py-3 rounded-2xl font-bold shadow-lg animate-slide-up text-white ${bgClass}`;
             el.innerHTML = msg; container.appendChild(el);
             setTimeout(() => { el.style.opacity = '0'; setTimeout(() => el.remove(), 300); }, 3000);
@@ -109,7 +131,7 @@
                     <p class="text-slate-600 dark:text-slate-300 mb-8">${message}</p>
                     <div class="flex space-x-4">
                         <button id="modal-cancel" class="flex-1 py-3 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">අවලංගු කරන්න</button>
-                        <button id="modal-confirm" class="flex-1 py-3 bg-red-600 text-white font-bold rounded-xl hover:bg-red-700 transition-colors">තහවුරුයි</button>
+                        <button id="modal-confirm" class="flex-1 py-3 bg-rose-600 text-white font-bold rounded-xl hover:bg-rose-700 transition-colors">තහවුරුයි</button>
                     </div>
                 </div>
             `;
@@ -139,110 +161,104 @@
             };
         }
 
-        async function fetchArticlesFromSheet() {
-            let globalArticles = JSON.parse(localStorage.getItem('mindsetos-global-articles') |
-
-| '');
-            
+        // ==========================================
+        // 3. CORE LOGIC & INITIALIZATION
+        // ==========================================
+        function loadGlobalArticles() {
             try {
-                const response = await fetch(GOOGLE_SHEET_CSV_URL + "&t=" + new Date().getTime(), { cache: 'no-store' });
-                const csvData = await response.text();
-                Papa.parse(csvData, {
-                    header: true, skipEmptyLines: true,
-                    complete: function(results) {
-                        const fetchedArticles = results.data.map(row => {
-                            let sections =;
-                            if(row.Sec1Title && row.Sec1Text) sections.push({title: row.Sec1Title, text: row.Sec1Text});
-                            if(row.Sec2Title && row.Sec2Text) sections.push({title: row.Sec2Title, text: row.Sec2Text});
-                            if(row.Sec3Title && row.Sec3Text) sections.push({title: row.Sec3Title, text: row.Sec3Text});
-                            return {
-                                id: row.ID, title: row.Title, author: row.Author, category: row.Category,
-                                icon: row.Icon |
-
-| '📚', color: row.Color |
-| 'text-indigo-500',
-                                readTime: row.ReadTime |
-
-| 'විනාඩි 5', excerpt: row.Excerpt, intro: row.Intro,
-                                sections: sections, science: row.Science
-                            };
-                        }).filter(a => a.id && a.title);
-
-                        articles = [...globalArticles,...fetchedArticles];
-                        if(state.activeTab === 'library' |
-
-| state.selectedArticleId) render();
-                    }
-                });
-            } catch (error) {
-                console.error("දත්ත ලබාගැනීමේ දෝෂයකි:", error);
-                articles =, science: "" }];
-                if(state.activeTab === 'library') render();
+                const publicArts = JSON.parse(localStorage.getItem(PUBLIC_ARTICLES_KEY) || '[]');
+                articles = [...publicArts, ...defaultArticles]; 
+            } catch(e) { 
+                console.error("Error loading public articles"); 
+                articles = [...defaultArticles];
             }
         }
 
         function initApp() {
-            const saved = localStorage.getItem(appId);
-            if (saved) {
+            loadGlobalArticles(); 
+            
+            const savedUser = localStorage.getItem(USER_DATA_KEY);
+            if (savedUser) {
                 try {
-                    const parsed = JSON.parse(saved);
+                    const parsed = JSON.parse(savedUser);
                     if (parsed.user && parsed.user.name) {
-                        state = {...state,...parsed, isNewUser: false };
+                        state = { ...state, ...parsed, isNewUser: false };
                         if(!state.categories) state.categories = {};
                     }
                 } catch(e) { console.error("Stored data parsing error", e); }
             }
             checkNewDay();
             applyTheme();
-            fetchArticlesFromSheet();
             render();
         }
 
         function checkNewDay() {
             if (state.isNewUser) return;
             const today = new Date().toLocaleDateString('si-LK');
-            if (!state.streak.lastDate) { state.streak.lastDate = today; updateHistory(); } 
-            else if (state.streak.lastDate!== today) {
-                const yest = new Date(); yest.setDate(yest.getDate() - 1);
-                if (state.streak.lastDate!== yest.toLocaleDateString('si-LK')) state.streak.count = 0; 
-                state.habits = state.habits.map(h => ({...h, completed: false }));
+            
+            if (!state.streak.lastDate) {
                 state.streak.lastDate = today;
-                updateHistory(); saveData();
+                updateHistory();
+            } else if (state.streak.lastDate !== today) {
+                const yest = new Date(); yest.setDate(yest.getDate() - 1);
+                if (state.streak.lastDate !== yest.toLocaleDateString('si-LK')) {
+                    state.streak.count = 0; 
+                }
+                
+                state.habits = state.habits.map(h => ({ ...h, completed: false }));
+                state.streak.lastDate = today;
+                
+                updateHistory();
+                saveData();
             }
         }
 
-        function saveData() { if (!state.isNewUser) localStorage.setItem(appId, JSON.stringify(state)); }
-
-        function exportData() {
-            const dataStr = localStorage.getItem(appId);
-            if (!dataStr) return showToast("දත්ත කිසිවක් නොමැත!", "error");
-            const blob = new Blob(, { type: "application/json" });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `MindsetOS_Backup_${new Date().toISOString().split('T')}.json`;
-            a.click();
-            URL.revokeObjectURL(url);
-            showToast("Backup ගොනුව සාර්ථකව Download විය.", "success");
-        }
-        
-        function importData(event) {
-            const file = event.target.files;
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                try {
-                    const data = JSON.parse(e.target.result);
-                    if (data && data.user) {
-                        localStorage.setItem(appId, JSON.stringify(data));
-                        showToast("දත්ත සාර්ථකව Restore කරන ලදී! පද්ධතිය නැවත ආරම්භ වේ.", "success");
-                        setTimeout(() => location.reload(), 2000);
-                    } else showToast("මෙය නිවැරදි Backup ගොනුවක් නොවේ!", "error");
-                } catch (err) { showToast("ගොනුව කියවීමේ දෝෂයකි!", "error"); }
-            };
-            reader.readAsText(file);
+        function saveData() { 
+            if (!state.isNewUser) {
+                localStorage.setItem(USER_DATA_KEY, JSON.stringify(state)); 
+            }
         }
 
+        function handleStart() { 
+            const n = document.getElementById('init-name')?.value.trim(); 
+            const e = document.getElementById('init-email')?.value.trim(); 
+            const p = document.getElementById('init-password')?.value; 
+            const d = document.getElementById('init-date')?.value;
+            
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            
+            if(!n) return showToast("කරුණාකර ඔබගේ නම ඇතුළත් කරන්න.", "error");
+            if(!e || !emailRegex.test(e)) return showToast("කරුණාකර නිවැරදි ඊමේල් ලිපිනයක් ඇතුළත් කරන්න.", "error");
+            if(!p || p.length < 6) return showToast("කරුණාකර අවම වශයෙන් අකුරු හෝ ඉලක්කම් 6 කින් යුත් මුරපදයක් ඇතුළත් කරන්න.", "error");
+            
+            state.user.name = n; 
+            state.user.email = e; 
+            state.user.password = p; 
+            state.user.targetDate = d; 
+            state.user.joined = new Date().toLocaleDateString('si-LK'); 
+            state.isNewUser = false; 
+
+            let allUsers = JSON.parse(localStorage.getItem('mindsetos-backend-users-emails') || '[]');
+            if(!allUsers.includes(e)) {
+                allUsers.push(e);
+                localStorage.setItem('mindsetos-backend-users-emails', JSON.stringify(allUsers));
+            }
+
+            saveData(); 
+            render(); 
+            showToast("සාර්ථකව ලියාපදිංචි විය!", "success");
+        }
+
+        function logout() {
+            showConfirmModal("ඔබට නිසැකවම ගිණුමෙන් ඉවත් වීමට අවශ්‍යද?", () => {
+                localStorage.removeItem(USER_DATA_KEY);
+                location.reload();
+            });
+        }
+
+        // ==========================================
+        // 4. FEATURES & FUNCTIONS
+        // ==========================================
         function addXP(amount) {
             state.user.xp += amount;
             if (state.user.xp >= state.user.level * 100) {
@@ -256,114 +272,85 @@
             if (state.user.theme === 'dark') document.documentElement.classList.add('dark');
             else document.documentElement.classList.remove('dark');
         }
-        function toggleTheme() { state.user.theme = state.user.theme === 'dark'? 'light' : 'dark'; applyTheme(); saveData(); render(); }
-        
-        function handleStart() { 
-            const n = document.getElementById('init-name')?.value.trim(); 
-            const e = document.getElementById('init-email')?.value.trim(); 
-            const p = document.getElementById('init-password')?.value; 
-            const d = document.getElementById('init-date')?.value;
-            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            
-            if(!n) return showToast("කරුණාකර ඔබගේ නම ඇතුළත් කරන්න.", "error");
-            if(!e ||!emailRegex.test(e)) return showToast("කරුණාකර නිවැරදි ඊමේල් ලිපිනයක් ඇතුළත් කරන්න.", "error");
-            if(!p |
-
-| p.length < 6) return showToast("කරුණාකර අවම වශයෙන් අකුරු හෝ ඉලක්කම් 6 කින් යුත් මුරපදයක් ඇතුළත් කරන්න.", "error");
-            
-            state.user.name = n; state.user.email = e; state.user.password = p; state.user.targetDate = d; 
-            state.user.joined = new Date().toLocaleDateString('si-LK'); state.isNewUser = false; 
-
-            let allUsers = JSON.parse(localStorage.getItem('mindsetos-backend-users') |
-
-| '');
-            if(!allUsers.includes(e)) {
-                allUsers.push(e);
-                localStorage.setItem('mindsetos-backend-users', JSON.stringify(allUsers));
-            }
-
-            saveData(); render(); 
-        }
-        
+        function toggleTheme() { state.user.theme = state.user.theme === 'dark' ? 'light' : 'dark'; applyTheme(); saveData(); render(); }
         function switchTab(t) { state.activeTab = t; state.selectedArticleId = null; render(); }
         function viewArticle(id) { state.selectedArticleId = id; state.activeTab = 'library'; addXP(5); render(); }
 
-        // --- ADMIN PUBLISHING LOGIC ---
+        // --- Admin Publishing Logic ---
         function publishAdminArticle() {
-            const title = document.getElementById('admin-art-title')?.value;
-            const author = document.getElementById('admin-art-author')?.value |
+            const titleElement = document.getElementById('admin-art-title');
+            if(!titleElement) return;
+            
+            const title = titleElement.value;
+            const author = document.getElementById('admin-art-author')?.value || 'MindsetOS Admin';
+            const readTime = document.getElementById('admin-art-time')?.value || 'විනාඩි 5';
+            const cat = document.getElementById('admin-art-cat')?.value || 'General';
+            const intro = document.getElementById('admin-art-intro')?.value || '';
+            const text = document.getElementById('admin-art-text')?.value || '';
 
-| 'MindsetOS Admin';
-            const readTime = document.getElementById('admin-art-time')?.value |
-
-| 'විනාඩි 5';
-            const cat = document.getElementById('admin-art-cat')?.value |
-
-| 'General';
-            const intro = document.getElementById('admin-art-intro')?.value |
-
-| '';
-            const text = document.getElementById('admin-art-text')?.value |
-
-| '';
-
-            if(!title ||!intro ||!text) {
+            if(!title || !intro || !text) {
                 showToast("කරුණාකර මාතෘකාව, හැඳින්වීම සහ අන්තර්ගතය ඇතුළත් කරන්න.", "error");
                 return;
             }
 
             const newArt = {
-                id: 'global-custom-' + Date.now(),
-                title: title, author: author, category: cat, icon: '⭐', color: 'text-yellow-500',
-                readTime: readTime, excerpt: intro.substring(0, 100) + '...', intro: intro,
-                sections: [{ title: '1. අන්තර්ගතය', text: text }], science: 'Admin විසින් පද්ධතියට එක් කරන ලදී.'
+                id: 'custom-' + Date.now(),
+                title: title,
+                author: author,
+                category: cat,
+                icon: '⭐',
+                color: 'text-yellow-500',
+                readTime: readTime,
+                excerpt: intro.substring(0, 100) + '...',
+                intro: intro,
+                sections: [{ title: 'ප්‍රධාන අන්තර්ගතය', text: text }],
+                science: 'Admin විසින් තහවුරු කරන ලද දත්ත.'
             };
 
-            // Save to Global Storage
-            let globalArticles = JSON.parse(localStorage.getItem('mindsetos-global-articles') |
-
-| '');
-            globalArticles.unshift(newArt);
-            localStorage.setItem('mindsetos-global-articles', JSON.stringify(globalArticles));
+            let publicArts = JSON.parse(localStorage.getItem(PUBLIC_ARTICLES_KEY) || '[]');
+            publicArts.unshift(newArt);
+            localStorage.setItem(PUBLIC_ARTICLES_KEY, JSON.stringify(publicArts));
             
-            // Add to current UI memory
-            articles.unshift(newArt);
+            loadGlobalArticles();
             
             document.getElementById('admin-art-title').value = '';
             document.getElementById('admin-art-intro').value = '';
             document.getElementById('admin-art-text').value = '';
             
-            showToast("ලිපිය සාර්ථකව පුස්තකාලයට එක් කරන ලදී!", "success");
+            showToast("ලිපිය සාර්ථකව Publish කරන ලදී!", "success");
             render();
         }
 
-        // Habit Stacking Integration
+        function deleteAdminArticle(articleId) {
+            showConfirmModal("මෙම ලිපිය සම්පූර්ණයෙන්ම පද්ධතියෙන් ඉවත් කිරීමට ඔබට අවශ්‍යද?", () => {
+                let publicArts = JSON.parse(localStorage.getItem(PUBLIC_ARTICLES_KEY) || '[]');
+                publicArts = publicArts.filter(a => a.id !== articleId);
+                localStorage.setItem(PUBLIC_ARTICLES_KEY, JSON.stringify(publicArts));
+                
+                loadGlobalArticles();
+                showToast("ලිපිය සාර්ථකව මකා දමන ලදී.", "success");
+                render();
+            });
+        }
+
+        // --- Habits & History ---
         function addHabit() {
-            const anchor = document.getElementById('habit-anchor')?.value.trim();
             const text = document.getElementById('habit-text')?.value.trim();
             const cat = document.getElementById('habit-cat')?.value;
             const pri = document.getElementById('habit-priority')?.value;
-            
-            let finalStr = text;
-            if(anchor && text) finalStr = `${anchor} ට පසු, මම ${text} කරමි.`;
-            else if(!text && anchor) finalStr = anchor;
-
-            if (finalStr) { 
-                state.habits.unshift({ id: Date.now(), text: escapeHTML(finalStr), category: cat, priority: pri, completed: false }); 
-                updateHistory(); render(); 
-            }
+            if (text) { state.habits.unshift({ id: Date.now(), text: escapeHTML(text), category: cat, priority: pri, completed: false }); updateHistory(); render(); }
         }
         function toggleHabit(id) {
             let newlyCompleted = false;
-            state.habits = state.habits.map(h => { if(h.id === id) { if(!h.completed) newlyCompleted = true; return {...h, completed:!h.completed }; } return h; });
+            state.habits = state.habits.map(h => { if(h.id === id) { if(!h.completed) newlyCompleted = true; return { ...h, completed: !h.completed }; } return h; });
             if(newlyCompleted) { updateStreak(); addXP(10); }
             updateHistory(); render();
         }
-        function deleteHabit(id) { state.habits = state.habits.filter(h => h.id!== id); updateHistory(); render(); }
+        function deleteHabit(id) { state.habits = state.habits.filter(h => h.id !== id); updateHistory(); render(); }
         
         function updateStreak() {
             const today = new Date().toLocaleDateString('si-LK');
-            if (state.streak.lastDate!== today) {
+            if (state.streak.lastDate !== today) {
                 const yest = new Date(); yest.setDate(yest.getDate() - 1);
                 if (state.streak.lastDate === yest.toLocaleDateString('si-LK')) state.streak.count++; else state.streak.count = 1;
                 state.streak.lastDate = today;
@@ -372,8 +359,8 @@
         
         function updateHistory() {
             const today = new Date().toLocaleDateString('si-LK');
-            const score = state.habits.length? Math.round((state.habits.filter(h => h.completed).length / state.habits.length) * 100) : 0;
-            state.history = [...state.history.filter(d => d.date!== today), { date: today, score }].slice(-14); saveData();
+            const score = state.habits.length ? Math.round((state.habits.filter(h => h.completed).length / state.habits.length) * 100) : 0;
+            state.history = [...state.history.filter(d => d.date !== today), { date: today, score }].slice(-14); saveData();
         }
         
         function addCustomCategory() {
@@ -387,69 +374,34 @@
         }
         function updateTargetDate(val) { state.user.targetDate = val; saveData(); render(); showToast("විභාග/ඉලක්ක දිනය යාවත්කාලීන විය.", "success"); }
 
-        function shareToWhatsApp() {
-            const completedHabits = state.habits.filter(h => h.completed);
-            const score = state.habits.length? Math.round((completedHabits.length / state.habits.length) * 100) : 0;
-            const focusHours = Math.floor((state.stats.totalFocusMinutes |
-
-| 0) / 60);
-            const focusMins = (state.stats.totalFocusMinutes |
-
-| 0) % 60;
-            const timeString = focusHours > 0? `${focusHours}h ${focusMins}m` : `${focusMins}m`;
-            
-            let text = `🔥 මම අද දවසේ මගේ ඉලක්ක වලින් ${score}% ක් සම්පූර්ණ කළා!\n⏱️ අද වැඩ කළ කාලය: ${timeString}\n\n`;
-            if (completedHabits.length > 0) { text += `✅ අද නිම කළ වැඩ සියල්ල:\n`; completedHabits.forEach(h => { text += `- ${h.text}\n`; }); }
-            text += `\nඔයාගේ වැඩ කටයුතු කොහොමද? 🚀 (via MindsetOS)`;
-            window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
-        }
-
-        function setMood(mood) { state.moods = mood; saveData(); render(); }
-        function saveJournal() { state.reflections = escapeHTML(document.getElementById('journal-text')?.value); saveData(); showToast('දවසේ සටහන සුරැකිණි.', 'success'); }
+        function setMood(mood) { state.moods[new Date().toLocaleDateString('si-LK')] = mood; saveData(); render(); }
+        function saveJournal() { state.reflections[new Date().toLocaleDateString('si-LK')] = escapeHTML(document.getElementById('journal-text')?.value); saveData(); showToast('දවසේ සටහන සුරැකිණි.', 'success'); }
         
-        // SM-2 Spaced Repetition
+        // --- Flashcards ---
         function addFlashcard() { 
             const q = document.getElementById('fc-q')?.value.trim(); const a = document.getElementById('fc-a')?.value.trim(); 
-            if(q && a) { state.flashcards.unshift({ id: Date.now(), q: escapeHTML(q), a: escapeHTML(a), n: 0, ef: 2.5, interval: 0, nextReview: new Date().getTime() }); saveData(); render(); } 
+            if(q && a) { state.flashcards.unshift({ id: Date.now(), q: escapeHTML(q), a: escapeHTML(a) }); saveData(); render(); } 
         }
-        function rateFlashcard(id, quality) {
-            let card = state.flashcards.find(f => f.id === id);
-            if(card) {
-                if (quality < 3) { card.n = 0; card.interval = 1; } 
-                else {
-                    if (card.n === 0) card.interval = 1;
-                    else if (card.n === 1) card.interval = 6;
-                    else card.interval = Math.ceil(card.interval * card.ef);
-                    card.n++;
-                }
-                card.ef = Math.max(1.3, card.ef + (0.1 - (5 - quality) * (0.08 + (5 - quality) * 0.02)));
-                card.nextReview = new Date().getTime() + (card.interval * 24 * 60 * 60 * 1000);
-                state.flippedCards[id] = false;
-            }
-            saveData(); render();
-        }
-        function deleteFlashcard(id) { state.flashcards = state.flashcards.filter(f => f.id!== id); saveData(); render(); }
-        function flipCardDOM(id, element) { state.flippedCards[id] =!state.flippedCards[id]; element.querySelector('.preserve-3d').classList.toggle('rotate-y-180'); }
+        function deleteFlashcard(id) { state.flashcards = state.flashcards.filter(f => f.id !== id); saveData(); render(); }
+        function flipCardDOM(id, element) { state.flippedCards[id] = !state.flippedCards[id]; element.querySelector('.preserve-3d').classList.toggle('rotate-y-180'); }
 
+        // --- Timer & Audio ---
         let audioCtxObj = null; let noiseSourceNode = null;
         function toggleFocusSound(type) {
             if (audioCtxObj) { audioCtxObj.close(); audioCtxObj = null; noiseSourceNode = null; return; }
             try {
-                audioCtxObj = new (window.AudioContext |
-
-| window.webkitAudioContext)();
+                audioCtxObj = new (window.AudioContext || window.webkitAudioContext)();
                 const buffer = audioCtxObj.createBuffer(1, audioCtxObj.sampleRate * 2, audioCtxObj.sampleRate);
                 const data = buffer.getChannelData(0);
                 for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
                 noiseSourceNode = audioCtxObj.createBufferSource(); noiseSourceNode.buffer = buffer; noiseSourceNode.loop = true;
-                const filter = audioCtxObj.createBiquadFilter(); filter.type = 'lowpass'; filter.frequency.value = type === 'rain'? 400 : (type === 'forest'? 800 : 2500);
+                const filter = audioCtxObj.createBiquadFilter(); filter.type = 'lowpass'; filter.frequency.value = type === 'rain' ? 400 : (type === 'forest' ? 800 : 2500);
                 noiseSourceNode.connect(filter); filter.connect(audioCtxObj.destination); noiseSourceNode.start();
                 showToast(type + ' sound on', 'success');
-            } catch(e) { console.log(e); }
+            } catch(e) { console.log(e); showToast("ශ්‍රව්‍ය පහසුකම භාවිතා කිරීමට Play බොත්තම ඔබන්න.", "error"); }
         }
         
         function toggleTimer() {
-            if (timerState.lockFocus && timerState.mode === 'focus') { showToast("කරුණාකර මොළයේ වෙහෙස අඩුකර ගැනීමට විනාඩි 5 ක විවේකය සම්පූර්ණ කරන්න.", "error"); return; }
             if (timerState.isRunning) { clearInterval(timerState.interval); timerState.isRunning = false; } 
             else {
                 timerState.isRunning = true;
@@ -458,77 +410,142 @@
                     else {
                         clearInterval(timerState.interval); timerState.isRunning = false;
                         if(audioCtxObj) { audioCtxObj.close(); audioCtxObj=null; }
-                        if(timerState.mode === 'focus') { 
-                            addXP(25); state.stats.totalFocusMinutes += 25; saveData(); 
-                            showToast("Focus Time එක අවසන්. 25 XP ලබාගත්තා. විවේකයක් ගන්න!", "success"); 
-                            timerState.lockFocus = true; switchTimerMode('break'); 
-                        } else { 
-                            showToast("විවේකය අවසන්! නැවත වැඩ පටන් ගනිමු.", "info"); 
-                            timerState.lockFocus = false; switchTimerMode('focus'); 
-                        }
+                        if(timerState.mode === 'focus') { addXP(25); state.stats.totalFocusMinutes += 25; saveData(); showToast("Focus Time එක අවසන්. 25 XP ලබාගත්තා.", "success"); switchTimerMode('break'); }
+                        else { showToast("විවේකය අවසන්! නැවත වැඩ පටන් ගනිමු.", "info"); switchTimerMode('focus'); }
                     }
                 }, 1000);
             }
             render();
         }
-        function switchTimerMode(mode) { 
-            if(mode === 'focus' && timerState.lockFocus) { showToast("විවේකය සම්පූර්ණ කර අවසන් වූ පසු පමණක් නැවත Focus Mode එකට යා හැක.", "error"); return; }
-            clearInterval(timerState.interval); timerState.isRunning = false; timerState.mode = mode; timerState.timeLeft = mode === 'focus'? 25 * 60 : 5 * 60; render(); 
-        }
+        function switchTimerMode(mode) { clearInterval(timerState.interval); timerState.isRunning = false; timerState.mode = mode; timerState.timeLeft = mode === 'focus' ? 25 * 60 : 5 * 60; render(); }
         function updateTimerUI() {
             const el = document.getElementById('timer-display');
             if(el) el.innerText = `${Math.floor(timerState.timeLeft / 60).toString().padStart(2, '0')}:${(timerState.timeLeft % 60).toString().padStart(2, '0')}`;
             const circle = document.getElementById('timer-circle-bg');
-            if(circle) circle.style.background = `conic-gradient(${timerState.mode === 'focus'? (state.user.theme === 'dark'? '#6366f1' : '#4f46e5') : '#10b981'} ${(( (timerState.mode === 'focus'? 25*60 : 5*60) - timerState.timeLeft) / (timerState.mode === 'focus'? 25*60 : 5*60)) * 100}%, transparent 0deg)`;
+            if(circle) circle.style.background = `conic-gradient(${timerState.mode === 'focus' ? (state.user.theme === 'dark' ? '#6366f1' : '#4f46e5') : '#10b981'} ${(( (timerState.mode === 'focus' ? 25*60 : 5*60) - timerState.timeLeft) / (timerState.mode === 'focus' ? 25*60 : 5*60)) * 100}%, transparent 0deg)`;
+        }
+
+        // --- Data Backup & Restore ---
+        function exportData() {
+            const dataStr = localStorage.getItem(USER_DATA_KEY);
+            if (!dataStr) return showToast("දත්ත කිසිවක් නොමැත!", "error");
+            const blob = new Blob([dataStr], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `MindsetOS_Backup_${state.user.email}_${new Date().toISOString().split('T')[0]}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast("Backup ගොනුව සාර්ථකව Download විය.", "success");
+        }
+        
+        function importData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if (data && data.user) {
+                        localStorage.setItem(USER_DATA_KEY, JSON.stringify(data));
+                        showToast("දත්ත සාර්ථකව Restore කරන ලදී! පද්ධතිය නැවත ආරම්භ වේ.", "success");
+                        setTimeout(() => location.reload(), 2000);
+                    } else showToast("මෙය නිවැරදි Backup ගොනුවක් නොවේ!", "error");
+                } catch (err) { showToast("ගොනුව කියවීමේ දෝෂයකි!", "error"); }
+            };
+            reader.readAsText(file);
+        }
+
+        // --- Data Visualization (Chart.js) ---
+        function initProgressChart() {
+            const ctx = document.getElementById('progressChart');
+            if(!ctx) return;
+            if(progressChartInstance) progressChartInstance.destroy();
+
+            const isDark = state.user.theme === 'dark';
+            const textColor = isDark ? '#cbd5e1' : '#475569';
+            const gridColor = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)';
+
+            const labels = state.history.length ? state.history.map(d => d.date) : ['අද'];
+            const data = state.history.length ? state.history.map(d => d.score) : [0];
+
+            progressChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'දෛනික ප්‍රගතිය (%)',
+                        data: data,
+                        borderColor: '#6366f1',
+                        backgroundColor: 'rgba(99, 102, 241, 0.2)',
+                        borderWidth: 3,
+                        pointBackgroundColor: '#4f46e5',
+                        pointBorderColor: '#ffffff',
+                        pointRadius: 5,
+                        pointHoverRadius: 8,
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: isDark ? '#1e293b' : '#ffffff',
+                            titleColor: isDark ? '#ffffff' : '#0f172a',
+                            bodyColor: isDark ? '#cbd5e1' : '#475569',
+                            borderColor: isDark ? '#334155' : '#e2e8f0',
+                            borderWidth: 1,
+                            padding: 12,
+                            boxPadding: 4,
+                            callbacks: { label: function(context) { return ` ප්‍රගතිය: ${context.raw}%`; } }
+                        }
+                    },
+                    scales: {
+                        y: { beginAtZero: true, max: 100, grid: { color: gridColor }, ticks: { color: textColor, callback: function(value) { return value + "%"; } } },
+                        x: { grid: { display: false }, ticks: { color: textColor, maxRotation: 45, minRotation: 45 } }
+                    }
+                }
+            });
         }
 
         function getDaysRemaining() {
             if(!state.user.targetDate) return null;
             const diff = new Date(state.user.targetDate) - new Date();
             const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
-            return days > 0? days : 0;
+            return days > 0 ? days : 0;
         }
 
-        function initProgressChart() {
-            const ctx = document.getElementById('progressChart');
-            if(!ctx) return;
-            if(progressChartInstance) progressChartInstance.destroy();
-            const isDark = state.user.theme === 'dark';
-            const textColor = isDark? '#cbd5e1' : '#475569';
-            const gridColor = isDark? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)';
-            const labels = state.history.length? state.history.map(d => d.date) : ['අද'];
-            const data = state.history.length? state.history.map(d => d.score) : ;
-
-            progressChartInstance = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: labels,
-                    datasets:
-                },
-                options: {
-                    responsive: true, maintainAspectRatio: false,
-                    plugins: { legend: { display: false }, tooltip: { backgroundColor: isDark? '#1e293b' : '#ffffff', titleColor: isDark? '#ffffff' : '#0f172a', bodyColor: isDark? '#cbd5e1' : '#475569', borderColor: isDark? '#334155' : '#e2e8f0', borderWidth: 1, padding: 12, boxPadding: 4, callbacks: { label: function(context) { return ` ප්‍රගතිය: ${context.raw}%`; } } } },
-                    scales: { y: { beginAtZero: true, max: 100, grid: { color: gridColor }, ticks: { color: textColor, callback: function(value) { return value + "%"; } } }, x: { grid: { display: false }, ticks: { color: textColor, maxRotation: 45, minRotation: 45 } } }
-                }
-            });
+        function shareToWhatsApp() {
+            const completedHabits = state.habits.filter(h => h.completed);
+            const score = state.habits.length ? Math.round((completedHabits.length / state.habits.length) * 100) : 0;
+            const focusHours = Math.floor((state.stats.totalFocusMinutes || 0) / 60);
+            const focusMins = (state.stats.totalFocusMinutes || 0) % 60;
+            const timeString = focusHours > 0 ? `${focusHours}h ${focusMins}m` : `${focusMins}m`;
+            
+            let text = `🔥 මම අද දවසේ මගේ ඉලක්ක වලින් ${score}% ක් සම්පූර්ණ කළා!\n`;
+            text += `⏱️ අද වැඩ කළ කාලය (Deep Work): ${timeString}\n\n`;
+            
+            if (completedHabits.length > 0) { 
+                text += `✅ අද නිම කළ වැඩ සියල්ල:\n`; 
+                completedHabits.forEach(h => { text += `- ${h.text}\n`; }); 
+                text += `\n`; 
+            }
+            text += `ඔයාගේ වැඩ කටයුතු කොහොමද? 🚀 (via MindsetOS)`;
+            window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
         }
 
         // ==========================================
-        // RENDERING ENGINE
+        // 5. RENDERING ENGINE
         // ==========================================
         function render() {
             const root = document.getElementById('app-root');
             if (state.isNewUser) { root.innerHTML = renderWelcome(); } 
             else {
-                let content = state.selectedArticleId? renderArticleView() : (
-                    state.activeTab==='home'? renderHome() : 
-                    state.activeTab==='planner'? renderPlanner() : 
-                    state.activeTab==='timer'? renderTimer() : 
-                    state.activeTab==='flashcards'? renderFlashcards() : 
-                    state.activeTab==='library'? renderLibrary() : 
-                    state.activeTab==='stats'? renderStats() : 
-                    state.activeTab==='admin'? renderAdminDashboard() : 
-                    renderSettings()
+                let content = state.selectedArticleId ? renderArticleView() : (
+                    state.activeTab==='home' ? renderHome() : state.activeTab==='planner' ? renderPlanner() : state.activeTab==='timer' ? renderTimer() : state.activeTab==='flashcards' ? renderFlashcards() : state.activeTab==='library' ? renderLibrary() : state.activeTab==='stats' ? renderStats() : renderSettings()
                 );
                 
                 root.innerHTML = `
@@ -543,17 +560,18 @@
                                 <div class="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full mt-1 overflow-hidden"><div class="h-full bg-yellow-400 transition-all duration-500" style="width:${(state.user.xp / (state.user.level * 100)) * 100}%"></div></div>
                             </div>
                         </div>
-                        <button onclick="toggleTheme()" class="w-12 h-12 glass-nav rounded-full flex items-center justify-center shadow-sm border border-slate-200 dark:border-slate-700"><span class="text-xl">${state.user.theme === 'dark'? '☀️' : '🌙'}</span></button>
+                        <button onclick="toggleTheme()" class="w-12 h-12 glass-nav rounded-full flex items-center justify-center shadow-sm border border-slate-200 dark:border-slate-700"><span class="text-xl">${state.user.theme === 'dark' ? '☀️' : '🌙'}</span></button>
                     </div>
                     <main class="flex-1 max-w-7xl mx-auto w-full p-6 mt-16 md:mt-0 md:p-10 lg:p-12 animate-slide-up print-content">${content}</main>
                 </div>`;
-                if(state.activeTab === 'timer' &&!state.selectedArticleId) updateTimerUI();
+                if(state.activeTab === 'timer' && !state.selectedArticleId) updateTimerUI();
                 if(state.activeTab === 'stats') setTimeout(initProgressChart, 50);
             }
         }
 
-        // --- Views ---
+        // --- View Functions ---
         function renderWelcome() { 
+            // NOTE: Removed the admin login hint to keep it completely hidden from normal users.
             return `
             <div class="min-h-screen bg-slate-900 flex items-center justify-center p-6 text-white">
                 <div class="max-w-md w-full bg-slate-800/40 backdrop-blur-2xl rounded-[3rem] p-10 text-center shadow-2xl border border-slate-700">
@@ -562,7 +580,7 @@
                     <p class="text-slate-400 text-sm mb-8">ඔබේ මනස නවතම මට්ටමකට</p>
                     
                     <div class="space-y-4 mb-8 text-left">
-                        <label class="text-xs font-bold text-indigo-400 uppercase tracking-widest pl-2">ලියාපදිංචි වන්න</label>
+                        <label class="text-xs font-bold text-indigo-400 uppercase tracking-widest pl-2">ලියාපදිංචි වන්න / ලොග් වන්න</label>
                         <input type="text" id="init-name" placeholder="ඔබේ නම (Name)" class="w-full p-4 bg-slate-900/60 rounded-2xl outline-none font-bold text-base border border-slate-700 focus:border-indigo-500 transition-colors"/>
                         <input type="email" id="init-email" placeholder="විද්‍යුත් තැපෑල (Email)" class="w-full p-4 bg-slate-900/60 rounded-2xl outline-none font-bold text-base border border-slate-700 focus:border-indigo-500 transition-colors"/>
                         <input type="password" id="init-password" placeholder="මුරපදය (Password)" class="w-full p-4 bg-slate-900/60 rounded-2xl outline-none font-bold text-base border border-slate-700 focus:border-indigo-500 transition-colors"/>
@@ -577,103 +595,34 @@
         }
         
         function renderSidebar() {
-            const tabs =;
-            
-            if (checkAdmin()) {
-                tabs.push({ id:'admin', icon:'🛡️', l:'Admin Panel' });
-            }
-
-            return `<nav class="fixed bottom-0 left-0 w-full md:top-0 md:w-24 lg:w-72 md:h-full glass-nav z-50 flex md:flex-col p-3 md:p-6 lg:p-8 justify-around md:justify-start space-y-0 md:space-y-2 shadow-lg print-hidden"><div class="hidden md:flex items-center space-x-4 mb-8 cursor-pointer" onclick="switchTab('home')"><div class="bg-indigo-600 p-3 rounded-2xl text-2xl">🧠</div><div class="hidden lg:block"><h1 class="font-black text-2xl tracking-tighter text-slate-900 dark:text-white">Mindset<span class="text-indigo-600">OS</span></h1></div></div>${tabs.map(t => `<button onclick="switchTab('${t.id}')" class="flex flex-col lg:flex-row items-center lg:space-x-4 p-2 lg:p-4 rounded-2xl transition-all w-full group relative ${state.activeTab === t.id &&!state.selectedArticleId? 'bg-indigo-600 text-white shadow-xl' : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800'}"><div class="relative"><span class="text-xl ${state.activeTab===t.id?'scale-125 inline-block transition-transform':''}">${t.icon}</span>${t.activePulse? '<span class="absolute -top-1 -right-1 w-2.5 h-2.5 bg-rose-500 rounded-full border-2 border-white dark:border-slate-900"></span>' : ''}</div><span class="text-[10px] lg:text-[15px] font-bold mt-1 lg:mt-0 ${state.activeTab===t.id &&!state.selectedArticleId?'text-white':''} hidden sm:block">${t.l}</span></button>`).join('')}</nav>`;
-        }
-
-        // Separate Admin Dashboard Component
-        function renderAdminDashboard() {
-            if (!checkAdmin()) return `<div class="text-center text-red-500 font-bold mt-20">Access Denied!</div>`;
-            
-            let backendUsers = JSON.parse(localStorage.getItem('mindsetos-backend-users') |
-
-| '');
-            let totalUsers = backendUsers.length |
-
-| 1;
-            let globalArticles = JSON.parse(localStorage.getItem('mindsetos-global-articles') |
-
-| '');
-
-            return `
-            <div class="max-w-4xl mx-auto space-y-10 pb-20">
-                <header>
-                    <h2 class="text-4xl font-black text-center text-indigo-600 dark:text-indigo-400">🛡️ Backend Admin Panel</h2>
-                    <p class="text-center text-slate-500 mt-2 font-bold">පද්ධතියේ සම්පූර්ණ පාලනය මෙතැනින් සිදුකරන්න</p>
-                </header>
-                
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div class="bg-white dark:bg-darkcard p-8 rounded-[2rem] border border-slate-100 dark:border-slate-800 text-center shadow-sm">
-                        <h4 class="text-5xl font-black text-indigo-600 dark:text-indigo-400 mb-2">${totalUsers}</h4>
-                        <p class="font-bold uppercase tracking-widest text-xs text-slate-500">මුළු පරිශීලකයන් (Total Users)</p>
-                    </div>
-                    <div class="bg-white dark:bg-darkcard p-8 rounded-[2rem] border border-slate-100 dark:border-slate-800 text-center shadow-sm">
-                        <h4 class="text-5xl font-black text-green-500 mb-2">${globalArticles.length}</h4>
-                        <p class="font-bold uppercase tracking-widest text-xs text-slate-500">පළ කළ ලිපි ගණන (Published Articles)</p>
-                    </div>
-                </div>
-
-                <div class="bg-slate-900 rounded-[3rem] p-10 shadow-2xl text-white">
-                    <h3 class="text-2xl font-black mb-6 text-indigo-300">📝 නව ලිපියක් පද්ධතියට එක් කරන්න (Live Update)</h3>
-                    <div class="space-y-4">
-                        <div>
-                            <label class="text-xs font-bold text-indigo-400 uppercase tracking-widest pl-2">මාතෘකාව (Title)</label>
-                            <input type="text" id="admin-art-title" class="w-full p-4 bg-slate-800 rounded-xl outline-none border border-slate-700 text-sm mt-1 focus:border-indigo-500"/>
-                        </div>
-                        <div class="flex space-x-4">
-                            <div class="flex-1">
-                                <label class="text-xs font-bold text-indigo-400 uppercase tracking-widest pl-2">කර්තෘ (Author)</label>
-                                <input type="text" id="admin-art-author" value="MindsetOS Admin" class="w-full p-4 bg-slate-800 rounded-xl outline-none border border-slate-700 text-sm mt-1 focus:border-indigo-500"/>
-                            </div>
-                            <div class="flex-1">
-                                <label class="text-xs font-bold text-indigo-400 uppercase tracking-widest pl-2">කාණ්ඩය (Category)</label>
-                                <input type="text" id="admin-art-cat" value="Psychology" class="w-full p-4 bg-slate-800 rounded-xl outline-none border border-slate-700 text-sm mt-1 focus:border-indigo-500"/>
-                            </div>
-                        </div>
-                        <div>
-                            <label class="text-xs font-bold text-indigo-400 uppercase tracking-widest pl-2">කෙටි හැඳින්වීම (Intro)</label>
-                            <textarea id="admin-art-intro" class="w-full p-4 bg-slate-800 rounded-xl outline-none border border-slate-700 text-sm h-24 resize-none mt-1 focus:border-indigo-500"></textarea>
-                        </div>
-                        <div>
-                            <label class="text-xs font-bold text-indigo-400 uppercase tracking-widest pl-2">සම්පූර්ණ අන්තර්ගතය (Full Content)</label>
-                            <textarea id="admin-art-text" class="w-full p-4 bg-slate-800 rounded-xl outline-none border border-slate-700 text-sm h-48 resize-none mt-1 focus:border-indigo-500"></textarea>
-                        </div>
-                        <button onclick="publishAdminArticle()" class="w-full bg-indigo-600 hover:bg-indigo-500 py-4 rounded-xl font-black transition-colors text-lg mt-4 shadow-lg">ලිපිය සියලු පරිශීලකයන්ට පළ කරන්න</button>
-                    </div>
-                </div>
-            </div>`;
+            const tabs = [{ id:'home', icon:'📊', l:'මුල් පිටුව' }, { id:'planner', icon:'✅', l:'සැලසුම්කරු' }, { id:'timer', icon:'⏱️', l:'Deep Work', activePulse: timerState.isRunning }, { id:'flashcards', icon:'🗂️', l:'Flashcards' }, { id:'library', icon:'📖', l:'පුස්තකාලය' }, { id:'stats', icon:'📈', l:'ප්‍රගතිය' }, { id:'settings', icon:'⚙️', l:'සැකසුම්' }];
+            return `<nav class="fixed bottom-0 left-0 w-full md:top-0 md:w-24 lg:w-72 md:h-full glass-nav z-50 flex md:flex-col p-3 md:p-6 lg:p-8 justify-around md:justify-start space-y-0 md:space-y-2 shadow-lg print-hidden"><div class="hidden md:flex items-center space-x-4 mb-8 cursor-pointer" onclick="switchTab('home')"><div class="bg-indigo-600 p-3 rounded-2xl text-2xl">🧠</div><div class="hidden lg:block"><h1 class="font-black text-2xl tracking-tighter text-slate-900 dark:text-white">Mindset<span class="text-indigo-600">OS</span></h1></div></div>${tabs.map(t => `<button onclick="switchTab('${t.id}')" class="flex flex-col lg:flex-row items-center lg:space-x-4 p-2 lg:p-4 rounded-2xl transition-all w-full group relative ${state.activeTab === t.id && !state.selectedArticleId ? 'bg-indigo-600 text-white shadow-xl' : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800'}"><div class="relative"><span class="text-xl ${state.activeTab===t.id?'scale-125 inline-block transition-transform':''}">${t.icon}</span>${t.activePulse ? '<span class="absolute -top-1 -right-1 w-2.5 h-2.5 bg-rose-500 rounded-full border-2 border-white dark:border-slate-900"></span>' : ''}</div><span class="text-[10px] lg:text-[15px] font-bold mt-1 lg:mt-0 ${state.activeTab===t.id && !state.selectedArticleId?'text-white':''} hidden sm:block">${t.l}</span></button>`).join('')}</nav>`;
         }
 
         function renderHome() {
-            const score = state.habits.length? Math.round((state.habits.filter(h => h.completed).length / state.habits.length) * 100) : 0;
+            const score = state.habits.length ? Math.round((state.habits.filter(h => h.completed).length / state.habits.length) * 100) : 0;
             const daysLeft = getDaysRemaining();
-            
             const hour = new Date().getHours();
             let greeting = "ආයුබෝවන්";
             if (hour < 12) greeting = "සුබ උදෑසනක්"; else if (hour < 18) greeting = "සුබ දහවලක්"; else greeting = "සුබ රාත්‍රියක්";
 
             const quotes = ["විනය යනු ඔබට මේ මොහොතේ අවශ්‍ය දේ සහ ඔබට වඩාත්ම අවශ්‍ය දේ අතර තෝරාගැනීමයි.", "කුඩා වෙනස්කම්, විශාල ප්‍රතිඵල ගෙන දෙයි. 1% කින් දියුණු වන්න.", "අද දවස ඔබේ ජීවිතයේ ඉතිරි කාලයේ පළමු දවසයි.", "කාලය කළමනාකරණය යනු හැඟීම් කළමනාකරණයයි."];
-            const todayQuote = quotes;
-            const pendingTasks = state.habits.filter(h =>!h.completed).slice(0, 3);
+            const todayQuote = quotes[new Date().getDay() % quotes.length];
+            const pendingTasks = state.habits.filter(h => !h.completed).slice(0, 3);
             const dateString = new Date().toLocaleDateString('si-LK', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
             return `
             <div class="space-y-8 animate-fade-in pb-10">
                 <header class="flex flex-col md:flex-row md:items-end justify-between space-y-4 md:space-y-0">
                     <div><p class="text-indigo-600 dark:text-indigo-400 font-bold tracking-widest uppercase text-sm mb-2">${dateString}</p><h2 class="text-4xl md:text-5xl font-black tracking-tight">${greeting}, ${escapeHTML(state.user.name)}! ✨</h2></div>
-                    ${daysLeft!== null? `<div class="bg-white dark:bg-darkcard px-6 py-4 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-800 flex items-center space-x-4"><div class="p-3 bg-red-50 dark:bg-red-900/20 rounded-2xl text-2xl text-red-500">🔥</div><div><p class="text-xs font-bold text-slate-400 uppercase tracking-widest">ඉලක්කයට තවත්</p><p class="text-2xl font-black text-slate-800 dark:text-white">${daysLeft} <span class="text-sm text-slate-500">දිනයි</span></p></div></div>` : ''}
+                    ${daysLeft !== null ? `<div class="bg-white dark:bg-darkcard px-6 py-4 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-800 flex items-center space-x-4"><div class="p-3 bg-red-50 dark:bg-red-900/20 rounded-2xl text-2xl text-red-500">🔥</div><div><p class="text-xs font-bold text-slate-400 uppercase tracking-widest">ඉලක්කයට තවත්</p><p class="text-2xl font-black text-slate-800 dark:text-white">${daysLeft} <span class="text-sm text-slate-500">දිනයි</span></p></div></div>` : ''}
                 </header>
                 
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <button onclick="switchTab('timer')" class="bg-white dark:bg-darkcard p-4 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 flex items-center justify-center space-x-3 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors group"><span class="text-xl group-hover:scale-110 transition-transform">▶️</span><span class="font-bold text-sm">Deep Work</span></button>
                     <button onclick="switchTab('planner')" class="bg-white dark:bg-darkcard p-4 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 flex items-center justify-center space-x-3 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors group"><span class="text-xl group-hover:scale-110 transition-transform">➕</span><span class="font-bold text-sm">නව කාර්යයක්</span></button>
                     <button onclick="switchTab('flashcards')" class="bg-white dark:bg-darkcard p-4 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 flex items-center justify-center space-x-3 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors group"><span class="text-xl group-hover:scale-110 transition-transform">🗂️</span><span class="font-bold text-sm">Flashcards</span></button>
-                    <button onclick="shareToWhatsApp()" class="bg-/10 dark:bg-/20 p-4 rounded-2xl shadow-sm flex items-center justify-center space-x-3 hover:bg-/30 transition-colors group"><span class="text-xl group-hover:scale-110 transition-transform text-">🔗</span><span class="font-bold text-sm text-">Share Progress</span></button>
+                    <button onclick="shareToWhatsApp()" class="bg-[#25D366]/10 dark:bg-[#25D366]/20 p-4 rounded-2xl shadow-sm flex items-center justify-center space-x-3 hover:bg-[#25D366]/30 transition-colors group"><span class="text-xl group-hover:scale-110 transition-transform text-[#25D366]">🔗</span><span class="font-bold text-sm text-[#25D366]">Share Progress</span></button>
                 </div>
                 
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -683,9 +632,7 @@
                     </div>
                     
                     <div class="lg:col-span-2 space-y-8">
-                        <div class="bg-white dark:bg-darkcard rounded-[3rem] p-8 md:p-10 border border-slate-100 dark:border-slate-800 shadow-sm"><div class="flex justify-between items-center mb-6"><h4 class="font-black text-lg flex items-center space-x-3"><div class="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg text-lg">🕒</div><span>මීළඟට කළ යුතු (Up Next)</span></h4><button onclick="switchTab('planner')" class="text-sm font-bold text-indigo-600 dark:text-indigo-400 hover:underline">සියල්ල බලන්න</button></div><div class="space-y-3">${pendingTasks.length === 0? `<div class="text-center py-8 text-slate-400 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-dashed border-slate-200 dark:border-slate-700"><p class="font-bold">නියමයි! අදට නියමිත සියලුම වැඩ අවසන්.</p></div>` : pendingTasks.map(h => { const pri = priorities[h.priority] |
-
-| priorities['Q4']; return `<div class="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors group cursor-pointer" onclick="toggleHabit(${h.id})"><div class="flex items-center space-x-4"><div class="w-8 h-8 rounded-lg border-2 flex items-center justify-center border-slate-300 dark:border-slate-600 group-hover:border-indigo-500 transition-colors"></div><div><p class="font-bold text-slate-800 dark:text-white truncate max-w-[200px] md:max-w-md">${h.text}</p><span class="text-[9px] font-black uppercase ${pri.class} px-2 py-0.5 rounded border border-transparent">${pri.name}</span></div></div><button onclick="event.stopPropagation(); switchTab('timer')" class="text-slate-400 hover:text-indigo-600 p-2 text-xl" title="Start Timer">▶️</button></div>` }).join('')}</div></div>
+                        <div class="bg-white dark:bg-darkcard rounded-[3rem] p-8 md:p-10 border border-slate-100 dark:border-slate-800 shadow-sm"><div class="flex justify-between items-center mb-6"><h4 class="font-black text-lg flex items-center space-x-3"><div class="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg text-lg">🕒</div><span>මීළඟට කළ යුතු (Up Next)</span></h4><button onclick="switchTab('planner')" class="text-sm font-bold text-indigo-600 dark:text-indigo-400 hover:underline">සියල්ල බලන්න</button></div><div class="space-y-3">${pendingTasks.length === 0 ? `<div class="text-center py-8 text-slate-400 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-dashed border-slate-200 dark:border-slate-700"><p class="font-bold">නියමයි! අදට නියමිත සියලුම වැඩ අවසන්.</p></div>` : pendingTasks.map(h => { const pri = priorities[h.priority] || priorities['Q4']; return `<div class="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors group cursor-pointer" onclick="toggleHabit(${h.id})"><div class="flex items-center space-x-4"><div class="w-8 h-8 rounded-lg border-2 flex items-center justify-center border-slate-300 dark:border-slate-600 group-hover:border-indigo-500 transition-colors"></div><div><p class="font-bold text-slate-800 dark:text-white truncate max-w-[200px] md:max-w-md">${h.text}</p><span class="text-[9px] font-black uppercase ${pri.class} px-2 py-0.5 rounded border border-transparent">${pri.name}</span></div></div><button onclick="event.stopPropagation(); switchTab('timer')" class="text-slate-400 hover:text-indigo-600 p-2 text-xl" title="Start Timer">▶️</button></div>` }).join('')}</div></div>
                         
                         <div class="bg-slate-900 dark:bg-slate-800 rounded-[3rem] p-8 md:p-10 text-white cursor-pointer relative overflow-hidden shadow-xl hover:shadow-2xl transition-shadow group" onclick="switchTab('library')"><div class="absolute inset-0 bg-gradient-to-r from-blue-600/20 to-purple-600/20"></div><div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between"><div class="mb-6 md:mb-0 md:mr-6"><span class="bg-blue-500/20 text-blue-300 px-3 py-1 rounded-full text-[10px] font-black uppercase mb-4 inline-block border border-blue-500/30">නව දැනුම</span><h3 class="text-2xl md:text-3xl font-black mb-2 group-hover:text-blue-300 transition-colors">ඔබේ මනස තියුණු කරන්න.</h3><p class="text-slate-400 text-sm md:text-base">Cloud පුස්තකාලය වෙත ගොස් අලුත්ම මනෝවිද්‍යාත්මක ලිපි කියවන්න.</p></div><div class="shrink-0 bg-white/10 p-4 rounded-2xl backdrop-blur-md border border-white/20 group-hover:bg-white/20 transition-colors text-3xl">📖</div></div><span class="absolute right-[5%] bottom-[5%] text-6xl opacity-10 group-hover:rotate-12 transition-transform duration-700">✨</span></div>
                     </div>
@@ -695,10 +642,7 @@
 
         function renderPlanner() {
             const today = new Date().toLocaleDateString('si-LK');
-            return `<div class="max-w-4xl mx-auto space-y-10 pb-10"><header class="text-center"><h2 class="text-4xl font-black tracking-tight">දෛනික සැලසුම්කරු (Matrix)</h2><p class="mt-4 text-slate-500">අද දිනය සඳහා ඔබගේ අරමුණු පෙළගස්වා කළමනාකරණය කරන්න.</p></header><div class="bg-white dark:bg-darkcard p-4 rounded-[2rem] shadow-sm border border-slate-100 dark:border-slate-800 flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-3"><div class="flex-1 flex flex-col space-y-2"><span class="text-xs font-bold text-slate-500">Habit Stacking ආකෘතිය: අලුත් පුරුද්දක් පරණ පුරුද්දකට සම්බන්ධ කරන්න.</span><input type="text" id="habit-anchor" placeholder="දැනට කරන වැඩක් (උදා: කෝපි බීමෙන් පසු...)" class="px-4 py-2 bg-slate-50 dark:bg-slate-800/50 rounded-xl outline-none font-bold text-slate-800 dark:text-white text-sm border focus:border-indigo-400"/><input type="text" id="habit-text" onkeydown="if(event.key==='Enter')addHabit()" placeholder="නව වැඩය (උදා: පොතක් කියවමි)" class="px-4 py-2 bg-slate-50 dark:bg-slate-800/50 rounded-xl outline-none font-bold text-slate-800 dark:text-white text-sm border focus:border-indigo-400"/></div><div class="flex flex-col space-y-2 justify-end"><select id="habit-priority" class="px-4 py-2 bg-slate-50 dark:bg-slate-800/50 rounded-xl font-bold text-slate-600 dark:text-slate-300 text-sm border">${Object.keys(priorities).map(k => `<option value="${k}">${priorities[k].name}</option>`).join('')}</select><select id="habit-cat" class="px-4 py-2 bg-slate-50 dark:bg-slate-800/50 rounded-xl font-bold text-slate-600 dark:text-slate-300 text-sm border">${Object.keys(state.categories).map(k => `<option value="${k}">${state.categories[k].name}</option>`).join('')}</select></div><button onclick="addHabit()" class="bg-indigo-600 text-white px-6 py-3 rounded-xl font-black hover:bg-indigo-700 self-end">එක් කරන්න</button></div><div class="space-y-4">${state.habits.map(h => { const pri = priorities[h.priority] |
-
-| priorities['Q4']; const cat = state.categories[h.category] |
-| state.categories['Other']; return `<div class="flex items-center justify-between p-5 bg-white dark:bg-darkcard border rounded-[1.5rem] card-hover ${h.completed? 'opacity-60 bg-slate-50 dark:bg-slate-900' : 'border-slate-200 dark:border-slate-700'}"><div class="flex items-center space-x-4"><button onclick="toggleHabit(${h.id})" class="w-12 h-12 rounded-xl border-2 flex items-center justify-center text-xl font-black ${h.completed?'bg-indigo-600 border-indigo-600 text-white':'bg-slate-50 dark:bg-slate-800 dark:border-slate-600'}">${h.completed?'✓':''}</button><div><div class="flex space-x-2 mb-1"><span class="px-2 py-0.5 text-[9px] font-black uppercase rounded border ${pri.class}">${pri.name}</span><span class="px-2 py-0.5 text-[9px] font-black uppercase rounded border ${cat.color}">${cat.name}</span></div><p class="font-black text-xl break-all ${h.completed?'line-through text-slate-400':'text-slate-800 dark:text-white'}">${h.text}</p></div></div><button onclick="deleteHabit(${h.id})" class="p-3 text-slate-400 hover:text-red-500 text-xl">🗑️</button></div>`; }).join('')}</div><div class="bg-white dark:bg-darkcard p-8 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 space-y-6"><div><h3 class="text-2xl font-black mb-2">දවසේ සටහන (Journal & Mood)</h3></div><div class="flex space-x-4 mb-4">${Object.keys(moodEmojis).map(m => `<button onclick="setMood('${m}')" class="text-4xl hover:scale-125 transition-transform ${state.moods[today]===m?'scale-125 bg-slate-100 dark:bg-slate-800 rounded-full':''}">${moodEmojis[m]}</button>`).join('')}</div><textarea id="journal-text" placeholder="අද දවස ගැන ලියන්න..." class="w-full bg-slate-50 dark:bg-slate-800 p-6 rounded-2xl outline-none font-medium text-lg h-32 resize-none border-2 border-transparent focus:border-indigo-400">${state.reflections[today]||''}</textarea><button onclick="saveJournal()" class="w-full py-4 bg-indigo-600 text-white font-black rounded-xl hover:bg-indigo-700">සටහන සුරකින්න</button></div></div>`;
+            return `<div class="max-w-4xl mx-auto space-y-10 pb-10"><header class="text-center"><h2 class="text-4xl font-black tracking-tight">දෛනික සැලසුම්කරු (Matrix)</h2><p class="mt-4 text-slate-500">අද දිනය සඳහා ඔබගේ අරමුණු පෙළගස්වා කළමනාකරණය කරන්න.</p></header><div class="bg-white dark:bg-darkcard p-4 rounded-[2rem] shadow-sm border border-slate-100 dark:border-slate-800 flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-3"><input type="text" id="habit-text" onkeydown="if(event.key==='Enter')addHabit()" placeholder="වැඩක් ඇතුළත් කරන්න..." class="flex-1 px-4 py-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl outline-none font-bold text-slate-800 dark:text-white"/><select id="habit-priority" class="px-4 py-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl font-bold text-slate-600 dark:text-slate-300">${Object.keys(priorities).map(k => `<option value="${k}">${priorities[k].name}</option>`).join('')}</select><select id="habit-cat" class="px-4 py-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl font-bold text-slate-600 dark:text-slate-300">${Object.keys(state.categories).map(k => `<option value="${k}">${state.categories[k].name}</option>`).join('')}</select><button onclick="addHabit()" class="bg-indigo-600 text-white px-6 py-3 rounded-xl font-black hover:bg-indigo-700">එක් කරන්න</button></div><div class="space-y-4">${state.habits.map(h => { const pri = priorities[h.priority] || priorities['Q4']; const cat = state.categories[h.category] || state.categories['Other']; return `<div class="flex items-center justify-between p-5 bg-white dark:bg-darkcard border rounded-[1.5rem] card-hover ${h.completed ? 'opacity-60 bg-slate-50 dark:bg-slate-900' : 'border-slate-200 dark:border-slate-700'}"><div class="flex items-center space-x-4"><button onclick="toggleHabit(${h.id})" class="w-12 h-12 rounded-xl border-2 flex items-center justify-center text-xl font-black ${h.completed?'bg-indigo-600 border-indigo-600 text-white':'bg-slate-50 dark:bg-slate-800 dark:border-slate-600'}">${h.completed?'✓':''}</button><div><div class="flex space-x-2 mb-1"><span class="px-2 py-0.5 text-[9px] font-black uppercase rounded border ${pri.class}">${pri.name}</span><span class="px-2 py-0.5 text-[9px] font-black uppercase rounded border ${cat.color}">${cat.name}</span></div><p class="font-black text-xl break-all ${h.completed?'line-through text-slate-400':'text-slate-800 dark:text-white'}">${h.text}</p></div></div><button onclick="deleteHabit(${h.id})" class="p-3 text-slate-400 hover:text-red-500 text-xl">🗑️</button></div>`; }).join('')}</div><div class="bg-white dark:bg-darkcard p-8 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 space-y-6"><div><h3 class="text-2xl font-black mb-2">දවසේ සටහන (Journal & Mood)</h3></div><div class="flex space-x-4 mb-4">${Object.keys(moodEmojis).map(m => `<button onclick="setMood('${m}')" class="text-4xl hover:scale-125 transition-transform ${state.moods[today]===m?'scale-125 bg-slate-100 dark:bg-slate-800 rounded-full':''}">${moodEmojis[m]}</button>`).join('')}</div><textarea id="journal-text" placeholder="අද දවස ගැන ලියන්න..." class="w-full bg-slate-50 dark:bg-slate-800 p-6 rounded-2xl outline-none font-medium text-lg h-32 resize-none border-2 border-transparent focus:border-indigo-400">${state.reflections[today]||''}</textarea><button onclick="saveJournal()" class="w-full py-4 bg-indigo-600 text-white font-black rounded-xl hover:bg-indigo-700">සටහන සුරකින්න</button></div></div>`;
         }
 
         function renderTimer() {
@@ -706,15 +650,11 @@
         }
 
         function renderFlashcards() {
-            const now = new Date().getTime();
-            const dueCards = state.flashcards.filter(f =>!f.nextReview |
-
-| f.nextReview <= now);
-            return `<div class="max-w-4xl mx-auto space-y-10 pb-20"><header class="text-center"><h2 class="text-4xl font-black">Active Recall Flashcards</h2><p class="mt-4 text-slate-500">කෙටි කාලීන මතකය දිගු කාලීනව තහවුරු කරගැනීමට.</p></header><div class="bg-white dark:bg-darkcard p-6 rounded-[2rem] border border-slate-100 dark:border-slate-800 flex flex-col md:flex-row gap-4"><input type="text" id="fc-q" placeholder="ප්‍රශ්නය..." class="flex-1 px-4 py-3 bg-slate-50 dark:bg-slate-800 rounded-xl outline-none font-bold border focus:border-indigo-400"/><input type="text" id="fc-a" placeholder="පිළිතුර..." class="flex-1 px-4 py-3 bg-slate-50 dark:bg-slate-800 rounded-xl outline-none font-bold border focus:border-indigo-400"/><button onclick="addFlashcard()" class="bg-indigo-600 text-white px-6 py-3 rounded-xl font-black hover:bg-indigo-700">එක් කරන්න</button></div><div class="grid grid-cols-1 md:grid-cols-2 gap-6 perspective">${dueCards.length === 0? `<div class="col-span-full text-center py-10 text-slate-400 font-bold bg-slate-50 dark:bg-slate-800/50 rounded-[2rem] border border-dashed border-slate-200 dark:border-slate-700">අද දිනට නියමිත Flashcards නොමැත! 🎉 අලුත් ඒවා එකතු කරන්න.</div>` : dueCards.map(f => `<div class="relative h-56 w-full group cursor-pointer" onclick="flipCardDOM(${f.id}, this)"><div class="absolute inset-0 w-full h-full preserve-3d ${state.flippedCards[f.id]? 'rotate-y-180' : ''}"><div class="absolute inset-0 backface-hidden bg-white dark:bg-darkcard border border-slate-200 dark:border-slate-700 rounded-[2rem] p-6 flex flex-col justify-center items-center shadow-sm"><span class="text-xs font-bold text-indigo-500 mb-2">ප්‍රශ්නය</span><h3 class="text-xl font-black text-center break-words w-full">${f.q}</h3><button onclick="event.stopPropagation(); deleteFlashcard(${f.id})" class="absolute top-4 right-4 text-slate-300 hover:text-red-500 text-lg">🗑️</button></div><div class="absolute inset-0 backface-hidden rotate-y-180 bg-indigo-600 text-white rounded-[2rem] p-6 flex flex-col justify-center items-center shadow-md"><span class="text-xs font-bold text-indigo-200 mb-2">පිළිතුර</span><h3 class="text-2xl font-black text-center break-words w-full">${f.a}</h3><div class="mt-6 flex space-x-2 z-50"><button onclick="event.stopPropagation(); rateFlashcard(${f.id}, 0)" class="px-3 py-1.5 bg-red-500 hover:bg-red-400 text-white text-xs font-bold rounded-lg transition-colors">අමතකයි (0)</button><button onclick="event.stopPropagation(); rateFlashcard(${f.id}, 3)" class="px-3 py-1.5 bg-yellow-500 hover:bg-yellow-400 text-white text-xs font-bold rounded-lg transition-colors">අමාරුයි (3)</button><button onclick="event.stopPropagation(); rateFlashcard(${f.id}, 5)" class="px-3 py-1.5 bg-green-500 hover:bg-green-400 text-white text-xs font-bold rounded-lg transition-colors">පහසුයි (5)</button></div></div></div></div>`).join('')}</div></div>`;
+            return `<div class="max-w-4xl mx-auto space-y-10 pb-20"><header class="text-center"><h2 class="text-4xl font-black">Active Recall Flashcards</h2><p class="mt-4 text-slate-500">කෙටි කාලීන මතකය දිගු කාලීනව තහවුරු කරගැනීමට.</p></header><div class="bg-white dark:bg-darkcard p-6 rounded-[2rem] border border-slate-100 dark:border-slate-800 flex flex-col md:flex-row gap-4"><input type="text" id="fc-q" placeholder="ප්‍රශ්නය..." class="flex-1 px-4 py-3 bg-slate-50 dark:bg-slate-800 rounded-xl outline-none font-bold"/><input type="text" id="fc-a" placeholder="පිළිතුර..." class="flex-1 px-4 py-3 bg-slate-50 dark:bg-slate-800 rounded-xl outline-none font-bold"/><button onclick="addFlashcard()" class="bg-indigo-600 text-white px-6 py-3 rounded-xl font-black">එක් කරන්න</button></div><div class="grid grid-cols-1 md:grid-cols-2 gap-6 perspective">${state.flashcards.length === 0 ? `<div class="col-span-full text-center py-10 text-slate-400">Card එකක් සාදා ඉගෙනීම අරඹන්න.</div>` : state.flashcards.map(f => `<div class="relative h-48 w-full group cursor-pointer" onclick="flipCardDOM(${f.id}, this)"><div class="absolute inset-0 w-full h-full preserve-3d ${state.flippedCards[f.id] ? 'rotate-y-180' : ''}"><div class="absolute inset-0 backface-hidden bg-white dark:bg-darkcard border border-slate-200 dark:border-slate-700 rounded-[2rem] p-6 flex flex-col justify-center items-center shadow-sm"><span class="text-xs font-bold text-indigo-500 mb-2">ප්‍රශ්නය</span><h3 class="text-xl font-black text-center break-words w-full">${f.q}</h3><button onclick="event.stopPropagation(); deleteFlashcard(${f.id})" class="absolute top-4 right-4 text-slate-300 hover:text-red-500 text-lg">🗑️</button></div><div class="absolute inset-0 backface-hidden rotate-y-180 bg-indigo-600 text-white rounded-[2rem] p-6 flex flex-col justify-center items-center shadow-md"><span class="text-xs font-bold text-indigo-200 mb-2">පිළිතුර</span><h3 class="text-2xl font-black text-center break-words w-full">${f.a}</h3></div></div></div>`).join('')}</div></div>`;
         }
 
         function renderLibrary() {
-            return `<div class="space-y-10 pb-20"><header><h2 class="text-4xl font-black mb-2">පර්යේෂණ පුස්තකාලය</h2><p class="text-slate-500 font-bold">ඔබේ මනස දියුණු කරන නවතම ලිපි එකතුව හා පර්යේෂණාත්මක දත්ත</p></header><div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">${articles.map(a => `<div onclick="${a.id === 'loading'? '' : `viewArticle('${a.id}')`}" class="bg-white dark:bg-darkcard rounded-[2.5rem] p-8 border border-slate-100 dark:border-slate-800 shadow-sm ${a.id!== 'loading'? 'cursor-pointer card-hover' : ''}"><div><div class="w-16 h-16 bg-slate-50 dark:bg-slate-800 rounded-2xl flex items-center justify-center mb-6 text-3xl ${a.color}">${a.icon}</div><h3 class="text-2xl font-black mb-3">${a.title}</h3><p class="text-slate-500 text-sm mb-6 line-clamp-3">${a.excerpt}</p></div>${a.id!== 'loading'? `<button class="w-full py-3 bg-slate-50 dark:bg-slate-800 font-bold rounded-xl text-slate-700 dark:text-slate-300">කියවන්න (+5 XP)</button>` : ''}</div>`).join('')}</div></div>`;
+            return `<div class="space-y-10 pb-20"><header><h2 class="text-4xl font-black mb-2">පර්යේෂණ පුස්තකාලය</h2><p class="text-slate-500 font-bold">ඔබේ මනස දියුණු කරන නවතම ලිපි එකතුව</p></header><div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">${articles.map(a => `<div onclick="viewArticle('${a.id}')" class="bg-white dark:bg-darkcard rounded-[2.5rem] p-8 border border-slate-100 dark:border-slate-800 shadow-sm cursor-pointer card-hover"><div><div class="w-16 h-16 bg-slate-50 dark:bg-slate-800 rounded-2xl flex items-center justify-center mb-6 text-3xl ${a.color}">${a.icon}</div><h3 class="text-2xl font-black mb-3">${a.title}</h3><p class="text-slate-500 text-sm mb-6 line-clamp-3">${a.excerpt}</p></div><button class="w-full py-3 bg-slate-50 dark:bg-slate-800 font-bold rounded-xl text-slate-700 dark:text-slate-300">කියවන්න (+5 XP)</button></div>`).join('')}</div></div>`;
         }
 
         function renderArticleView() {
@@ -727,8 +667,9 @@
                     <button onclick="window.print()" class="bg-slate-900 text-white px-4 py-2 rounded-xl flex items-center space-x-2 font-bold shadow-lg"><span class="text-xl">🖨️</span><span>PDF / Print</span></button>
                 </div>
                 <h2 class="text-4xl font-black print-text-black">${a.title}</h2>
+                <div class="flex space-x-4 text-sm text-slate-500 font-bold"><span>කර්තෘ: ${a.author}</span><span>• කාලය: ${a.readTime}</span></div>
                 <p class="text-xl text-slate-600 dark:text-slate-300 italic border-l-4 border-indigo-400 pl-6 print-text-black print-border-light">${a.intro}</p>
-                ${a.sections.map(s=>`<div class="space-y-2"><h3 class="text-xl font-black text-indigo-600">${s.title}</h3><p class="text-lg text-slate-700 dark:text-slate-300 print-text-black">${s.text}</p></div>`).join('')}
+                ${a.sections.map(s=>`<div class="space-y-2"><h3 class="text-xl font-black text-indigo-600">${s.title}</h3><p class="text-lg text-slate-700 dark:text-slate-300 print-text-black whitespace-pre-wrap">${s.text}</p></div>`).join('')}
                 <div class="bg-slate-900 rounded-[2rem] p-8 text-white shadow-xl mt-8 print:bg-white print:text-black print:border-2 print-border-light print:shadow-none">
                     <div class="flex items-center space-x-3 mb-4"><span class="text-indigo-400 text-2xl">🧬</span><h4 class="text-xl font-black uppercase">විද්‍යාත්මක පදනම</h4></div>
                     <p class="text-slate-300 text-lg leading-relaxed print-text-black">${a.science}</p>
@@ -737,17 +678,96 @@
         }
 
         function renderStats() {
-            const moodCounts = Object.values(state.moods).reduce((acc, emoji) => { acc[emoji] = (acc[emoji] |
-
-| 0) + 1; return acc; }, {});
-            return `<div class="space-y-10 pb-20"><header class="text-center"><h2 class="text-4xl font-black">Detailed Analytics</h2><p class="mt-4 text-slate-500">ඔබගේ වර්ධනය පිළිබඳ දත්ත හා සංඛ්‍යානමය විශ්ලේෂණ</p></header><div class="grid grid-cols-1 md:grid-cols-3 gap-6"><div class="bg-indigo-600 text-white p-8 rounded-[2rem] text-center shadow-lg"><h4 class="text-5xl font-black mb-2">${state.user.level}</h4><p class="font-bold uppercase tracking-widest text-xs opacity-80">දැනට පවතින Level එක</p><p class="mt-4 text-sm font-bold bg-white/20 rounded-full py-1">${state.user.xp} XP / ${state.user.level*100} XP</p></div><div class="bg-white dark:bg-darkcard p-8 rounded-[2rem] border border-slate-100 dark:border-slate-800 text-center"><h4 class="text-5xl font-black text-slate-900 dark:text-white mb-2">${Math.round(state.stats.totalFocusMinutes/60)}<span class="text-2xl text-slate-400">h</span></h4><p class="font-bold uppercase tracking-widest text-xs text-slate-500">Total Focus Time</p></div><div class="bg-white dark:bg-darkcard p-8 rounded-[2rem] border border-slate-100 dark:border-slate-800 text-center"><div class="flex justify-center space-x-2 text-3xl mb-4">${Object.keys(moodCounts).length? Object.keys(moodCounts).slice(0,3).map(m=>`<span>${moodEmojis[m]}</span>`).join('') : '➖'}</div><p class="font-bold uppercase tracking-widest text-xs text-slate-500">ප්‍රධාන මානසික මට්ටම්</p></div></div><div class="bg-white dark:bg-darkcard p-10 rounded-[3rem] border border-slate-100 dark:border-slate-800 shadow-sm"><h4 class="font-black mb-6 text-center text-slate-600 dark:text-slate-300">පසුගිය දින 14 ක ප්‍රස්ථාරය (Daily Progress Chart)</h4><div class="chart-container"><canvas id="progressChart"></canvas></div></div></div>`;
+            const moodCounts = Object.values(state.moods).reduce((acc, emoji) => { acc[emoji] = (acc[emoji] || 0) + 1; return acc; }, {});
+            return `<div class="space-y-10 pb-20">
+                <header class="text-center">
+                    <h2 class="text-4xl font-black">Detailed Analytics</h2>
+                    <p class="mt-4 text-slate-500">ඔබගේ වර්ධනය පිළිබඳ දත්ත හා සංඛ්‍යානමය විශ්ලේෂණ</p>
+                </header>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="bg-indigo-600 text-white p-8 rounded-[2rem] text-center shadow-lg">
+                        <h4 class="text-5xl font-black mb-2">${state.user.level}</h4>
+                        <p class="font-bold uppercase tracking-widest text-xs opacity-80">දැනට පවතින Level එක</p>
+                        <p class="mt-4 text-sm font-bold bg-white/20 rounded-full py-1">${state.user.xp} XP / ${state.user.level*100} XP</p>
+                    </div>
+                    <div class="bg-white dark:bg-darkcard p-8 rounded-[2rem] border border-slate-100 dark:border-slate-800 text-center">
+                        <h4 class="text-5xl font-black text-slate-900 dark:text-white mb-2">${Math.round(state.stats.totalFocusMinutes/60)}<span class="text-2xl text-slate-400">h</span></h4>
+                        <p class="font-bold uppercase tracking-widest text-xs text-slate-500">Total Focus Time</p>
+                    </div>
+                    <div class="bg-white dark:bg-darkcard p-8 rounded-[2rem] border border-slate-100 dark:border-slate-800 text-center">
+                        <div class="flex justify-center space-x-2 text-3xl mb-4">${Object.keys(moodCounts).length ? Object.keys(moodCounts).slice(0,3).map(m=>`<span>${moodEmojis[m]}</span>`).join('') : '➖'}</div>
+                        <p class="font-bold uppercase tracking-widest text-xs text-slate-500">ප්‍රධාන මානසික මට්ටම්</p>
+                    </div>
+                </div>
+                <div class="bg-white dark:bg-darkcard p-10 rounded-[3rem] border border-slate-100 dark:border-slate-800 shadow-sm">
+                    <h4 class="font-black mb-6 text-center text-slate-600 dark:text-slate-300">පසුගිය දින 14 ක ප්‍රස්ථාරය (Daily Progress Chart)</h4>
+                    <div class="chart-container">
+                        <canvas id="progressChart"></canvas>
+                    </div>
+                </div>
+            </div>`;
         }
 
         function renderSettings() {
+            let backendUsers = JSON.parse(localStorage.getItem('mindsetos-backend-users-emails') || '[]');
+            let totalUsers = backendUsers.length;
+            if (totalUsers === 0 && !state.isNewUser) totalUsers = 1;
+
+            // Simple Local Admin Verification
+            const isAdmin = state.user.email === 'admin@mindsetos.com' && state.user.password === 'sadew12125';
+            
+            // Get custom articles specific to admin publishing to list them for deletion
+            const publicArtsList = JSON.parse(localStorage.getItem(PUBLIC_ARTICLES_KEY) || '[]');
+            const renderedArticleList = publicArtsList.length === 0 ? 
+                '<p class="text-slate-400 text-sm text-center py-4">දැනට ඔබ විසින් පළකළ ලිපි කිසිවක් නැත.</p>' : 
+                publicArtsList.map(a => `
+                    <div class="flex justify-between items-center p-3 bg-slate-800 rounded-lg border border-slate-700">
+                        <span class="text-sm font-bold text-slate-200 truncate pr-4">${a.title}</span>
+                        <button onclick="deleteAdminArticle('${a.id}')" class="text-rose-500 hover:text-rose-400 p-2 bg-slate-900 rounded-md transition-colors" title="Delete Article"><span class="text-lg">🗑️</span></button>
+                    </div>
+                `).join('');
+
             return `
             <div class="max-w-xl mx-auto space-y-10 pb-20">
                 <header><h2 class="text-4xl font-black text-center">සැකසුම්</h2></header>
                 <div class="bg-white dark:bg-darkcard p-10 rounded-[3rem] border border-slate-100 dark:border-slate-800 space-y-6">
+                    
+                    ${isAdmin ? `
+                    <!-- ADMIN PANEL START -->
+                    <div class="p-6 bg-slate-900 rounded-2xl border border-slate-800 mb-6 text-white shadow-lg animate-fade-in">
+                        <div class="flex items-center space-x-3 mb-2">
+                            <span class="text-xl">🖥️</span>
+                            <h3 class="text-xl font-black">Admin Panel (පරිපාලක)</h3>
+                        </div>
+                        <div class="bg-slate-800 p-5 rounded-xl flex justify-between items-center border border-slate-700 mb-6">
+                            <span class="font-bold text-slate-300">ලියාපදිංචි මුළු ගිණුම්:</span>
+                            <span class="text-3xl font-black text-indigo-400">${totalUsers}</span>
+                        </div>
+                        
+                        <div class="pt-4 border-t border-slate-700 space-y-4">
+                            <h4 class="font-bold text-emerald-400 mb-4 flex items-center gap-2"><span>📢</span> නව ලිපියක් Publish කරන්න</h4>
+                            <input type="text" id="admin-art-title" placeholder="මාතෘකාව (Title)" class="w-full p-3 bg-slate-800 rounded-xl outline-none border border-slate-700 text-sm focus:border-indigo-500 transition-colors"/>
+                            <input type="text" id="admin-art-author" placeholder="කර්තෘ (Author - විකල්ප)" value="MindsetOS Admin" class="w-full p-3 bg-slate-800 rounded-xl outline-none border border-slate-700 text-sm focus:border-indigo-500 transition-colors"/>
+                            <div class="flex space-x-3">
+                                <input type="text" id="admin-art-cat" placeholder="කාණ්ඩය (උදා: Study, Health)" class="w-full p-3 bg-slate-800 rounded-xl outline-none border border-slate-700 text-sm"/>
+                                <input type="text" id="admin-art-time" placeholder="කියවීමට කාලය (උදා: විනාඩි 5)" class="w-full p-3 bg-slate-800 rounded-xl outline-none border border-slate-700 text-sm"/>
+                            </div>
+                            <textarea id="admin-art-intro" placeholder="කෙටි හැඳින්වීම (Intro)..." class="w-full p-3 bg-slate-800 rounded-xl outline-none border border-slate-700 text-sm h-20 resize-none focus:border-indigo-500 transition-colors"></textarea>
+                            <textarea id="admin-art-text" placeholder="සම්පූර්ණ අන්තර්ගතය (Main Content)..." class="w-full p-3 bg-slate-800 rounded-xl outline-none border border-slate-700 text-sm h-32 resize-none focus:border-indigo-500 transition-colors"></textarea>
+                            <button id="publish-btn" onclick="publishAdminArticle()" class="w-full bg-emerald-600 hover:bg-emerald-500 py-3 rounded-xl font-black transition-colors">ලිපිය Publish කරන්න (Global)</button>
+                        </div>
+
+                        <!-- MANAGE PUBLISHED ARTICLES -->
+                        <div class="pt-6 mt-6 border-t border-slate-700 space-y-4">
+                            <h4 class="font-bold text-rose-400 mb-4 flex items-center gap-2"><span>🗑️</span> පළකළ ලිපි කළමනාකරණය</h4>
+                            <div class="space-y-2 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
+                                ${renderedArticleList}
+                            </div>
+                        </div>
+                    </div>
+                    <!-- ADMIN PANEL END -->
+                    ` : ''}
+
                     <div class="p-6 bg-indigo-50 dark:bg-indigo-900/20 rounded-2xl border border-indigo-100 dark:border-indigo-800/50 mb-6">
                         <h3 class="text-xl font-black mb-2 text-indigo-900 dark:text-indigo-300">දත්ත ආරක්ෂිතව තබාගන්න</h3>
                         <p class="text-sm text-slate-600 dark:text-slate-400 mb-4">ඔබේ වැඩ සහ ප්‍රගතිය (JSON) Download කර තබාගන්න.</p>
@@ -761,6 +781,7 @@
                             </label>
                         </div>
                     </div>
+
                     <div>
                         <label class="font-black text-sm block mb-2">විභාගය/ඉලක්ක දිනය:</label>
                         <input type="date" value="${state.user.targetDate}" onchange="updateTargetDate(this.value)" class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 outline-none mb-4" />
@@ -768,12 +789,16 @@
                     <div>
                         <button onclick="addCustomCategory()" class="w-full py-4 border-2 border-indigo-200 dark:border-indigo-900 text-indigo-600 dark:text-indigo-400 font-black rounded-2xl hover:bg-indigo-50 dark:hover:bg-indigo-900/30">අලුත් කාණ්ඩයක් (Category) එක් කරන්න</button>
                     </div>
-                    <button onclick="showConfirmModal('ඔබගේ සියලුම ලැයිස්තු හිස් කිරීමට අවශ්‍යද?', () => { localStorage.setItem(appId, JSON.stringify({user:state.user,habits:,history:,reflections:{},categories:state.categories,streak:{count:0},stats:{totalFocusMinutes:0},flashcards:,moods:{}})); location.reload(); })" class="w-full py-4 border-2 border-slate-200 dark:border-slate-700 font-black rounded-2xl mt-4">සියලුම ලැයිස්තු හිස් කරන්න</button>
-                    <button onclick="showConfirmModal('ඔබගේ සියලුම දත්ත මකා දැමීමට අවශ්‍යද? මෙය නැවත ලබා ගත නොහැක.', () => { localStorage.removeItem(appId); localStorage.removeItem('mindsetos-global-articles'); location.reload(); })" class="w-full py-4 border-2 border-red-200 text-red-500 font-black rounded-2xl hover:bg-red-50 dark:hover:bg-red-900/20">සම්පූර්ණ ගිණුම මකා දමන්න</button>
+
+                    <div class="pt-6 border-t border-slate-200 dark:border-slate-700 space-y-4">
+                        <button onclick="logout()" class="w-full py-4 bg-slate-100 dark:bg-slate-800 font-black rounded-2xl hover:bg-slate-200 dark:hover:bg-slate-700">ගිණුමෙන් ඉවත් වන්න (Logout)</button>
+                        <button onclick="showConfirmModal('ඔබගේ සියලුම දත්ත මකා දැමීමට අවශ්‍යද? මෙය නැවත ලබා ගත නොහැක.', () => { localStorage.removeItem(USER_DATA_KEY); location.reload(); })" class="w-full py-4 border-2 border-red-200 text-red-500 font-black rounded-2xl hover:bg-red-50 dark:hover:bg-red-900/20">සම්පූර්ණ ගිණුම මකා දමන්න</button>
+                    </div>
                 </div>
             </div>`;
         }
 
+        // Start Application
         initApp();
     </script>
 </body>
