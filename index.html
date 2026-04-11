@@ -14,7 +14,9 @@
     </script>
     <!-- Chart.js for Analytics -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- Google Fonts for Sinhala & English -->
+    <!-- PapaParse for Google Sheets Database (Free Backend) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&family=Noto+Sans+Sinhala:wght@400;600;800;900&display=swap" rel="stylesheet">
     
     <style>
@@ -36,16 +38,13 @@
         
         .timer-circle { border-radius: 50%; }
         
-        /* 3D Flashcard Effects */
         .perspective { perspective: 1000px; }
         .preserve-3d { transform-style: preserve-3d; transition: transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1); }
         .backface-hidden { backface-visibility: hidden; }
         .rotate-y-180 { transform: rotateY(180deg); }
         
-        /* Chart Container Strict Bounds */
         .chart-container { position: relative; width: 100%; max-width: 800px; margin-left: auto; margin-right: auto; height: 300px; max-height: 400px; }
         
-        /* Print Styles */
         @media print {
             body { background: white !important; color: black !important; }
             .print-hidden { display: none !important; }
@@ -58,10 +57,8 @@
 </head>
 <body class="bg-slate-50 dark:bg-darkbg text-slate-900 dark:text-slate-100 overflow-x-hidden transition-colors duration-300 print:bg-white">
 
-    <!-- App Mount Point -->
     <div id="app-root"></div>
     
-    <!-- Floating Components -->
     <div id="toast-container" class="fixed top-24 right-6 z-50 flex flex-col space-y-2 pointer-events-none print-hidden"></div>
     <div id="modal-container" class="fixed inset-0 z-[100] hidden items-center justify-center bg-slate-900/60 backdrop-blur-sm print-hidden transition-opacity"></div>
 
@@ -70,7 +67,11 @@
         // 1. DATA & STATE MANAGEMENT
         // ==========================================
         const USER_DATA_KEY = "mindsetos_active_user"; 
-        const PUBLIC_ARTICLES_KEY = "mindsetos_public_articles"; 
+        const LOCAL_ARTICLES_KEY = "mindsetos_local_articles"; 
+
+        // Google Sheets Database Configuration (FREE CLOUD DATABASE)
+        const GOOGLE_SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQFbQGRAZ0-oVmelxStjuVQKVT7QcXvyp8udwNdDhWRwBUPa5a9Qyh7i0IEufIZ5ODi8owLHhXszqkW/pub?output=csv";
+        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxNfCYs1B05XPW6JyedxcHNisNSt9plGEl6YCUrYTZ7qTK40avqv8uNZ1DyRX_GU0UjOQ/exec";
 
         let state = {
             activeTab: 'home',
@@ -100,11 +101,10 @@
         let progressChartInstance = null;
 
         const defaultArticles = [
-            { id: "default-1", title: "මනස සන්සුන් කරගැනීමේ විද්‍යාව", author: "MindsetOS Team", category: "Health", icon: "🧘‍♂️", color: "text-blue-500", readTime: "විනාඩි 3", excerpt: "මානසික ආතතිය අවම කරගැනීමට හා අවධානය වැඩි කරගැනීමට...", intro: "ඔබේ මනස සන්සුන් කිරීම යනු හුදු විවේකයක් පමණක් නොව, මොළයේ ක්‍රියාකාරීත්වය වර්ධනය කරන විද්‍යාත්මක ක්‍රියාවලියකි.", sections: [{title: "හුස්ම ගැනීමේ වැදගත්කම", text: "ගැඹුරු හුස්ම ගැනීම් මගින් රුධිර පීඩනය පාලනය කර ස්නායු පද්ධතිය සන්සුන් කරයි."}], science: "Deep breathing activates the parasympathetic nervous system, lowering cortisol levels." },
-            { id: "default-2", title: "සාර්ථකත්වයේ රහස: 1% Rule", author: "James Clear", category: "Study", icon: "📈", color: "text-green-500", readTime: "විනාඩි 5", excerpt: "දිනපතා 1% කින් දියුණු වීම හරහා වසරක් අවසානයේ 37 ගුණයක වර්ධනයක් ලබා ගන්නේ කෙසේද?", intro: "විශාල වෙනස්කම් එකවර කිරීමට යාමෙන් බොහෝ දෙනා අසාර්ථක වේ. නමුත් කුඩා පුරුදු දිගුකාලීනව පවත්වා ගැනීමෙන් ඉහළ ප්‍රතිඵල ලබාගත හැක.", sections: [{title: "Continuous Improvement", text: "ඔබ සෑම දිනකම 1% කින් දියුණු වුවහොත්, දින 365 කට පසු ඔබ සිටින්නේ විශාල ඉදිරි පිම්මකය."}], science: "Habit formation relies on neuroplasticity. Small, consistent actions create strong neural pathways." }
+            { id: "default-1", title: "මනස සන්සුන් කරගැනීමේ විද්‍යාව", author: "MindsetOS Team", category: "Health", icon: "🧘‍♂️", color: "text-blue-500", readTime: "විනාඩි 3", excerpt: "මානසික ආතතිය අවම කරගැනීමට හා අවධානය වැඩි කරගැනීමට...", intro: "ඔබේ මනස සන්සුන් කිරීම යනු හුදු විවේකයක් පමණක් නොව, මොළයේ ක්‍රියාකාරීත්වය වර්ධනය කරන විද්‍යාත්මක ක්‍රියාවලියකි.", sections: [{title: "හුස්ම ගැනීමේ වැදගත්කම", text: "ගැඹුරු හුස්ම ගැනීම් මගින් රුධිර පීඩනය පාලනය කර ස්නායු පද්ධතිය සන්සුන් කරයි."}], science: "Deep breathing activates the parasympathetic nervous system, lowering cortisol levels." }
         ];
         
-        let articles = [];
+        let articles = [...defaultArticles];
 
         // ==========================================
         // 2. UI HELPERS & MODALS
@@ -162,20 +162,51 @@
         }
 
         // ==========================================
-        // 3. CORE LOGIC & INITIALIZATION
+        // 3. CORE LOGIC & GOOGLE SHEETS FETCHING
         // ==========================================
-        function loadGlobalArticles() {
+        
+        async function fetchArticlesFromCloud() {
             try {
-                const publicArts = JSON.parse(localStorage.getItem(PUBLIC_ARTICLES_KEY) || '[]');
-                articles = [...publicArts, ...defaultArticles]; 
-            } catch(e) { 
-                console.error("Error loading public articles"); 
-                articles = [...defaultArticles];
+                // Get locally saved articles (immediate updates)
+                const localArts = JSON.parse(localStorage.getItem(LOCAL_ARTICLES_KEY) || '[]');
+                articles = [...localArts, ...defaultArticles];
+                if(state.activeTab === 'library') render();
+
+                // Fetch global articles from Google Sheets
+                if (!GOOGLE_SHEET_CSV_URL) return;
+                const response = await fetch(GOOGLE_SHEET_CSV_URL + "&t=" + new Date().getTime(), { cache: 'no-store' });
+                const csvData = await response.text();
+                
+                Papa.parse(csvData, {
+                    header: true, skipEmptyLines: true,
+                    complete: function(results) {
+                        const cloudArticles = results.data.map(row => {
+                            let sections = [];
+                            if(row.Sec1Title && row.Sec1Text) sections.push({title: row.Sec1Title, text: row.Sec1Text});
+                            if(row.Sec2Title && row.Sec2Text) sections.push({title: row.Sec2Title, text: row.Sec2Text});
+                            return {
+                                id: row.ID, title: row.Title, author: row.Author, category: row.Category,
+                                icon: row.Icon || '📚', color: row.Color || 'text-indigo-500',
+                                readTime: row.ReadTime || 'විනාඩි 5', excerpt: row.Excerpt, intro: row.Intro,
+                                sections: sections, science: row.Science
+                            };
+                        }).filter(a => a.id && a.title);
+
+                        // Merge Cloud and Default (Remove local if cloud has it to prevent duplicates)
+                        const cloudIds = new Set(cloudArticles.map(a => a.id));
+                        const uniqueLocal = localArts.filter(a => !cloudIds.has(a.id));
+                        
+                        articles = [...uniqueLocal, ...cloudArticles, ...defaultArticles];
+                        if(state.activeTab === 'library' || state.selectedArticleId) render();
+                    }
+                });
+            } catch (error) {
+                console.error("Cloud Fetch Error:", error);
             }
         }
 
         function initApp() {
-            loadGlobalArticles(); 
+            fetchArticlesFromCloud(); 
             
             const savedUser = localStorage.getItem(USER_DATA_KEY);
             if (savedUser) {
@@ -204,19 +235,15 @@
                 if (state.streak.lastDate !== yest.toLocaleDateString('si-LK')) {
                     state.streak.count = 0; 
                 }
-                
                 state.habits = state.habits.map(h => ({ ...h, completed: false }));
                 state.streak.lastDate = today;
-                
                 updateHistory();
                 saveData();
             }
         }
 
         function saveData() { 
-            if (!state.isNewUser) {
-                localStorage.setItem(USER_DATA_KEY, JSON.stringify(state)); 
-            }
+            if (!state.isNewUser) { localStorage.setItem(USER_DATA_KEY, JSON.stringify(state)); }
         }
 
         function handleStart() { 
@@ -276,8 +303,8 @@
         function switchTab(t) { state.activeTab = t; state.selectedArticleId = null; render(); }
         function viewArticle(id) { state.selectedArticleId = id; state.activeTab = 'library'; addXP(5); render(); }
 
-        // --- Admin Publishing Logic ---
-        function publishAdminArticle() {
+        // --- Admin Publishing to Google Sheets ---
+        async function publishAdminArticle() {
             const titleElement = document.getElementById('admin-art-title');
             if(!titleElement) return;
             
@@ -293,41 +320,67 @@
                 return;
             }
 
+            const btn = document.getElementById('publish-btn');
+            btn.innerText = "Cloud වෙත යවමින් පවතී...";
+            btn.disabled = true;
+
             const newArt = {
-                id: 'custom-' + Date.now(),
-                title: title,
-                author: author,
-                category: cat,
-                icon: '⭐',
-                color: 'text-yellow-500',
-                readTime: readTime,
-                excerpt: intro.substring(0, 100) + '...',
-                intro: intro,
-                sections: [{ title: 'ප්‍රධාන අන්තර්ගතය', text: text }],
-                science: 'Admin විසින් තහවුරු කරන ලද දත්ත.'
+                ID: 'custom-' + Date.now(),
+                Title: title,
+                Author: author,
+                Category: cat,
+                Icon: '⭐',
+                Color: 'text-yellow-500',
+                ReadTime: readTime,
+                Excerpt: intro.substring(0, 100) + '...',
+                Intro: intro,
+                Sec1Title: 'ප්‍රධාන අන්තර්ගතය',
+                Sec1Text: text,
+                Science: 'Admin විසින් තහවුරු කරන ලද දත්ත.'
             };
 
-            let publicArts = JSON.parse(localStorage.getItem(PUBLIC_ARTICLES_KEY) || '[]');
-            publicArts.unshift(newArt);
-            localStorage.setItem(PUBLIC_ARTICLES_KEY, JSON.stringify(publicArts));
-            
-            loadGlobalArticles();
-            
+            // 1. Save Locally Immediately
+            const localObj = {
+                id: newArt.ID, title: newArt.Title, author: newArt.Author, category: newArt.Category,
+                icon: newArt.Icon, color: newArt.Color, readTime: newArt.ReadTime, excerpt: newArt.Excerpt,
+                intro: newArt.Intro, sections: [{ title: newArt.Sec1Title, text: newArt.Sec1Text }], science: newArt.Science
+            };
+            let localArts = JSON.parse(localStorage.getItem(LOCAL_ARTICLES_KEY) || '[]');
+            localArts.unshift(localObj);
+            localStorage.setItem(LOCAL_ARTICLES_KEY, JSON.stringify(localArts));
+            articles.unshift(localObj);
+            render();
+
+            // 2. Send to Google Sheets Background
+            try {
+                const urlEncodedData = new URLSearchParams(newArt).toString();
+                await fetch(GOOGLE_SCRIPT_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: urlEncodedData,
+                    mode: 'no-cors'
+                });
+                showToast("ලිපිය සාර්ථකව Google Sheets (Cloud) වෙත Publish කරන ලදී!", "success");
+            } catch (e) {
+                showToast("Cloud වෙත යැවීම අසාර්ථකයි. (Offline Mode)", "error");
+            }
+
             document.getElementById('admin-art-title').value = '';
             document.getElementById('admin-art-intro').value = '';
             document.getElementById('admin-art-text').value = '';
-            
-            showToast("ලිපිය සාර්ථකව Publish කරන ලදී!", "success");
-            render();
+            btn.innerText = "ලිපිය Publish කරන්න (Global)";
+            btn.disabled = false;
         }
 
         function deleteAdminArticle(articleId) {
-            showConfirmModal("මෙම ලිපිය සම්පූර්ණයෙන්ම පද්ධතියෙන් ඉවත් කිරීමට ඔබට අවශ්‍යද?", () => {
-                let publicArts = JSON.parse(localStorage.getItem(PUBLIC_ARTICLES_KEY) || '[]');
-                publicArts = publicArts.filter(a => a.id !== articleId);
-                localStorage.setItem(PUBLIC_ARTICLES_KEY, JSON.stringify(publicArts));
+            showConfirmModal("මෙම ලිපිය පද්ධතියෙන් ඉවත් කිරීමට ඔබට අවශ්‍යද? (අවධානය: Google Sheets වලින්ද මෙම පේළිය මකා දැමීමට මතක තබාගන්න)", () => {
+                let localArts = JSON.parse(localStorage.getItem(LOCAL_ARTICLES_KEY) || '[]');
+                localArts = localArts.filter(a => a.id !== articleId);
+                localStorage.setItem(LOCAL_ARTICLES_KEY, JSON.stringify(localArts));
                 
-                loadGlobalArticles();
+                // Remove from active array
+                articles = articles.filter(a => a.id !== articleId);
+                
                 showToast("ලිපිය සාර්ථකව මකා දමන ලදී.", "success");
                 render();
             });
@@ -571,7 +624,6 @@
 
         // --- View Functions ---
         function renderWelcome() { 
-            // NOTE: Removed the admin login hint to keep it completely hidden from normal users.
             return `
             <div class="min-h-screen bg-slate-900 flex items-center justify-center p-6 text-white">
                 <div class="max-w-md w-full bg-slate-800/40 backdrop-blur-2xl rounded-[3rem] p-10 text-center shadow-2xl border border-slate-700">
@@ -654,7 +706,7 @@
         }
 
         function renderLibrary() {
-            return `<div class="space-y-10 pb-20"><header><h2 class="text-4xl font-black mb-2">පර්යේෂණ පුස්තකාලය</h2><p class="text-slate-500 font-bold">ඔබේ මනස දියුණු කරන නවතම ලිපි එකතුව</p></header><div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">${articles.map(a => `<div onclick="viewArticle('${a.id}')" class="bg-white dark:bg-darkcard rounded-[2.5rem] p-8 border border-slate-100 dark:border-slate-800 shadow-sm cursor-pointer card-hover"><div><div class="w-16 h-16 bg-slate-50 dark:bg-slate-800 rounded-2xl flex items-center justify-center mb-6 text-3xl ${a.color}">${a.icon}</div><h3 class="text-2xl font-black mb-3">${a.title}</h3><p class="text-slate-500 text-sm mb-6 line-clamp-3">${a.excerpt}</p></div><button class="w-full py-3 bg-slate-50 dark:bg-slate-800 font-bold rounded-xl text-slate-700 dark:text-slate-300">කියවන්න (+5 XP)</button></div>`).join('')}</div></div>`;
+            return `<div class="space-y-10 pb-20"><header><h2 class="text-4xl font-black mb-2">පර්යේෂණ පුස්තකාලය</h2><p class="text-slate-500 font-bold">ඔබේ මනස දියුණු කරන නවතම ලිපි එකතුව (Cloud Database)</p></header><div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">${articles.map(a => `<div onclick="viewArticle('${a.id}')" class="bg-white dark:bg-darkcard rounded-[2.5rem] p-8 border border-slate-100 dark:border-slate-800 shadow-sm cursor-pointer card-hover"><div><div class="w-16 h-16 bg-slate-50 dark:bg-slate-800 rounded-2xl flex items-center justify-center mb-6 text-3xl ${a.color}">${a.icon}</div><h3 class="text-2xl font-black mb-3">${a.title}</h3><p class="text-slate-500 text-sm mb-6 line-clamp-3">${a.excerpt}</p></div><button class="w-full py-3 bg-slate-50 dark:bg-slate-800 font-bold rounded-xl text-slate-700 dark:text-slate-300">කියවන්න (+5 XP)</button></div>`).join('')}</div></div>`;
         }
 
         function renderArticleView() {
@@ -713,14 +765,14 @@
             let totalUsers = backendUsers.length;
             if (totalUsers === 0 && !state.isNewUser) totalUsers = 1;
 
-            // Simple Local Admin Verification
+            // Simple Local Admin Verification (Users do not see this hint anywhere)
             const isAdmin = state.user.email === 'admin@mindsetos.com' && state.user.password === 'sadew12125';
             
             // Get custom articles specific to admin publishing to list them for deletion
-            const publicArtsList = JSON.parse(localStorage.getItem(PUBLIC_ARTICLES_KEY) || '[]');
-            const renderedArticleList = publicArtsList.length === 0 ? 
+            const localArtsList = JSON.parse(localStorage.getItem(LOCAL_ARTICLES_KEY) || '[]');
+            const renderedArticleList = localArtsList.length === 0 ? 
                 '<p class="text-slate-400 text-sm text-center py-4">දැනට ඔබ විසින් පළකළ ලිපි කිසිවක් නැත.</p>' : 
-                publicArtsList.map(a => `
+                localArtsList.map(a => `
                     <div class="flex justify-between items-center p-3 bg-slate-800 rounded-lg border border-slate-700">
                         <span class="text-sm font-bold text-slate-200 truncate pr-4">${a.title}</span>
                         <button onclick="deleteAdminArticle('${a.id}')" class="text-rose-500 hover:text-rose-400 p-2 bg-slate-900 rounded-md transition-colors" title="Delete Article"><span class="text-lg">🗑️</span></button>
@@ -745,7 +797,7 @@
                         </div>
                         
                         <div class="pt-4 border-t border-slate-700 space-y-4">
-                            <h4 class="font-bold text-emerald-400 mb-4 flex items-center gap-2"><span>📢</span> නව ලිපියක් Publish කරන්න</h4>
+                            <h4 class="font-bold text-emerald-400 mb-4 flex items-center gap-2"><span>📢</span> Cloud Database වෙත නව ලිපියක් Publish කරන්න</h4>
                             <input type="text" id="admin-art-title" placeholder="මාතෘකාව (Title)" class="w-full p-3 bg-slate-800 rounded-xl outline-none border border-slate-700 text-sm focus:border-indigo-500 transition-colors"/>
                             <input type="text" id="admin-art-author" placeholder="කර්තෘ (Author - විකල්ප)" value="MindsetOS Admin" class="w-full p-3 bg-slate-800 rounded-xl outline-none border border-slate-700 text-sm focus:border-indigo-500 transition-colors"/>
                             <div class="flex space-x-3">
@@ -760,6 +812,7 @@
                         <!-- MANAGE PUBLISHED ARTICLES -->
                         <div class="pt-6 mt-6 border-t border-slate-700 space-y-4">
                             <h4 class="font-bold text-rose-400 mb-4 flex items-center gap-2"><span>🗑️</span> පළකළ ලිපි කළමනාකරණය</h4>
+                            <p class="text-xs text-slate-400 mb-2">පහතින් ඉවත් කල විට එය පද්ධතියෙන් ඉවත් වේ. (Google Sheets වලිනුත් සම්පූර්ණයෙන්ම ඉවත් කිරීමට අමතක නොකරන්න).</p>
                             <div class="space-y-2 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
                                 ${renderedArticleList}
                             </div>
