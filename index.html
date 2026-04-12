@@ -159,7 +159,8 @@
                 'Health': { name: 'සෞඛ්‍යය / Health', color: 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300 border-green-200 dark:border-green-800' },
                 'Work': { name: 'ව්‍යාපාර / Work', color: 'bg-orange-100 text-orange-700 dark:bg-orange-900/50 dark:text-orange-300 border-orange-200 dark:border-orange-800' }
             },
-            adminUsersData: [], pendingReviews: [], appRating: 0, lastSeenArticleId: null
+            adminUsersData: [], pendingReviews: [], appRating: 0, lastSeenArticleId: null,
+            readArticles: [], timerSettings: { focus: 25, break: 5 }
         };
 
         const priorities = { 'Q1': { name: 'හදිසි/වැදගත්', class: 'bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400' }, 'Q2': { name: 'වැදගත් පමණි', class: 'bg-indigo-50 text-indigo-600 dark:bg-indigo-900/20 dark:text-indigo-400' }, 'Q3': { name: 'සාමාන්‍ය', class: 'bg-slate-50 text-slate-600 dark:bg-slate-800 dark:text-slate-400' } };
@@ -231,31 +232,30 @@
         // ==========================================
         function initApp() {
             render(); 
+            // වලාකුළෙන් (Google Sheets) දත්ත වහාම ලබාගැනීමට
+            fetchUsersFromGoogleSheet();
+
             try {
-                let registry = JSON.parse(localStorage.getItem(USERS_REGISTRY_KEY)) || {};
                 let savedData = localStorage.getItem(USER_DATA_KEY);
                 
-                let oldAppLegacy = localStorage.getItem('mindsetos-app-v6') || localStorage.getItem('mindset-os-secure-v2') || localStorage.getItem('mindsetos_local_db_v3');
-                if(!savedData && oldAppLegacy) savedData = oldAppLegacy; 
-
+                // පරිශීලකයාගේ දත්ත LocalStorage හි තිබේ නම්, auto-login වීමට
                 if (savedData) {
                     let parsed = JSON.parse(savedData);
                     if (parsed.user && parsed.user.email) {
-                        if (!registry[parsed.user.email]) {
-                            registry[parsed.user.email] = parsed;
-                            localStorage.setItem(USERS_REGISTRY_KEY, JSON.stringify(registry));
-                        }
                         state = { ...state, ...parsed, isNewUser: false };
                         if(!state.pastTasks) state.pastTasks = {}; 
                         if(!state.dailyFocus) state.dailyFocus = {};
                         if(!state.pendingReviews) state.pendingReviews = [];
+                        if(!state.readArticles) state.readArticles = []; 
+                        if(!state.timerSettings) state.timerSettings = { focus: 25, break: 5 }; 
+                        
+                        timerState.timeLeft = (state.timerSettings.focus || 25) * 60;
+                        checkNewDay(); 
+                        applyTheme();
+                        syncUserStatsToGoogleSheet(); 
                     }
                 }
-
-                checkNewDay(); applyTheme();
                 fetchArticlesFromGoogleSheet();
-                if (isAdmin()) fetchUsersFromGoogleSheet();
-                if (!state.isNewUser) syncUserStatsToGoogleSheet(); 
             } catch(e) { console.error("Init Error:", e); } 
             finally { isAppLoading = false; render(); }
         }
@@ -313,27 +313,60 @@
                 habits: [], history: [], reflections: {}, moods: {}, flashcards: [], pastTasks: {}, dailyFocus: {}, 
                 stats: { totalFocusMinutes: 0 }, streak: { count: 0, lastDate: null },
                 categories: { 'Study': { name: 'අධ්‍යාපනය / Study', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 border-blue-200 dark:border-blue-800' } },
-                pendingReviews: [], appRating: 0, lastSeenArticleId: null
+                pendingReviews: [], appRating: 0, lastSeenArticleId: null,
+                readArticles: [], timerSettings: { focus: 25, break: 5 }
             };
 
-            saveData(); syncUserStatsToGoogleSheet(true); render(); showToast("සාර්ථකව ලියාපදිංචි විය!", "success");
+            saveData(); 
+            syncUserStatsToGoogleSheet(true); 
+            applyTheme();
+            render(); 
+            showToast("සාර්ථකව ලියාපදිංචි විය!", "success");
         }
 
+        // CROSS-DEVICE LOGIN / LOCAL LOGIN
         function handleLogin() {
             const e = document.getElementById('init-email')?.value.trim(); 
             const p = document.getElementById('init-password')?.value; 
             if(!e || !p) return showToast("කරුණාකර විද්‍යුත් තැපෑල සහ මුරපදය ඇතුළත් කරන්න.", "error");
             if(!emailRegex.test(e)) return showToast("කරුණාකර නිවැරදි ඊමේල් ලිපිනයක් ඇතුළත් කරන්න.", "error");
 
+            // 1. පරණ Local Registry එකෙන් බලන්න
             let registry = JSON.parse(localStorage.getItem(USERS_REGISTRY_KEY)) || {};
             if(registry[e] && registry[e].user.password === p) {
-                state = { ...state, ...registry[e], isNewUser: false };
-                if(!state.pendingReviews) state.pendingReviews = [];
-                saveData(); applyTheme(); render(); showToast("සාර්ථකව ලොග් විය!", "success");
-                if(isAdmin()) fetchUsersFromGoogleSheet();
-            } else {
-                showToast("විද්‍යුත් තැපෑල හෝ මුරපදය වැරදියි.", "error");
+                loginSuccess(registry[e]);
+                return;
             }
+
+            // 2. අලුත් ඩිවයිස් එකක් නම් Google Sheet එකෙන් (Cloud) ගෙනාපු දත්ත වලින් බලන්න
+            if (state.adminUsersData && state.adminUsersData.length > 0) {
+                const cloudUser = state.adminUsersData.find(u => u.email === e);
+                if (cloudUser && cloudUser.password === p) {
+                    if (cloudUser.stateData) {
+                        try {
+                            const parsedState = JSON.parse(cloudUser.stateData);
+                            loginSuccess(parsedState);
+                            return;
+                        } catch(err) {
+                            console.error("Cloud data parsing error:", err);
+                        }
+                    }
+                }
+            }
+
+            showToast("විද්‍යුත් තැපෑල හෝ මුරපදය වැරදියි. (අන්තර්ජාලය හා සම්බන්ධ වී ඇත්දැයි බලන්න)", "error");
+        }
+
+        function loginSuccess(userData) {
+            state = { ...state, ...userData, isNewUser: false };
+            if(!state.pendingReviews) state.pendingReviews = [];
+            if(!state.readArticles) state.readArticles = [];
+            if(!state.timerSettings) state.timerSettings = { focus: 25, break: 5 };
+            timerState.timeLeft = (state.timerSettings.focus || 25) * 60;
+            saveData(); 
+            applyTheme(); 
+            render(); 
+            showToast("සාර්ථකව ලොග් විය!", "success");
         }
 
         function handleForgotPassword() {
@@ -375,22 +408,36 @@
         }
 
         async function fetchUsersFromGoogleSheet() {
-            if (!isAdmin() || !GOOGLE_SHEET_USERS_CSV_URL || GOOGLE_SHEET_USERS_CSV_URL.includes("YOUR_")) return;
+            // වෙනස්කම: දැන් හැමෝටම දත්ත ලබාගත හැක (ලොගින් වීමට අවශ්‍ය නිසා)
+            if (!GOOGLE_SHEET_USERS_CSV_URL || GOOGLE_SHEET_USERS_CSV_URL.includes("YOUR_")) return;
             try {
                 const response = await fetch(GOOGLE_SHEET_USERS_CSV_URL + "&t=" + Date.now(), { cache: 'no-store' });
                 const csvData = await response.text();
                 Papa.parse(csvData, { header: true, skipEmptyLines: true, complete: function(results) {
-                        state.adminUsersData = results.data.map(row => ({ name: row.Name, email: row.Email, level: row.Level, xp: row.XP, totalFocusMinutes: row.FocusMinutes, joined: row.JoinedDate })).filter(u => u.email);
+                        state.adminUsersData = results.data.map(row => ({ 
+                            name: row.Name, email: row.Email, password: row.Password, level: row.Level, xp: row.XP, 
+                            totalFocusMinutes: row.FocusMinutes, joined: row.JoinedDate, stateData: row.StateJSON 
+                        })).filter(u => u.email);
                         state.adminUsersData.sort((a,b) => (parseInt(b.xp) || 0) - (parseInt(a.xp) || 0));
-                        if(state.activeTab === 'profile') render();
+                        if(state.activeTab === 'profile' && isAdmin()) render();
                     } });
             } catch (error) { console.error(error); }
         }
 
-        function syncUserStatsToGoogleSheet() {
-            if (!GOOGLE_SCRIPT_URL || GOOGLE_SCRIPT_URL.includes("YOUR_") || state.isNewUser || isAdmin()) return;
+        function syncUserStatsToGoogleSheet(force = false) {
+            // අලුතින් State එක සම්පූර්ණයෙන්ම යවයි
+            if (!GOOGLE_SCRIPT_URL || GOOGLE_SCRIPT_URL.includes("YOUR_") || (state.isNewUser && !force)) return;
             const formData = new URLSearchParams();
-            formData.append('action', 'saveUser'); formData.append('name', state.user.name); formData.append('email', state.user.email); formData.append('level', state.user.level); formData.append('xp', state.user.xp); formData.append('focusMinutes', state.stats.totalFocusMinutes || 0); formData.append('joinedDate', state.user.joined);
+            formData.append('action', 'saveUser'); 
+            formData.append('name', state.user.name); 
+            formData.append('email', state.user.email); 
+            formData.append('password', state.user.password);
+            formData.append('level', state.user.level); 
+            formData.append('xp', state.user.xp); 
+            formData.append('focusMinutes', state.stats.totalFocusMinutes || 0); 
+            formData.append('joinedDate', state.user.joined);
+            formData.append('stateData', JSON.stringify(state)); // සම්පූර්ණ දත්ත මෙතැනින් යවයි
+            
             fetch(GOOGLE_SCRIPT_URL, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: formData.toString(), mode: 'no-cors' }).catch(e=>e);
         }
 
@@ -529,8 +576,20 @@
         }
 
         // ==========================================
-        // FIXED POMODORO FUNCTIONS
+        // ADJUSTABLE POMODORO FUNCTIONS
         // ==========================================
+        function updateTimerSettings(type, val) {
+            let num = parseInt(val);
+            if (isNaN(num) || num < 1) num = 1;
+            if (!state.timerSettings) state.timerSettings = { focus: 25, break: 5 };
+            state.timerSettings[type] = num;
+            saveData();
+            if (timerState.phase === 'idle' && type === 'focus') {
+                timerState.timeLeft = num * 60;
+                updateTimerUI();
+            }
+        }
+
         function toggleTimer() {
             if (!globalAudioCtx) {
                 globalAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -562,9 +621,10 @@
                     clearInterval(timerState.interval); 
                     playAlarm(); 
                     if(timerState.mode === 'focus') { 
-                        addXP(25); state.stats.totalFocusMinutes += 25; 
+                        let focusMins = state.timerSettings?.focus || 25;
+                        addXP(focusMins); state.stats.totalFocusMinutes += focusMins; 
                         const today = new Date().toLocaleDateString('si-LK');
-                        state.dailyFocus[today] = (state.dailyFocus[today] || 0) + 25;
+                        state.dailyFocus[today] = (state.dailyFocus[today] || 0) + focusMins;
                         saveData(); 
                         timerState.phase = 'focus-ended';
                         showToast("අවධානය යොමුකළ කාලය අවසන්!", "success"); 
@@ -581,13 +641,13 @@
             clearInterval(timerState.interval); 
             timerState.mode = 'focus'; 
             timerState.phase = 'idle'; 
-            timerState.timeLeft = 25 * 60; 
+            timerState.timeLeft = (state.timerSettings?.focus || 25) * 60; 
             render(); 
         }
 
         function startBreakManual() {
             timerState.mode = 'break';
-            timerState.timeLeft = 5 * 60;
+            timerState.timeLeft = (state.timerSettings?.break || 5) * 60;
             timerState.phase = 'break-running';
             if (!globalAudioCtx) {
                 globalAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -605,7 +665,8 @@
             const el = document.getElementById('timer-display');
             if(el) el.innerText = `${Math.floor(timerState.timeLeft / 60).toString().padStart(2, '0')}:${(timerState.timeLeft % 60).toString().padStart(2, '0')}`;
             const circle = document.getElementById('timer-circle-bg');
-            if(circle) circle.style.background = `conic-gradient(${timerState.mode === 'focus' ? (state.user.theme === 'dark' ? '#6366f1' : '#4f46e5') : '#10b981'} ${(( (timerState.mode === 'focus' ? 25*60 : 5*60) - timerState.timeLeft) / (timerState.mode === 'focus' ? 25*60 : 5*60)) * 100}%, transparent 0deg)`;
+            const totalSecs = timerState.mode === 'focus' ? (state.timerSettings?.focus || 25) * 60 : (state.timerSettings?.break || 5) * 60;
+            if(circle) circle.style.background = `conic-gradient(${timerState.mode === 'focus' ? (state.user.theme === 'dark' ? '#6366f1' : '#4f46e5') : '#10b981'} ${((totalSecs - timerState.timeLeft) / totalSecs) * 100}%, transparent 0deg)`;
         }
 
         function initCharts() {
@@ -627,7 +688,7 @@
 
         function shareToWhatsApp() {
             const todayStr = new Date().toLocaleDateString('si-LK');
-            const completedHabits = state.habits.filter(h => h.completed); 
+            const completedHabits = state.habits.filter(h => h.completed && h.date === todayStr); 
             const focusTimeToday = state.dailyFocus[todayStr] || 0;
             const focusHours = Math.floor(focusTimeToday / 60);
             const focusMins = focusTimeToday % 60;
@@ -647,6 +708,7 @@
         function clearAllData() {
             showConfirmModal(t('clear_all') + "?", () => {
                 state.habits = []; state.history = []; state.reflections = {}; state.moods = {}; state.flashcards = []; state.pastTasks = {}; state.dailyFocus = {}; state.streak.count = 0; state.pendingReviews = [];
+                // readArticles and timerSettings are preserved
                 saveData(); render(); showToast("ලැයිස්තු හිස් කරන ලදී.", "success");
             });
         }
@@ -727,7 +789,13 @@
             state.selectedArticleId = id; 
             state.activeTab = 'library'; 
             state.lastSeenArticleId = id;
-            addXP(5); 
+
+            // Bug fix: Article read checking
+            if (!state.readArticles) state.readArticles = [];
+            if (!state.readArticles.includes(id)) {
+                state.readArticles.push(id);
+                addXP(5); 
+            }
             render(); 
         }
         
@@ -737,6 +805,7 @@
             state.user.xp += amount; 
             let leveledUp = false;
             
+            // Bug fix: While loop for skipping multiple levels safely
             while (state.user.xp >= state.user.level * 100 && state.user.level < 100) { 
                 state.user.xp -= state.user.level * 100; 
                 state.user.level++; 
@@ -761,7 +830,7 @@
             deleteFlashcard, flipCardDOM, toggleFocusSound, toggleTimer, resetTimer, startBreakManual,
             skipBreakManual, shareToWhatsApp, publishAdminArticle, deleteAdminArticle,
             exportData, importData, updateTargetDate, addCustomCategory, clearAllData, deleteAccount,
-            dismissReview, setRating, submitFeedback
+            dismissReview, setRating, submitFeedback, updateTimerSettings
         });
 
         function render() {
@@ -932,13 +1001,21 @@
         function renderTimer() {
             let controlButtons = '';
             if (timerState.phase === 'focus-ended') {
-                controlButtons = `<div class="flex justify-center space-x-4 mt-8 animate-fade-in"><button onclick="window.startBreakManual()" class="px-8 py-4 bg-emerald-500 text-white rounded-2xl font-black shadow-lg text-lg hover:bg-emerald-400">${t('start_break')}</button><button onclick="window.skipBreakManual()" class="px-8 py-4 glass-btn rounded-2xl font-black text-slate-500 dark:text-slate-300 transition-colors">${t('skip_break')}</button></div>`;
+                controlButtons = `<div class="flex justify-center space-x-4 mt-8 animate-fade-in"><button onclick="window.startBreakManual()" class="px-8 py-4 bg-emerald-500 text-white rounded-2xl font-black shadow-lg text-lg hover:bg-emerald-400">${t('start_break').replace('5m', (state.timerSettings?.break || 5) + 'm')}</button><button onclick="window.skipBreakManual()" class="px-8 py-4 glass-btn rounded-2xl font-black text-slate-500 dark:text-slate-300 transition-colors">${t('skip_break')}</button></div>`;
             } else {
                 let icon = (timerState.phase === 'running' || timerState.phase === 'break-running') ? '⏸️' : '▶️';
                 controlButtons = `<div class="flex justify-center space-x-6 mt-8"><button onclick="window.toggleTimer()" class="w-20 h-20 rounded-full flex items-center justify-center text-white text-3xl shadow-xl transition-transform hover:scale-105 ${(timerState.phase==='running'||timerState.phase==='break-running')?'bg-rose-500':'bg-indigo-600'}"><span>${icon}</span></button><button onclick="window.resetTimer()" class="w-20 h-20 rounded-full flex items-center justify-center bg-slate-300 text-slate-700 text-3xl shadow-xl transition-transform hover:scale-105" title="${t('reset_timer')}"><span>⏹️</span></button></div>`;
             }
 
-            return `<div class="max-w-xl mx-auto space-y-10 text-center pb-20"><header><h2 class="text-4xl font-black drop-shadow-md">${t('timer_title')}</h2></header><div class="glass-panel p-12 rounded-[3rem] relative shadow-xl"><div class="flex justify-center space-x-2 mb-8"><button onclick="window.toggleFocusSound()" class="px-4 py-2 rounded-lg text-xs font-bold border glass-btn shadow-sm">SOUND (BETA)</button></div><div class="relative w-72 h-72 mx-auto mb-10 flex items-center justify-center"><div class="absolute inset-0 bg-slate-200/50 dark:bg-slate-700/50 rounded-full shadow-inner"></div><div id="timer-circle-bg" class="absolute inset-0 timer-circle transition-all duration-500"></div><div class="absolute inset-4 glass-panel rounded-full flex flex-col items-center justify-center"><span class="text-sm font-bold text-slate-500 uppercase tracking-widest mb-1">${timerState.mode} MODE</span><span id="timer-display" class="text-7xl font-black drop-shadow-md">25:00</span></div></div>${controlButtons}</div></div>`;
+            let settingsUI = '';
+            if (timerState.phase === 'idle') {
+                settingsUI = `<div class="flex justify-center space-x-6 mb-8 animate-fade-in">
+                    <div class="flex flex-col items-center"><label class="text-[10px] font-bold text-slate-500 uppercase mb-1">Focus Time (Min)</label><input type="number" value="${state.timerSettings?.focus || 25}" onchange="window.updateTimerSettings('focus', this.value)" class="w-20 px-3 py-2 text-center glass-btn rounded-xl font-black text-lg outline-none focus:border-indigo-500" min="1" max="120"></div>
+                    <div class="flex flex-col items-center"><label class="text-[10px] font-bold text-slate-500 uppercase mb-1">Break Time (Min)</label><input type="number" value="${state.timerSettings?.break || 5}" onchange="window.updateTimerSettings('break', this.value)" class="w-20 px-3 py-2 text-center glass-btn rounded-xl font-black text-lg outline-none focus:border-indigo-500" min="1" max="30"></div>
+                </div>`;
+            }
+
+            return `<div class="max-w-xl mx-auto space-y-10 text-center pb-20"><header><h2 class="text-4xl font-black drop-shadow-md">${t('timer_title')}</h2></header><div class="glass-panel p-12 rounded-[3rem] relative shadow-xl"><div class="flex justify-center space-x-2 mb-8"><button onclick="window.toggleFocusSound()" class="px-4 py-2 rounded-lg text-xs font-bold border glass-btn shadow-sm">SOUND (BETA)</button></div>${settingsUI}<div class="relative w-72 h-72 mx-auto mb-10 flex items-center justify-center"><div class="absolute inset-0 bg-slate-200/50 dark:bg-slate-700/50 rounded-full shadow-inner"></div><div id="timer-circle-bg" class="absolute inset-0 timer-circle transition-all duration-500"></div><div class="absolute inset-4 glass-panel rounded-full flex flex-col items-center justify-center"><span class="text-sm font-bold text-slate-500 uppercase tracking-widest mb-1">${timerState.mode} MODE</span><span id="timer-display" class="text-7xl font-black drop-shadow-md">${String(Math.floor(timerState.timeLeft / 60)).padStart(2, '0')}:${String(timerState.timeLeft % 60).padStart(2, '0')}</span></div></div>${controlButtons}</div></div>`;
         }
 
         function renderFlashcards() {
