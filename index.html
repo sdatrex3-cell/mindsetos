@@ -232,13 +232,10 @@
         // ==========================================
         function initApp() {
             render(); 
-            // වලාකුළෙන් (Google Sheets) දත්ත වහාම ලබාගැනීමට
-            fetchUsersFromGoogleSheet();
 
+            // පරිශීලකයාගේ දත්ත LocalStorage හි තිබේ නම්, auto-login වීම සහ නැවත මුරපද නොඇසීම මෙතැනින් සිදු වේ.
             try {
                 let savedData = localStorage.getItem(USER_DATA_KEY);
-                
-                // පරිශීලකයාගේ දත්ත LocalStorage හි තිබේ නම්, auto-login වීමට
                 if (savedData) {
                     let parsed = JSON.parse(savedData);
                     if (parsed.user && parsed.user.email) {
@@ -252,10 +249,11 @@
                         timerState.timeLeft = (state.timerSettings.focus || 25) * 60;
                         checkNewDay(); 
                         applyTheme();
-                        syncUserStatsToGoogleSheet(); 
+                        // Note: syncUserStatsToGoogleSheet() is not called on init to save Google API quota.
                     }
                 }
                 fetchArticlesFromGoogleSheet();
+                if(isAdmin()) fetchUsersFromGoogleSheet();
             } catch(e) { console.error("Init Error:", e); } 
             finally { isAppLoading = false; render(); }
         }
@@ -318,55 +316,87 @@
             };
 
             saveData(); 
-            syncUserStatsToGoogleSheet(true); 
             applyTheme();
             render(); 
             showToast("සාර්ථකව ලියාපදිංචි විය!", "success");
         }
 
-        // CROSS-DEVICE LOGIN / LOCAL LOGIN
-        function handleLogin() {
+        // ==========================================
+        // CROSS-DEVICE LOGIN & LOCAL LOGIN 
+        // ==========================================
+        async function handleLogin() {
             const e = document.getElementById('init-email')?.value.trim(); 
             const p = document.getElementById('init-password')?.value; 
             if(!e || !p) return showToast("කරුණාකර විද්‍යුත් තැපෑල සහ මුරපදය ඇතුළත් කරන්න.", "error");
             if(!emailRegex.test(e)) return showToast("කරුණාකර නිවැරදි ඊමේල් ලිපිනයක් ඇතුළත් කරන්න.", "error");
 
-            // 1. පරණ Local Registry එකෙන් බලන්න
             let registry = JSON.parse(localStorage.getItem(USERS_REGISTRY_KEY)) || {};
+            
+            // 1. Local Device එකෙහි පරණ දත්ත තිබේදැයි බැලීම
             if(registry[e] && registry[e].user.password === p) {
                 loginSuccess(registry[e]);
                 return;
             }
 
-            // 2. අලුත් ඩිවයිස් එකක් නම් Google Sheet එකෙන් (Cloud) ගෙනාපු දත්ත වලින් බලන්න
-            if (state.adminUsersData && state.adminUsersData.length > 0) {
-                const cloudUser = state.adminUsersData.find(u => u.email === e);
-                if (cloudUser && cloudUser.password === p) {
-                    if (cloudUser.stateData) {
-                        try {
-                            const parsedState = JSON.parse(cloudUser.stateData);
-                            loginSuccess(parsedState);
-                            return;
-                        } catch(err) {
-                            console.error("Cloud data parsing error:", err);
-                        }
-                    }
-                }
+            // 2. අලුත් Device එකකින් පැමිණියේ නම් Cloud එකෙන් (Google Sheet) ගෙන්වා ගැනීම
+            if (!GOOGLE_SHEET_USERS_CSV_URL || GOOGLE_SHEET_USERS_CSV_URL.includes("YOUR_")) {
+                showToast("විද්‍යුත් තැපෑල හෝ මුරපදය වැරදියි.", "error");
+                return;
             }
 
-            showToast("විද්‍යුත් තැපෑල හෝ මුරපදය වැරදියි. (අන්තර්ජාලය හා සම්බන්ධ වී ඇත්දැයි බලන්න)", "error");
+            showToast("Cloud දත්ත පරීක්ෂා කරමින්...", "info");
+            try {
+                const response = await fetch(GOOGLE_SHEET_USERS_CSV_URL + "&t=" + Date.now(), { cache: 'no-store' });
+                const csvData = await response.text();
+                Papa.parse(csvData, { header: true, skipEmptyLines: true, complete: function(results) {
+                    const cloudUser = results.data.find(u => u.Email === e);
+                    if (cloudUser && cloudUser.Password === p) {
+                        let loadedState = null;
+                        
+                        // Cloud එකේ StateJSON එක සාර්ථකව තිබේ නම් එය ලබා ගනී
+                        if (cloudUser.StateJSON) {
+                            try { loadedState = JSON.parse(cloudUser.StateJSON); } catch(err) { console.error("Parse Error", err); }
+                        }
+                        
+                        // Fallback දත්ත
+                        if (!loadedState) {
+                            loadedState = {
+                                language: 'si', activeTab: 'home', flippedCards: {}, isNewUser: false,
+                                user: { name: cloudUser.Name, email: cloudUser.Email, password: cloudUser.Password, joined: cloudUser.JoinedDate, targetDate: '', theme: 'light', xp: parseInt(cloudUser.XP)||0, level: parseInt(cloudUser.Level)||1 },
+                                habits: [], history: [], reflections: {}, moods: {}, flashcards: [], pastTasks: {}, dailyFocus: {}, 
+                                stats: { totalFocusMinutes: parseInt(cloudUser.FocusMinutes)||0 }, streak: { count: 0, lastDate: null },
+                                categories: { 'Study': { name: 'අධ්‍යාපනය / Study', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/50' } },
+                                pendingReviews: [], readArticles: [], timerSettings: { focus: 25, break: 5 }
+                            };
+                        }
+                        loginSuccess(loadedState);
+                    } else {
+                        showToast("විද්‍යුත් තැපෑල හෝ මුරපදය වැරදියි.", "error");
+                    }
+                }});
+            } catch(err) {
+                showToast("අන්තර්ජාල දෝෂයක්. කරුණාකර නැවත උත්සාහ කරන්න.", "error");
+            }
         }
 
+        // Login වීම සාර්ථක වූ විට අදාල දත්ත LocalStorage හි රඳවා ගැනීම
         function loginSuccess(userData) {
             state = { ...state, ...userData, isNewUser: false };
             if(!state.pendingReviews) state.pendingReviews = [];
             if(!state.readArticles) state.readArticles = [];
             if(!state.timerSettings) state.timerSettings = { focus: 25, break: 5 };
             timerState.timeLeft = (state.timerSettings.focus || 25) * 60;
-            saveData(); 
+            
+            // Auto login එක සඳහා Local storage එක යාවත්කාලීන කිරීම
+            let registry = JSON.parse(localStorage.getItem(USERS_REGISTRY_KEY)) || {};
+            registry[state.user.email] = state;
+            localStorage.setItem(USERS_REGISTRY_KEY, JSON.stringify(registry));
+            localStorage.setItem(USER_DATA_KEY, JSON.stringify(state)); 
+            
             applyTheme(); 
             render(); 
             showToast("සාර්ථකව ලොග් විය!", "success");
+            if(isAdmin()) fetchUsersFromGoogleSheet();
         }
 
         function handleForgotPassword() {
@@ -408,7 +438,6 @@
         }
 
         async function fetchUsersFromGoogleSheet() {
-            // වෙනස්කම: දැන් හැමෝටම දත්ත ලබාගත හැක (ලොගින් වීමට අවශ්‍ය නිසා)
             if (!GOOGLE_SHEET_USERS_CSV_URL || GOOGLE_SHEET_USERS_CSV_URL.includes("YOUR_")) return;
             try {
                 const response = await fetch(GOOGLE_SHEET_USERS_CSV_URL + "&t=" + Date.now(), { cache: 'no-store' });
@@ -424,9 +453,9 @@
             } catch (error) { console.error(error); }
         }
 
-        function syncUserStatsToGoogleSheet(force = false) {
-            // අලුතින් State එක සම්පූර්ණයෙන්ම යවයි
-            if (!GOOGLE_SCRIPT_URL || GOOGLE_SCRIPT_URL.includes("YOUR_") || (state.isNewUser && !force)) return;
+        function syncUserStatsToGoogleSheet() {
+            // දත්ත වෙනස් වූ විට පමණක් සම්පූර්ණ State එක Cloud එකට යවයි
+            if (!GOOGLE_SCRIPT_URL || GOOGLE_SCRIPT_URL.includes("YOUR_") || state.isNewUser) return;
             const formData = new URLSearchParams();
             formData.append('action', 'saveUser'); 
             formData.append('name', state.user.name); 
@@ -436,7 +465,7 @@
             formData.append('xp', state.user.xp); 
             formData.append('focusMinutes', state.stats.totalFocusMinutes || 0); 
             formData.append('joinedDate', state.user.joined);
-            formData.append('stateData', JSON.stringify(state)); // සම්පූර්ණ දත්ත මෙතැනින් යවයි
+            formData.append('stateData', JSON.stringify(state)); 
             
             fetch(GOOGLE_SCRIPT_URL, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: formData.toString(), mode: 'no-cors' }).catch(e=>e);
         }
@@ -708,7 +737,6 @@
         function clearAllData() {
             showConfirmModal(t('clear_all') + "?", () => {
                 state.habits = []; state.history = []; state.reflections = {}; state.moods = {}; state.flashcards = []; state.pastTasks = {}; state.dailyFocus = {}; state.streak.count = 0; state.pendingReviews = [];
-                // readArticles and timerSettings are preserved
                 saveData(); render(); showToast("ලැයිස්තු හිස් කරන ලදී.", "success");
             });
         }
