@@ -83,8 +83,6 @@
         
         const GOOGLE_SHEET_ARTICLES_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vShQaas57qfq3ElS57vD9c85buElPk8F7o6EDs4JjNFY-JKBZpOCBUIFg4tgex7Ojy6TxUsh3tuyzdf/pub?gid=0&single=true&output=csv";
         const GOOGLE_SHEET_USERS_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vShQaas57qfq3ElS57vD9c85buElPk8F7o6EDs4JjNFY-JKBZpOCBUIFg4tgex7Ojy6TxUsh3tuyzdf/pub?gid=1423780323&single=true&output=csv"; 
-        
-        // UPATED URL HERE:
         const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzJZYxni7XVjMkwU-h-XJdHsa4jkVDUei8ZyArZLw4HAOWypI4DfuVvcqY0Q8oMQhNl/exec";
 
         // ==========================================
@@ -152,6 +150,7 @@
         // 3. STATE MANAGEMENT
         // ==========================================
         let state = {
+            lastModified: 0, // NEW: Timestamp to track newest data
             language: 'si', activeTab: 'home', selectedArticleId: null, flippedCards: {}, isNewUser: true,
             user: { name: '', email: '', password: '', joined: '', targetDate: '', theme: 'light', xp: 0, level: 1 },
             habits: [], history: [], reflections: {}, moods: {}, flashcards: [], pastTasks: {}, dailyFocus: {}, 
@@ -230,7 +229,7 @@
         }
 
         // ==========================================
-        // 5. CORE INIT & DATA MIGRATION
+        // 5. CORE INIT & BACKGROUND SYNC
         // ==========================================
         function initApp() {
             render(); 
@@ -241,6 +240,7 @@
                     let parsed = JSON.parse(savedData);
                     if (parsed.user && parsed.user.email) {
                         state = { ...state, ...parsed, isNewUser: false };
+                        if(!state.lastModified) state.lastModified = 0;
                         if(!state.pastTasks) state.pastTasks = {}; 
                         if(!state.dailyFocus) state.dailyFocus = {};
                         if(!state.pendingReviews) state.pendingReviews = [];
@@ -251,7 +251,7 @@
                         checkNewDay(); 
                         applyTheme();
                         
-                        // NEW: Trigger background sync for cross-device updates
+                        // Background sync on load
                         syncFromCloudSilently(state.user.email, state.user.password);
                     }
                 }
@@ -261,7 +261,7 @@
             finally { isAppLoading = false; render(); }
         }
 
-        // NEW FUNCTION: Quietly updates state if changes happened on another device
+        // TIMESTAMP-AWARE BACKGROUND SYNC
         async function syncFromCloudSilently(email, password) {
             if (!GOOGLE_SHEET_USERS_CSV_URL || GOOGLE_SHEET_USERS_CSV_URL.includes("YOUR_")) return;
 
@@ -286,15 +286,22 @@
                             if (stateJSON && stateJSON.trim().startsWith('{')) {
                                 try { 
                                     const cloudState = JSON.parse(stateJSON); 
-                                    // Merge the cloud data over the local data
-                                    state = { ...state, ...cloudState };
-                                    // Save the fresh data to local storage
-                                    localStorage.setItem(USER_DATA_KEY, JSON.stringify(state));
-                                    let registry = JSON.parse(localStorage.getItem(USERS_REGISTRY_KEY)) || {};
-                                    registry[state.user.email] = state;
-                                    localStorage.setItem(USERS_REGISTRY_KEY, JSON.stringify(registry));
                                     
-                                    render(); // Update UI with fresh data
+                                    // CROSS DEVICE FIX: Compare timestamps
+                                    const localTime = state.lastModified || 0;
+                                    const cloudTime = cloudState.lastModified || 0;
+
+                                    if (cloudTime > localTime) {
+                                        state = { ...state, ...cloudState };
+                                        
+                                        // Save locally without triggering a new upload
+                                        localStorage.setItem(USER_DATA_KEY, JSON.stringify(state));
+                                        let registry = JSON.parse(localStorage.getItem(USERS_REGISTRY_KEY)) || {};
+                                        registry[state.user.email] = state;
+                                        localStorage.setItem(USERS_REGISTRY_KEY, JSON.stringify(registry));
+                                        
+                                        render(); // Refresh UI with new data
+                                    }
                                 } catch(err) {} 
                             }
                         }
@@ -302,6 +309,19 @@
                 }});
             } catch (error) { console.error("Background sync failed", error); }
         }
+
+        // EVENT LISTENERS FOR TAB FOCUS & PERIODIC SYNC
+        window.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible' && !state.isNewUser && state.user.email) {
+                syncFromCloudSilently(state.user.email, state.user.password);
+            }
+        });
+        
+        setInterval(() => {
+            if (!state.isNewUser && state.user.email) {
+                syncFromCloudSilently(state.user.email, state.user.password);
+            }
+        }, 60000); // Check cloud every 60 seconds
 
         function checkNewDay() {
             if (state.isNewUser) return;
@@ -332,10 +352,14 @@
 
         function saveData() { 
             if (!state.isNewUser) {
+                // TIMESTAMP FIX: Update time on every action
+                state.lastModified = Date.now(); 
+                
                 localStorage.setItem(USER_DATA_KEY, JSON.stringify(state)); 
                 let registry = JSON.parse(localStorage.getItem(USERS_REGISTRY_KEY)) || {};
                 registry[state.user.email] = state;
                 localStorage.setItem(USERS_REGISTRY_KEY, JSON.stringify(registry));
+                
                 syncUserStatsToGoogleSheet(); 
             }
         }
@@ -351,6 +375,7 @@
             if(registry[e]) return showToast("මෙම විද්‍යුත් තැපෑල දැනටමත් භාවිතයේ පවතී. කරුණාකර ලොග් වන්න.", "error");
 
             state = {
+                lastModified: Date.now(),
                 language: state.language, activeTab: 'home', selectedArticleId: null, flippedCards: {}, isNewUser: false,
                 user: { name: n, email: e, password: p, joined: new Date().toLocaleDateString('si-LK'), targetDate: '', theme: 'light', xp: 0, level: 1 },
                 habits: [], history: [], reflections: {}, moods: {}, flashcards: [], pastTasks: {}, dailyFocus: {}, 
@@ -378,7 +403,6 @@
             let registry = JSON.parse(localStorage.getItem(USERS_REGISTRY_KEY)) || {};
             
             if (!GOOGLE_SHEET_USERS_CSV_URL || GOOGLE_SHEET_USERS_CSV_URL.includes("YOUR_")) {
-                // Offline / No Cloud configuration fallback
                 if(registry[e] && registry[e].user && registry[e].user.password === p) {
                     loginSuccess(registry[e]);
                     return;
@@ -416,6 +440,7 @@
                             
                             if (!loadedState) {
                                 loadedState = {
+                                    lastModified: Date.now(),
                                     language: 'si', activeTab: 'home', flippedCards: {}, isNewUser: false,
                                     user: { name: getField(cloudUser, 'name') || '', email: e, password: p, joined: getField(cloudUser, 'joineddate') || getField(cloudUser, 'joined') || new Date().toLocaleDateString('si-LK'), targetDate: '', theme: 'light', xp: parseInt(getField(cloudUser, 'xp'))||0, level: parseInt(getField(cloudUser, 'level'))||1 },
                                     habits: [], history: [], reflections: {}, moods: {}, flashcards: [], pastTasks: {}, dailyFocus: {}, 
@@ -429,7 +454,6 @@
                             showToast("මුරපදය (Password) වැරදියි.", "error");
                         }
                     } else {
-                        // Cloud missed it, fallback to local if it exists
                         if(registry[e] && registry[e].user && registry[e].user.password === p) {
                             showToast("Cloud දත්ත නොමැත, Local දත්ත භාවිතා වේ.", "info");
                             loginSuccess(registry[e]);
@@ -439,7 +463,6 @@
                     }
                 }});
             } catch(err) {
-                // Network Error Fallback
                 if(registry[e] && registry[e].user && registry[e].user.password === p) {
                     showToast("අන්තර්ජාල දෝෂයකි. Local දත්ත භාවිතා වේ.", "info");
                     loginSuccess(registry[e]);
@@ -452,6 +475,7 @@
         // Login වීම සාර්ථක වූ විට අදාල දත්ත LocalStorage හි රඳවා ගැනීම
         function loginSuccess(userData) {
             state = { ...state, ...userData, isNewUser: false };
+            if(!state.lastModified) state.lastModified = Date.now();
             if(!state.pendingReviews) state.pendingReviews = [];
             if(!state.readArticles) state.readArticles = [];
             if(!state.timerSettings) state.timerSettings = { focus: 25, break: 5 };
@@ -527,15 +551,15 @@
             } catch (error) { console.error(error); }
         }
 
-        let syncTimeout = null; // Debounce variable
+        let syncTimeout = null; 
 
         function syncUserStatsToGoogleSheet() {
-            // Only proceed if URL is valid and it's an existing user
             if (!GOOGLE_SCRIPT_URL || GOOGLE_SCRIPT_URL.includes("YOUR_") || state.isNewUser) return;
             
-            // Debounce: Wait 2.5 seconds after the last action before firing the API request
             clearTimeout(syncTimeout);
             syncTimeout = setTimeout(() => {
+                syncTimeout = null; // Clear flag before uploading
+                
                 const formData = new URLSearchParams();
                 formData.append('action', 'saveUser'); 
                 formData.append('name', state.user.name); 
