@@ -466,7 +466,7 @@
                         };
                         state.adminUsersData = results.data.map(row => ({ 
                             name: getField(row, 'name'), email: getField(row, 'email'), password: getField(row, 'password') || getField(row, 'pass'), level: getField(row, 'level'), xp: getField(row, 'xp'), 
-                            totalFocusMinutes: getField(row, 'focusminutes'), joined: getField(row, 'joineddate'), stateData: getField(row, 'statejson') || getField(row, 'statedata')
+                            totalFocusMinutes: getField(row, 'focusminutes'), joined: getField(row, 'joineddate') || getField(row, 'joined'), stateData: getField(row, 'statejson') || getField(row, 'statedata')
                         })).filter(u => u.email);
                         state.adminUsersData.sort((a,b) => (parseInt(b.xp) || 0) - (parseInt(a.xp) || 0));
                         if(state.activeTab === 'profile' && isAdmin()) render();
