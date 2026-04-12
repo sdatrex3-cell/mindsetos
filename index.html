@@ -249,7 +249,6 @@
                         timerState.timeLeft = (state.timerSettings.focus || 25) * 60;
                         checkNewDay(); 
                         applyTheme();
-                        // Note: syncUserStatsToGoogleSheet() is not called on init to save Google API quota.
                     }
                 }
                 fetchArticlesFromGoogleSheet();
@@ -332,8 +331,8 @@
 
             let registry = JSON.parse(localStorage.getItem(USERS_REGISTRY_KEY)) || {};
             
-            // 1. Local Device එකෙහි පරණ දත්ත තිබේදැයි බැලීම
-            if(registry[e] && registry[e].user.password === p) {
+            // 1. Local Device එකෙහි පරණ දත්ත තිබේදැයි බැලීම (Fast login without checking sheet)
+            if(registry[e] && registry[e].user && registry[e].user.password === p) {
                 loginSuccess(registry[e]);
                 return;
             }
@@ -346,32 +345,50 @@
 
             showToast("Cloud දත්ත පරීක්ෂා කරමින්...", "info");
             try {
-                const response = await fetch(GOOGLE_SHEET_USERS_CSV_URL + "&t=" + Date.now(), { cache: 'no-store' });
+                // Cache මඟහැරීම සඳහා අහඹු අංකයක් එකතු කිරීම
+                const response = await fetch(GOOGLE_SHEET_USERS_CSV_URL + "&t=" + Date.now() + Math.random(), { cache: 'no-store' });
                 const csvData = await response.text();
                 Papa.parse(csvData, { header: true, skipEmptyLines: true, complete: function(results) {
-                    const cloudUser = results.data.find(u => u.Email === e);
-                    if (cloudUser && cloudUser.Password === p) {
-                        let loadedState = null;
-                        
-                        // Cloud එකේ StateJSON එක සාර්ථකව තිබේ නම් එය ලබා ගනී
-                        if (cloudUser.StateJSON) {
-                            try { loadedState = JSON.parse(cloudUser.StateJSON); } catch(err) { console.error("Parse Error", err); }
+                    
+                    // Header වල අකුරු (Simple/Capital) වෙනස් වුණත් දත්ත නිවැරදිව ලබා ගැනීමට
+                    const getField = (row, searchStr) => {
+                        const key = Object.keys(row).find(k => k.toLowerCase().replace(/\s/g, '') === searchStr.toLowerCase() || k.toLowerCase().includes(searchStr.toLowerCase()));
+                        return key ? row[key] : null;
+                    };
+
+                    const eLower = e.toLowerCase();
+                    const cloudUser = results.data.find(u => {
+                        const rowEmail = getField(u, 'email') || u.Email || u.email || '';
+                        return String(rowEmail).trim().toLowerCase() === eLower;
+                    });
+                    
+                    if (cloudUser) {
+                        const cloudPass = getField(cloudUser, 'password') || getField(cloudUser, 'pass') || cloudUser.Password || cloudUser.password || '';
+                        if (String(cloudPass).trim() === p) {
+                            let loadedState = null;
+                            const stateJSON = getField(cloudUser, 'statejson') || getField(cloudUser, 'statedata') || cloudUser.StateJSON || cloudUser.StateData || '';
+                            
+                            if (stateJSON && stateJSON.trim().startsWith('{')) {
+                                try { loadedState = JSON.parse(stateJSON); } catch(err) { console.error("Parse Error", err); }
+                            }
+                            
+                            if (!loadedState) {
+                                // Fallback Data - State JSON එක නැත්නම් සාමාන්‍ය දත්ත වලින් Load කිරීම
+                                loadedState = {
+                                    language: 'si', activeTab: 'home', flippedCards: {}, isNewUser: false,
+                                    user: { name: getField(cloudUser, 'name') || '', email: e, password: p, joined: getField(cloudUser, 'joineddate') || getField(cloudUser, 'joined') || new Date().toLocaleDateString('si-LK'), targetDate: '', theme: 'light', xp: parseInt(getField(cloudUser, 'xp'))||0, level: parseInt(getField(cloudUser, 'level'))||1 },
+                                    habits: [], history: [], reflections: {}, moods: {}, flashcards: [], pastTasks: {}, dailyFocus: {}, 
+                                    stats: { totalFocusMinutes: parseInt(getField(cloudUser, 'focusminutes'))||0 }, streak: { count: 0, lastDate: null },
+                                    categories: { 'Study': { name: 'අධ්‍යාපනය / Study', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/50' } },
+                                    pendingReviews: [], readArticles: [], timerSettings: { focus: 25, break: 5 }
+                                };
+                            }
+                            loginSuccess(loadedState);
+                        } else {
+                            showToast("මුරපදය (Password) වැරදියි.", "error");
                         }
-                        
-                        // Fallback දත්ත
-                        if (!loadedState) {
-                            loadedState = {
-                                language: 'si', activeTab: 'home', flippedCards: {}, isNewUser: false,
-                                user: { name: cloudUser.Name, email: cloudUser.Email, password: cloudUser.Password, joined: cloudUser.JoinedDate, targetDate: '', theme: 'light', xp: parseInt(cloudUser.XP)||0, level: parseInt(cloudUser.Level)||1 },
-                                habits: [], history: [], reflections: {}, moods: {}, flashcards: [], pastTasks: {}, dailyFocus: {}, 
-                                stats: { totalFocusMinutes: parseInt(cloudUser.FocusMinutes)||0 }, streak: { count: 0, lastDate: null },
-                                categories: { 'Study': { name: 'අධ්‍යාපනය / Study', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/50' } },
-                                pendingReviews: [], readArticles: [], timerSettings: { focus: 25, break: 5 }
-                            };
-                        }
-                        loginSuccess(loadedState);
                     } else {
-                        showToast("විද්‍යුත් තැපෑල හෝ මුරපදය වැරදියි.", "error");
+                        showToast("මෙම ඊමේල් ලිපිනය සඳහා ගිණුමක් නොමැත. (මෑතකදී සෑදූ ගිණුමක් නම් විනාඩි 5ක් පමණ රැඳී සිටින්න)", "error");
                     }
                 }});
             } catch(err) {
@@ -443,9 +460,13 @@
                 const response = await fetch(GOOGLE_SHEET_USERS_CSV_URL + "&t=" + Date.now(), { cache: 'no-store' });
                 const csvData = await response.text();
                 Papa.parse(csvData, { header: true, skipEmptyLines: true, complete: function(results) {
+                        const getField = (row, searchStr) => {
+                            const key = Object.keys(row).find(k => k.toLowerCase().replace(/\s/g, '') === searchStr.toLowerCase() || k.toLowerCase().includes(searchStr.toLowerCase()));
+                            return key ? row[key] : null;
+                        };
                         state.adminUsersData = results.data.map(row => ({ 
-                            name: row.Name, email: row.Email, password: row.Password, level: row.Level, xp: row.XP, 
-                            totalFocusMinutes: row.FocusMinutes, joined: row.JoinedDate, stateData: row.StateJSON 
+                            name: getField(row, 'name'), email: getField(row, 'email'), password: getField(row, 'password') || getField(row, 'pass'), level: getField(row, 'level'), xp: getField(row, 'xp'), 
+                            totalFocusMinutes: getField(row, 'focusminutes'), joined: getField(row, 'joineddate'), stateData: getField(row, 'statejson') || getField(row, 'statedata')
                         })).filter(u => u.email);
                         state.adminUsersData.sort((a,b) => (parseInt(b.xp) || 0) - (parseInt(a.xp) || 0));
                         if(state.activeTab === 'profile' && isAdmin()) render();
@@ -737,6 +758,7 @@
         function clearAllData() {
             showConfirmModal(t('clear_all') + "?", () => {
                 state.habits = []; state.history = []; state.reflections = {}; state.moods = {}; state.flashcards = []; state.pastTasks = {}; state.dailyFocus = {}; state.streak.count = 0; state.pendingReviews = [];
+                // readArticles and timerSettings are preserved
                 saveData(); render(); showToast("ලැයිස්තු හිස් කරන ලදී.", "success");
             });
         }
