@@ -73,7 +73,7 @@
 
     <script>
         // ==========================================
-        // 1. CONFIGURATION 
+        // 1. CONFIGURATION & UNIVERSAL UTILS
         // ==========================================
         const USER_DATA_KEY = "mindsetos_local_db_final"; 
         const USERS_REGISTRY_KEY = "mindsetos_users_registry"; 
@@ -84,6 +84,11 @@
         const GOOGLE_SHEET_ARTICLES_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vShQaas57qfq3ElS57vD9c85buElPk8F7o6EDs4JjNFY-JKBZpOCBUIFg4tgex7Ojy6TxUsh3tuyzdf/pub?gid=0&single=true&output=csv";
         const GOOGLE_SHEET_USERS_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vShQaas57qfq3ElS57vD9c85buElPk8F7o6EDs4JjNFY-JKBZpOCBUIFg4tgex7Ojy6TxUsh3tuyzdf/pub?gid=1423780323&single=true&output=csv"; 
         const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzJZYxni7XVjMkwU-h-XJdHsa4jkVDUei8ZyArZLw4HAOWypI4DfuVvcqY0Q8oMQhNl/exec";
+
+        function getTodayStr() {
+            const d = new Date();
+            return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+        }
 
         // ==========================================
         // 2. DICTIONARY & LEVELS
@@ -150,7 +155,7 @@
         // 3. STATE MANAGEMENT
         // ==========================================
         let state = {
-            lastModified: 0, // NEW: Timestamp to track newest data
+            lastModified: 0, 
             language: 'si', activeTab: 'home', selectedArticleId: null, flippedCards: {}, isNewUser: true,
             user: { name: '', email: '', password: '', joined: '', targetDate: '', theme: 'light', xp: 0, level: 1 },
             habits: [], history: [], reflections: {}, moods: {}, flashcards: [], pastTasks: {}, dailyFocus: {}, 
@@ -167,7 +172,7 @@
         const priorities = { 'Q1': { name: 'හදිසි/වැදගත්', class: 'bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400' }, 'Q2': { name: 'වැදගත් පමණි', class: 'bg-indigo-50 text-indigo-600 dark:bg-indigo-900/20 dark:text-indigo-400' }, 'Q3': { name: 'සාමාන්‍ය', class: 'bg-slate-50 text-slate-600 dark:bg-slate-800 dark:text-slate-400' } };
         const moodEmojis = { 'great': '🤩', 'good': '😊', 'neutral': '😐', 'bad': '😫' };
         
-        let timerState = { mode: 'focus', phase: 'idle', timeLeft: 25 * 60, interval: null };
+        let timerState = { mode: 'focus', phase: 'idle', timeLeft: 25 * 60, targetEndTime: null, interval: null };
         let progressChartInstance = null, focusChartInstance = null;
         let globalAudioCtx = null;
 
@@ -232,8 +237,6 @@
         // 5. CORE INIT & BACKGROUND SYNC
         // ==========================================
         function initApp() {
-            render(); 
-
             try {
                 let savedData = localStorage.getItem(USER_DATA_KEY);
                 if (savedData) {
@@ -248,20 +251,19 @@
                         if(!state.timerSettings) state.timerSettings = { focus: 25, break: 5 }; 
                         
                         timerState.timeLeft = (state.timerSettings.focus || 25) * 60;
-                        checkNewDay(); 
                         applyTheme();
-                        
-                        // Background sync on load
                         syncFromCloudSilently(state.user.email, state.user.password);
                     }
                 }
                 fetchArticlesFromGoogleSheet();
                 if(isAdmin()) fetchUsersFromGoogleSheet();
             } catch(e) { console.error("Init Error:", e); } 
-            finally { isAppLoading = false; render(); }
+            finally { 
+                isAppLoading = false; 
+                render(); 
+            }
         }
 
-        // TIMESTAMP-AWARE BACKGROUND SYNC
         async function syncFromCloudSilently(email, password) {
             if (!GOOGLE_SHEET_USERS_CSV_URL || GOOGLE_SHEET_USERS_CSV_URL.includes("YOUR_")) return;
 
@@ -279,6 +281,8 @@
                         return String(rowEmail).trim().toLowerCase() === email.toLowerCase();
                     });
 
+                    const localTime = state.lastModified || 0;
+
                     if (cloudUser) {
                         const cloudPass = getField(cloudUser, 'password') || getField(cloudUser, 'pass') || '';
                         if (String(cloudPass).trim() === password) {
@@ -286,31 +290,33 @@
                             if (stateJSON && stateJSON.trim().startsWith('{')) {
                                 try { 
                                     const cloudState = JSON.parse(stateJSON); 
-                                    
-                                    // CROSS DEVICE FIX: Compare timestamps
-                                    const localTime = state.lastModified || 0;
                                     const cloudTime = cloudState.lastModified || 0;
 
                                     if (cloudTime > localTime) {
                                         state = { ...state, ...cloudState };
-                                        
-                                        // Save locally without triggering a new upload
                                         localStorage.setItem(USER_DATA_KEY, JSON.stringify(state));
                                         let registry = JSON.parse(localStorage.getItem(USERS_REGISTRY_KEY)) || {};
                                         registry[state.user.email] = state;
                                         localStorage.setItem(USERS_REGISTRY_KEY, JSON.stringify(registry));
                                         
-                                        render(); // Refresh UI with new data
+                                        const activeEl = document.activeElement;
+                                        const isTyping = activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA');
+                                        if (!isTyping) {
+                                            render(); 
+                                        }
+                                    } else if (localTime > cloudTime) {
+                                        syncUserStatsToGoogleSheet(true);
                                     }
                                 } catch(err) {} 
                             }
                         }
+                    } else {
+                        syncUserStatsToGoogleSheet(true);
                     }
                 }});
             } catch (error) { console.error("Background sync failed", error); }
         }
 
-        // EVENT LISTENERS FOR TAB FOCUS & PERIODIC SYNC
         window.addEventListener('visibilitychange', () => {
             if (document.visibilityState === 'visible' && !state.isNewUser && state.user.email) {
                 syncFromCloudSilently(state.user.email, state.user.password);
@@ -321,11 +327,11 @@
             if (!state.isNewUser && state.user.email) {
                 syncFromCloudSilently(state.user.email, state.user.password);
             }
-        }, 60000); // Check cloud every 60 seconds
+        }, 60000);
 
         function checkNewDay() {
             if (state.isNewUser) return;
-            const today = new Date().toLocaleDateString('si-LK');
+            const today = getTodayStr(); 
             
             if (!state.streak.lastDate) { 
                 state.streak.lastDate = today; 
@@ -333,8 +339,9 @@
                 updateHistory(); 
             } else if (state.streak.lastDate !== today) {
                 const yest = new Date(); yest.setDate(yest.getDate() - 1);
+                const yestStr = yest.getFullYear() + '-' + String(yest.getMonth() + 1).padStart(2, '0') + '-' + String(yest.getDate()).padStart(2, '0');
                 
-                if (state.streak.lastDate === yest.toLocaleDateString('si-LK')) {
+                if (state.streak.lastDate === yestStr) {
                     state.streak.count += 1; 
                 } else {
                     state.streak.count = 1; 
@@ -350,23 +357,31 @@
             }
         }
 
-        function saveData() { 
-            if (!state.isNewUser) {
-                // TIMESTAMP FIX: Update time on every action
-                state.lastModified = Date.now(); 
-                
+        let localSaveTimeout = null;
+        function saveData(immediate = false) { 
+            if (state.isNewUser) return;
+            state.lastModified = Date.now(); 
+            
+            const doSave = () => {
                 localStorage.setItem(USER_DATA_KEY, JSON.stringify(state)); 
                 let registry = JSON.parse(localStorage.getItem(USERS_REGISTRY_KEY)) || {};
                 registry[state.user.email] = state;
                 localStorage.setItem(USERS_REGISTRY_KEY, JSON.stringify(registry));
-                
                 syncUserStatsToGoogleSheet(); 
+            };
+
+            if (immediate) {
+                clearTimeout(localSaveTimeout);
+                doSave();
+            } else {
+                clearTimeout(localSaveTimeout);
+                localSaveTimeout = setTimeout(doSave, 500);
             }
         }
 
         function handleRegister() { 
             const n = document.getElementById('init-name')?.value.trim(); 
-            const e = document.getElementById('init-email')?.value.trim(); 
+            const e = document.getElementById('init-email')?.value.trim().toLowerCase(); 
             const p = document.getElementById('init-password')?.value; 
             if(!n || !e || p.length < 6) return showToast("කරුණාකර නිවැරදි තොරතුරු ඇතුළත් කරන්න (අවම වශයෙන් මුරපදයට අකුරු 6ක් අවශ්‍යයි).", "error");
             if(!emailRegex.test(e)) return showToast("කරුණාකර නිවැරදි ඊමේල් ලිපිනයක් ඇතුළත් කරන්න.", "error");
@@ -377,7 +392,7 @@
             state = {
                 lastModified: Date.now(),
                 language: state.language, activeTab: 'home', selectedArticleId: null, flippedCards: {}, isNewUser: false,
-                user: { name: n, email: e, password: p, joined: new Date().toLocaleDateString('si-LK'), targetDate: '', theme: 'light', xp: 0, level: 1 },
+                user: { name: n, email: e, password: p, joined: getTodayStr(), targetDate: '', theme: 'light', xp: 0, level: 1 },
                 habits: [], history: [], reflections: {}, moods: {}, flashcards: [], pastTasks: {}, dailyFocus: {}, 
                 stats: { totalFocusMinutes: 0 }, streak: { count: 0, lastDate: null },
                 categories: { 'Study': { name: 'අධ්‍යාපනය / Study', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 border-blue-200 dark:border-blue-800' } },
@@ -385,17 +400,14 @@
                 readArticles: [], timerSettings: { focus: 25, break: 5 }
             };
 
-            saveData(); 
+            saveData(true); 
             applyTheme();
             render(); 
             showToast("සාර්ථකව ලියාපදිංචි විය!", "success");
         }
 
-        // ==========================================
-        // CROSS-DEVICE LOGIN & LOCAL LOGIN 
-        // ==========================================
         async function handleLogin() {
-            const e = document.getElementById('init-email')?.value.trim(); 
+            const e = document.getElementById('init-email')?.value.trim().toLowerCase(); 
             const p = document.getElementById('init-password')?.value; 
             if(!e || !p) return showToast("කරුණාකර විද්‍යුත් තැපෑල සහ මුරපදය ඇතුළත් කරන්න.", "error");
             if(!emailRegex.test(e)) return showToast("කරුණාකර නිවැරදි ඊමේල් ලිපිනයක් ඇතුළත් කරන්න.", "error");
@@ -422,10 +434,9 @@
                         return key ? row[key] : null;
                     };
 
-                    const eLower = e.toLowerCase();
                     const cloudUser = results.data.find(u => {
                         const rowEmail = getField(u, 'email') || u.Email || u.email || '';
-                        return String(rowEmail).trim().toLowerCase() === eLower;
+                        return String(rowEmail).trim().toLowerCase() === e;
                     });
                     
                     if (cloudUser) {
@@ -442,7 +453,7 @@
                                 loadedState = {
                                     lastModified: Date.now(),
                                     language: 'si', activeTab: 'home', flippedCards: {}, isNewUser: false,
-                                    user: { name: getField(cloudUser, 'name') || '', email: e, password: p, joined: getField(cloudUser, 'joineddate') || getField(cloudUser, 'joined') || new Date().toLocaleDateString('si-LK'), targetDate: '', theme: 'light', xp: parseInt(getField(cloudUser, 'xp'))||0, level: parseInt(getField(cloudUser, 'level'))||1 },
+                                    user: { name: getField(cloudUser, 'name') || '', email: e, password: p, joined: getField(cloudUser, 'joineddate') || getField(cloudUser, 'joined') || getTodayStr(), targetDate: '', theme: 'light', xp: parseInt(getField(cloudUser, 'xp'))||0, level: parseInt(getField(cloudUser, 'level'))||1 },
                                     habits: [], history: [], reflections: {}, moods: {}, flashcards: [], pastTasks: {}, dailyFocus: {}, 
                                     stats: { totalFocusMinutes: parseInt(getField(cloudUser, 'focusminutes'))||0 }, streak: { count: 0, lastDate: null },
                                     categories: { 'Study': { name: 'අධ්‍යාපනය / Study', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/50' } },
@@ -472,7 +483,6 @@
             }
         }
 
-        // Login වීම සාර්ථක වූ විට අදාල දත්ත LocalStorage හි රඳවා ගැනීම
         function loginSuccess(userData) {
             state = { ...state, ...userData, isNewUser: false };
             if(!state.lastModified) state.lastModified = Date.now();
@@ -481,7 +491,6 @@
             if(!state.timerSettings) state.timerSettings = { focus: 25, break: 5 };
             timerState.timeLeft = (state.timerSettings.focus || 25) * 60;
             
-            // Auto login එක සඳහා Local storage එක යාවත්කාලීන කිරීම
             let registry = JSON.parse(localStorage.getItem(USERS_REGISTRY_KEY)) || {};
             registry[state.user.email] = state;
             localStorage.setItem(USERS_REGISTRY_KEY, JSON.stringify(registry));
@@ -493,9 +502,10 @@
             if(isAdmin()) fetchUsersFromGoogleSheet();
         }
 
+        // FIX: Force Sync Password change immediately
         function handleForgotPassword() {
             showPromptModal("ඔබගේ විද්‍යුත් තැපෑල (Email) ඇතුළත් කරන්න:", (email) => {
-                const e = email.trim();
+                const e = email.trim().toLowerCase();
                 if (!e || !emailRegex.test(e)) return showToast("කරුණාකර නිවැරදි ඊමේල් ලිපිනයක් ඇතුළත් කරන්න.", "error");
                 let registry = JSON.parse(localStorage.getItem(USERS_REGISTRY_KEY)) || {};
                 if (!registry[e]) {
@@ -505,8 +515,32 @@
                 setTimeout(() => {
                     showPromptModal("නව මුරපදය ඇතුළත් කරන්න:", (newPass) => {
                         if (!newPass || newPass.length < 6) return showToast("අවම වශයෙන් අකුරු 6ක් අවශ්‍යයි.", "error");
+                        
                         registry[e].user.password = newPass;
+                        registry[e].lastModified = Date.now(); 
                         localStorage.setItem(USERS_REGISTRY_KEY, JSON.stringify(registry));
+
+                        if (state.user && state.user.email === e) {
+                            state.user.password = newPass;
+                            state.lastModified = Date.now();
+                            saveData(true);
+                        }
+                        
+                        if (GOOGLE_SCRIPT_URL && !GOOGLE_SCRIPT_URL.includes("YOUR_")) {
+                            const formData = new URLSearchParams();
+                            formData.append('action', 'saveUser'); 
+                            formData.append('name', registry[e].user.name); 
+                            formData.append('email', e); 
+                            formData.append('password', newPass);
+                            formData.append('level', registry[e].user.level); 
+                            formData.append('xp', registry[e].user.xp); 
+                            formData.append('focusMinutes', registry[e].stats.totalFocusMinutes || 0); 
+                            formData.append('joinedDate', registry[e].user.joined);
+                            formData.append('stateData', JSON.stringify(registry[e])); 
+                            
+                            fetch(GOOGLE_SCRIPT_URL, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: formData.toString(), mode: 'no-cors' }).catch(err=>err);
+                        }
+                        
                         showToast("මුරපදය යාවත්කාලීන කරන ලදී. කරුණාකර ලොග් වන්න.", "success");
                     });
                 }, 300);
@@ -514,7 +548,27 @@
         }
 
         function switchAuthMode() { window.authMode = window.authMode === 'login' ? 'register' : 'login'; render(); }
-        function logout() { localStorage.removeItem(USER_DATA_KEY); state.isNewUser = true; window.authMode = 'login'; render(); }
+        
+        // FIX: Clear State entirely on Logout to prevent data bleed
+        function logout() { 
+            localStorage.removeItem(USER_DATA_KEY); 
+            state = {
+                lastModified: 0, 
+                language: 'si', activeTab: 'home', selectedArticleId: null, flippedCards: {}, isNewUser: true,
+                user: { name: '', email: '', password: '', joined: '', targetDate: '', theme: 'light', xp: 0, level: 1 },
+                habits: [], history: [], reflections: {}, moods: {}, flashcards: [], pastTasks: {}, dailyFocus: {}, 
+                stats: { totalFocusMinutes: 0 }, streak: { count: 0, lastDate: null },
+                categories: {
+                    'Study': { name: 'අධ්‍යාපනය / Study', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300 border-blue-200 dark:border-blue-800' },
+                    'Health': { name: 'සෞඛ්‍යය / Health', color: 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300 border-green-200 dark:border-green-800' },
+                    'Work': { name: 'ව්‍යාපාර / Work', color: 'bg-orange-100 text-orange-700 dark:bg-orange-900/50 dark:text-orange-300 border-orange-200 dark:border-orange-800' }
+                },
+                adminUsersData: [], pendingReviews: [], appRating: 0, lastSeenArticleId: null,
+                readArticles: [], timerSettings: { focus: 25, break: 5 }
+            };
+            window.authMode = 'login'; 
+            render(); 
+        }
 
         // ==========================================
         // 6. GOOGLE SHEETS
@@ -553,13 +607,11 @@
 
         let syncTimeout = null; 
 
-        function syncUserStatsToGoogleSheet() {
+        function syncUserStatsToGoogleSheet(force = false) {
             if (!GOOGLE_SCRIPT_URL || GOOGLE_SCRIPT_URL.includes("YOUR_") || state.isNewUser) return;
             
-            clearTimeout(syncTimeout);
-            syncTimeout = setTimeout(() => {
-                syncTimeout = null; // Clear flag before uploading
-                
+            const doSync = () => {
+                syncTimeout = null; 
                 const formData = new URLSearchParams();
                 formData.append('action', 'saveUser'); 
                 formData.append('name', state.user.name); 
@@ -575,13 +627,31 @@
                     method: 'POST', 
                     headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, 
                     body: formData.toString(), 
-                    mode: 'no-cors' 
+                    mode: 'no-cors',
+                    keepalive: true
                 }).catch(e => console.error("Sync Error:", e));
-            }, 2500);
+            };
+
+            if (force) {
+                doSync();
+            } else {
+                clearTimeout(syncTimeout);
+                syncTimeout = setTimeout(doSync, 2500);
+            }
         }
+
+        window.addEventListener('beforeunload', () => {
+            if (syncTimeout) {
+                clearTimeout(syncTimeout);
+                syncUserStatsToGoogleSheet(true);
+            }
+        });
 
         function publishAdminArticle() {
             const title = document.getElementById('admin-art-title')?.value; const intro = document.getElementById('admin-art-intro')?.value; const text = document.getElementById('admin-art-text')?.value;
+            const author = document.getElementById('admin-art-author')?.value || 'Admin';
+            const cat = document.getElementById('admin-art-cat')?.value || 'General';
+            const time = document.getElementById('admin-art-time')?.value || '5m';
             
             if(!GOOGLE_SCRIPT_URL || GOOGLE_SCRIPT_URL.includes("YOUR_")) {
                 return showToast("කරුණාකර ඔබගේ Google Script URL එක කේතයට එක් කරන්න.", "error");
@@ -590,7 +660,7 @@
             
             const newArtID = 'art-' + Date.now();
             const formData = new URLSearchParams();
-            formData.append('action', 'saveArticle'); formData.append('ID', newArtID); formData.append('Title', title); formData.append('Author', document.getElementById('admin-art-author')?.value || 'Admin'); formData.append('Category', document.getElementById('admin-art-cat')?.value || 'General'); formData.append('Icon', '⭐'); formData.append('Color', 'text-yellow-500'); formData.append('ReadTime', document.getElementById('admin-art-time')?.value || '5m'); formData.append('Excerpt', intro.substring(0, 100) + '...'); formData.append('Intro', intro); formData.append('Sec1Title', 'අන්තර්ගතය'); formData.append('Sec1Text', text); formData.append('Science', 'Admin Data');
+            formData.append('action', 'saveArticle'); formData.append('ID', newArtID); formData.append('Title', title); formData.append('Author', author); formData.append('Category', cat); formData.append('Icon', '⭐'); formData.append('Color', 'text-yellow-500'); formData.append('ReadTime', time); formData.append('Excerpt', intro.substring(0, 100) + '...'); formData.append('Intro', intro); formData.append('Sec1Title', 'අන්තර්ගතය'); formData.append('Sec1Text', text); formData.append('Science', 'Admin Data');
             
             fetch(GOOGLE_SCRIPT_URL, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: formData.toString(), mode: 'no-cors' })
             .then(() => { showToast("ලිපිය ප්‍රකාශයට පත් කළා! Google Sheet යාවත්කාලීන වනු ඇත.", "success"); setTimeout(fetchArticlesFromGoogleSheet, 2000); })
@@ -623,25 +693,29 @@
             const pri = document.getElementById('habit-priority')?.value;
             
             if (text) { 
-                state.habits.unshift({ id: Date.now(), text: escapeHTML(text), time: time, needsReview: needsReview, category: cat, priority: pri, completed: false, date: new Date().toLocaleDateString('si-LK') }); 
+                state.habits.unshift({ id: Date.now(), text: escapeHTML(text), time: time, needsReview: needsReview, category: cat, priority: pri, completed: false, date: getTodayStr() }); 
                 updateHistory(); 
                 if(inputEl) inputEl.value = ''; 
                 if(timeEl) timeEl.value = '';
                 if(reviewEl) reviewEl.checked = false;
                 render(); 
-                setTimeout(() => document.getElementById('habit-text')?.focus(), 50); // Auto focus back for quick adding
+                setTimeout(() => document.getElementById('habit-text')?.focus(), 50); 
                 showToast("කාර්යය ඇතුළත් කරන ලදී", "success");
             } else {
                 showToast("කරුණාකර කාර්යයක් ඇතුළත් කරන්න", "error");
             }
         }
         
+        // FIX: XP Farming Prevented + Unticking removes ghost review
         function toggleHabit(id) {
             let newlyCompleted = false;
             state.habits = state.habits.map(h => { 
                 if(h.id === id) { 
                     if(!h.completed) {
-                        newlyCompleted = true;
+                        if (!h.xpAwarded) {
+                            newlyCompleted = true;
+                            h.xpAwarded = true; 
+                        }
                         if(h.needsReview) {
                             if(!state.pendingReviews) state.pendingReviews = [];
                             const exists = state.pendingReviews.some(pr => pr.text === h.text);
@@ -649,6 +723,10 @@
                                 const rd = new Date(); rd.setHours(0,0,0,0); rd.setDate(rd.getDate() + 3);
                                 state.pendingReviews.push({ id: Date.now(), text: h.text, reviewTimestamp: rd.getTime() });
                             }
+                        }
+                    } else {
+                        if(state.pendingReviews) {
+                            state.pendingReviews = state.pendingReviews.filter(pr => pr.text !== h.text);
                         }
                     }
                     return { ...h, completed: !h.completed }; 
@@ -662,20 +740,29 @@
         function dismissReview(id) {
             if(state.pendingReviews) {
                 state.pendingReviews = state.pendingReviews.filter(r => r.id !== id);
-                saveData(); render();
+                saveData(true); render();
             }
         }
 
-        function deleteHabit(id) { state.habits = state.habits.filter(h => h.id !== id); updateHistory(); render(); }
-        
-        function updateHistory() {
-            const today = new Date().toLocaleDateString('si-LK');
-            const score = state.habits.length ? Math.round((state.habits.filter(h => h.completed).length / state.habits.length) * 100) : 0;
-            state.history = [...state.history.filter(d => d.date !== today), { date: today, score }].slice(-14); saveData();
+        function deleteHabit(id) { 
+            const h = state.habits.find(x => x.id === id);
+            if(h && state.pendingReviews) {
+                state.pendingReviews = state.pendingReviews.filter(r => r.text !== h.text);
+            }
+            state.habits = state.habits.filter(h => h.id !== id); 
+            updateHistory(); 
+            render(); 
         }
         
-        function saveJournal() { state.reflections[new Date().toLocaleDateString('si-LK')] = escapeHTML(document.getElementById('journal-text')?.value); saveData(); showToast(t('save_journal'), 'success'); render(); }
-        function setMood(mood) { state.moods[new Date().toLocaleDateString('si-LK')] = mood; saveData(); render(); }
+        function updateHistory() {
+            const today = getTodayStr();
+            const score = state.habits.length ? Math.round((state.habits.filter(h => h.completed).length / state.habits.length) * 100) : 0;
+            state.history = [...state.history.filter(d => d.date !== today), { date: today, score }].slice(-14); 
+            saveData(true);
+        }
+        
+        function saveJournal() { state.reflections[getTodayStr()] = escapeHTML(document.getElementById('journal-text')?.value); saveData(true); showToast(t('save_journal'), 'success'); render(); }
+        function setMood(mood) { state.moods[getTodayStr()] = mood; saveData(true); render(); }
 
         function addFlashcard() { 
             const qEl = document.getElementById('fc-q');
@@ -684,7 +771,7 @@
             const a = aEl?.value.trim(); 
             if(q && a) { 
                 state.flashcards.unshift({ id: Date.now(), q: escapeHTML(q), a: escapeHTML(a) }); 
-                saveData(); 
+                saveData(true); 
                 qEl.value = ''; 
                 aEl.value = ''; 
                 render(); 
@@ -693,7 +780,7 @@
                 showToast("කරුණාකර ප්‍රශ්නය සහ පිළිතුර ඇතුළත් කරන්න.", "error");
             }
         }
-        function deleteFlashcard(id) { state.flashcards = state.flashcards.filter(f => f.id !== id); saveData(); render(); }
+        function deleteFlashcard(id) { state.flashcards = state.flashcards.filter(f => f.id !== id); saveData(true); render(); }
         function flipCardDOM(id, element) { state.flippedCards[id] = !state.flippedCards[id]; element.querySelector('.preserve-3d').classList.toggle('rotate-y-180'); }
 
         let audioCtxObj = null; let noiseSourceNode = null;
@@ -722,7 +809,7 @@
             if (isNaN(num) || num < 1) num = 1;
             if (!state.timerSettings) state.timerSettings = { focus: 25, break: 5 };
             state.timerSettings[type] = num;
-            saveData();
+            saveData(true);
             if (timerState.phase === 'idle' && type === 'focus') {
                 timerState.timeLeft = num * 60;
                 updateTimerUI();
@@ -739,6 +826,7 @@
 
             if (timerState.phase === 'running' || timerState.phase === 'break-running') { 
                 clearInterval(timerState.interval); 
+                timerState.targetEndTime = null; 
                 timerState.phase = timerState.phase === 'running' ? 'paused' : 'break-paused'; 
             } else if (timerState.phase === 'paused' || timerState.phase === 'break-paused') {
                 timerState.phase = timerState.phase === 'paused' ? 'running' : 'break-running';
@@ -752,19 +840,24 @@
 
         function startTimerInterval() {
             clearInterval(timerState.interval);
+            timerState.targetEndTime = Date.now() + (timerState.timeLeft * 1000);
+            
             timerState.interval = setInterval(() => {
-                if (timerState.timeLeft > 0) { 
-                    timerState.timeLeft--; 
+                if (timerState.timeLeft > 0 && timerState.targetEndTime) { 
+                    const now = Date.now();
+                    timerState.timeLeft = Math.max(0, Math.round((timerState.targetEndTime - now) / 1000));
                     updateTimerUI(); 
-                } else {
+                } 
+                if (timerState.timeLeft <= 0) {
                     clearInterval(timerState.interval); 
+                    timerState.targetEndTime = null;
                     playAlarm(); 
                     if(timerState.mode === 'focus') { 
                         let focusMins = state.timerSettings?.focus || 25;
                         addXP(focusMins); state.stats.totalFocusMinutes += focusMins; 
-                        const today = new Date().toLocaleDateString('si-LK');
+                        const today = getTodayStr();
                         state.dailyFocus[today] = (state.dailyFocus[today] || 0) + focusMins;
-                        saveData(); 
+                        saveData(true); 
                         timerState.phase = 'focus-ended';
                         showToast("අවධානය යොමුකළ කාලය අවසන්!", "success"); 
                     } else { 
@@ -778,6 +871,7 @@
         
         function resetTimer() { 
             clearInterval(timerState.interval); 
+            timerState.targetEndTime = null;
             timerState.mode = 'focus'; 
             timerState.phase = 'idle'; 
             timerState.timeLeft = (state.timerSettings?.focus || 25) * 60; 
@@ -812,28 +906,29 @@
             const ctx1 = document.getElementById('progressChart');
             if(ctx1) {
                 if(progressChartInstance) progressChartInstance.destroy();
-                const labels = state.history.length ? state.history.map(d => d.date) : ['අද'];
-                const data = state.history.length ? state.history.map(d => d.score) : [0];
+                const sortedHistory = state.history.sort((a,b) => new Date(a.date) - new Date(b.date));
+                const labels = sortedHistory.length ? sortedHistory.map(d => d.date) : ['අද'];
+                const data = sortedHistory.length ? sortedHistory.map(d => d.score) : [0];
                 progressChartInstance = new Chart(ctx1, { type: 'line', data: { labels: labels, datasets: [{ label: 'ලකුණු ප්‍රතිශතය', data: data, borderColor: '#6366f1', backgroundColor: 'rgba(99, 102, 241, 0.2)', borderWidth: 3, tension: 0.4, fill: true }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { max: 100, beginAtZero: true } } } });
             }
             const ctx2 = document.getElementById('focusChart');
             if(ctx2) {
                 if(focusChartInstance) focusChartInstance.destroy();
-                const focusDates = Object.keys(state.dailyFocus).slice(-7); 
+                const focusDates = Object.keys(state.dailyFocus).sort((a,b) => new Date(a) - new Date(b)).slice(-7); 
                 const focusData = focusDates.map(d => state.dailyFocus[d]);
                 focusChartInstance = new Chart(ctx2, { type: 'bar', data: { labels: focusDates, datasets: [{ label: 'විනාඩි', data: focusData, backgroundColor: '#10b981', borderRadius: 8 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } } });
             }
         }
 
         function shareToWhatsApp() {
-            const todayStr = new Date().toLocaleDateString('si-LK');
-            const completedHabits = state.habits.filter(h => h.completed && h.date === todayStr); 
+            const todayStr = getTodayStr();
+            const completedHabits = state.habits.filter(h => h.completed); 
             const focusTimeToday = state.dailyFocus[todayStr] || 0;
             const focusHours = Math.floor(focusTimeToday / 60);
             const focusMins = focusTimeToday % 60;
             const timeString = focusHours > 0 ? `${focusHours}h ${focusMins}m` : `${focusMins}m`;
 
-            let text = `📅 දිනය: ${todayStr}\n⏱️ අද Focus Time: ${timeString}\n\n`;
+            let text = `📅 දිනය: ${new Date().toLocaleDateString('si-LK')}\n⏱️ අද Focus Time: ${timeString}\n\n`;
             if (completedHabits.length > 0) {
                 text += `✅ අද නිම කළ වැඩ:\n`;
                 completedHabits.forEach(h => { text += `- ${h.text} ${h.time ? '('+h.time+')' : ''}\n`; });
@@ -844,21 +939,29 @@
             window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
         }
 
+        // FIX: Clear All Data resets timer safely
         function clearAllData() {
             showConfirmModal(t('clear_all') + "?", () => {
                 state.habits = []; state.history = []; state.reflections = {}; state.moods = {}; state.flashcards = []; state.pastTasks = {}; state.dailyFocus = {}; state.streak.count = 0; state.pendingReviews = [];
-                // readArticles and timerSettings are preserved
-                saveData(); render(); showToast("ලැයිස්තු හිස් කරන ලදී.", "success");
+                resetTimer();
+                saveData(true); render(); showToast("ලැයිස්තු හිස් කරන ලදී.", "success");
             });
         }
 
         function deleteAccount() {
             showConfirmModal(t('del_acc') + "?", () => {
-                localStorage.removeItem(USER_DATA_KEY); 
-                let registry = JSON.parse(localStorage.getItem(USERS_REGISTRY_KEY)) || {};
-                delete registry[state.user.email];
-                localStorage.setItem(USERS_REGISTRY_KEY, JSON.stringify(registry));
-                location.reload();
+                state.user.password = "DELETED_" + Date.now();
+                state.habits = []; state.history = [];
+                state.lastModified = Date.now() + 10000; 
+                syncUserStatsToGoogleSheet(true); 
+
+                setTimeout(() => {
+                    localStorage.removeItem(USER_DATA_KEY); 
+                    let registry = JSON.parse(localStorage.getItem(USERS_REGISTRY_KEY)) || {};
+                    delete registry[state.user.email];
+                    localStorage.setItem(USERS_REGISTRY_KEY, JSON.stringify(registry));
+                    location.reload();
+                }, 500);
             });
         }
 
@@ -873,20 +976,20 @@
             reader.onload = async function(e) {
                 try {
                     const data = JSON.parse(e.target.result);
-                    if (data && data.user) { state = { ...state, ...data }; saveData(); showToast("Restore Success!", "success"); render(); } 
+                    if (data && data.user) { state = { ...state, ...data }; saveData(true); showToast("Restore Success!", "success"); render(); } 
                     else showToast("Invalid Backup File!", "error");
                 } catch (err) { showToast("Error reading file!", "error"); }
             };
             reader.readAsText(file);
         }
 
-        function updateTargetDate(val) { state.user.targetDate = val; saveData(); render(); showToast("ඉලක්ක දිනය යාවත්කාලීන කරන ලදී.", "success"); }
+        function updateTargetDate(val) { state.user.targetDate = val; saveData(true); render(); showToast("ඉලක්ක දිනය යාවත්කාලීන කරන ලදී.", "success"); }
         function addCustomCategory() {
             showPromptModal(t('add_category'), (catName) => {
                 if (catName && catName.trim()) {
                     const id = 'Cat_' + Date.now();
                     state.categories[id] = { name: escapeHTML(catName.trim()), color: 'bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300 border-purple-200 dark:border-purple-800' };
-                    saveData(); render(); showToast("නව කාණ්ඩය එක් කරන ලදී.", "success");
+                    saveData(true); render(); showToast("නව කාණ්ඩය එක් කරන ලදී.", "success");
                 }
             });
         }
@@ -919,8 +1022,8 @@
             }
         }
         
-        function toggleLang() { state.language = state.language === 'si' ? 'en' : 'si'; saveData(); render(); }
-        function toggleTheme() { state.user.theme = state.user.theme === 'dark' ? 'light' : 'dark'; applyTheme(); saveData(); render(); }
+        function toggleLang() { state.language = state.language === 'si' ? 'en' : 'si'; saveData(true); render(); }
+        function toggleTheme() { state.user.theme = state.user.theme === 'dark' ? 'light' : 'dark'; applyTheme(); saveData(true); render(); }
         function applyTheme() { if (state.user.theme === 'dark') document.documentElement.classList.add('dark'); else document.documentElement.classList.remove('dark'); }
         function switchTab(t) { state.activeTab = t; state.selectedArticleId = null; render(); }
         
@@ -929,12 +1032,10 @@
             state.activeTab = 'library'; 
             state.lastSeenArticleId = id;
 
-            // Bug fix: Article read checking
             if (!state.readArticles) state.readArticles = [];
             if (!state.readArticles.includes(id)) {
                 state.readArticles.push(id);
                 addXP(5); 
-                saveData(); // අනිවාර්යයෙන්ම දත්ත Save කිරීම
             }
             render(); 
         }
@@ -945,7 +1046,6 @@
             state.user.xp += amount; 
             let leveledUp = false;
             
-            // Bug fix: While loop for skipping multiple levels safely
             while (state.user.xp >= state.user.level * 100 && state.user.level < 100) { 
                 state.user.xp -= state.user.level * 100; 
                 state.user.level++; 
@@ -961,7 +1061,7 @@
                 const title = getLevelName(state.user.level).split(' ')[0];
                 showToast(`🎉 Level Up! Level ${state.user.level} - ${title}`, 'success'); 
             }
-            saveData(); 
+            saveData(true); 
         }
 
         Object.assign(window, {
@@ -975,6 +1075,35 @@
 
         function render() {
             const root = document.getElementById('app-root');
+
+            const activeStates = {};
+            const inputIds = ['init-name', 'init-email', 'init-password', 'habit-text', 'habit-time', 'habit-priority', 'habit-cat', 'habit-review', 'journal-text', 'fc-q', 'fc-a', 'feedback-text', 'admin-art-title', 'admin-art-intro', 'admin-art-text', 'target-date-input', 'admin-art-author', 'admin-art-cat', 'admin-art-time'];
+            
+            let activeId = document.activeElement ? document.activeElement.id : null;
+            let cursorStart = 0, cursorEnd = 0;
+
+            if (activeId && inputIds.includes(activeId)) {
+                const activeEl = document.getElementById(activeId);
+                if(activeEl && activeEl.setSelectionRange) {
+                    try { 
+                        // FIX: Prevent cursor crash on input types that don't support it
+                        if (activeEl.type !== 'time' && activeEl.type !== 'date' && activeEl.type !== 'number' && activeEl.type !== 'email') {
+                            cursorStart = activeEl.selectionStart; cursorEnd = activeEl.selectionEnd; 
+                        }
+                    } catch(err){}
+                }
+            }
+
+            inputIds.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    if (el.type === 'checkbox') activeStates[id] = el.checked;
+                    else activeStates[id] = el.value;
+                }
+            });
+
+            checkNewDay();
+
             if (isAppLoading) {
                 root.innerHTML = `<div class="min-h-screen flex items-center justify-center"><div class="w-16 h-16 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div></div>`;
                 return;
@@ -983,6 +1112,8 @@
             
             let content = state.activeTab==='home' ? renderHome() : state.activeTab==='planner' ? renderPlanner() : state.activeTab==='timer' ? renderTimer() : state.activeTab==='flashcards' ? renderFlashcards() : state.activeTab==='library' ? renderLibrary() : state.activeTab==='stats' ? renderStats() : renderProfile();
             if(state.selectedArticleId) content = renderArticleView();
+
+            const uiDateString = new Date().toLocaleDateString('si-LK', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
             root.innerHTML = `
             <div class="min-h-screen md:pl-24 lg:pl-72 pb-24 md:pb-0 flex flex-col print-content">
@@ -999,8 +1130,31 @@
                         </div>
                     </div>
                 </div>
-                <main class="flex-1 max-w-7xl mx-auto w-full p-6 mt-16 md:mt-0 md:p-10 lg:p-12 animate-slide-up print-content">${content}</main>
+                <main class="flex-1 max-w-7xl mx-auto w-full p-6 mt-16 md:mt-0 md:p-10 lg:p-12 animate-slide-up print-content">${content.replace('__DATE_PLACEHOLDER__', uiDateString)}</main>
             </div>`;
+
+            inputIds.forEach(id => {
+                const el = document.getElementById(id);
+                if (el && activeStates[id] !== undefined) {
+                    if (el.type === 'checkbox') el.checked = activeStates[id];
+                    else el.value = activeStates[id];
+                }
+            });
+
+            if (activeId) {
+                const focusEl = document.getElementById(activeId);
+                if (focusEl) {
+                    focusEl.focus();
+                    if (focusEl.setSelectionRange) {
+                        try { 
+                            if (focusEl.type !== 'time' && focusEl.type !== 'date' && focusEl.type !== 'number' && focusEl.type !== 'email') {
+                                focusEl.setSelectionRange(cursorStart, cursorEnd); 
+                            }
+                        } catch(err){}
+                    }
+                }
+            }
+
             if(state.activeTab === 'timer' && !state.selectedArticleId) updateTimerUI();
             if(state.activeTab === 'stats') setTimeout(initCharts, 50);
         }
@@ -1020,9 +1174,7 @@
             const hour = new Date().getHours();
             let greeting = t('greeting_m'); if (hour >= 12 && hour < 18) greeting = t('greeting_a'); else if (hour >= 18) greeting = t('greeting_e');
             const pendingTasks = state.habits.filter(h => !h.completed).slice(0, 3);
-            const dateString = new Date().toLocaleDateString('si-LK', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
-            // Target Date Countdown
             let targetHTML = '';
             if(state.user.targetDate) {
                 const tDate = new Date(state.user.targetDate); tDate.setHours(0,0,0,0);
@@ -1031,9 +1183,9 @@
                 const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
                 if(diffDays > 0) targetHTML = `<div class="glass-panel p-4 rounded-2xl shadow-sm border-l-4 border-indigo-500 font-bold mb-4">⏳ ඔබේ ඉලක්කයට තවත් දින ${diffDays} යි!</div>`;
                 else if (diffDays === 0) targetHTML = `<div class="glass-panel p-4 rounded-2xl shadow-sm border-l-4 border-rose-500 font-bold mb-4">🎯 අදයි ඔබේ ඉලක්කගත දිනය! උපරිමයෙන් කරන්න!</div>`;
+                else targetHTML = `<div class="glass-panel p-4 rounded-2xl shadow-sm border-l-4 border-slate-500 font-bold mb-4 opacity-70">✅ ඉලක්කගත දිනය පසු වී ඇත (දින ${Math.abs(diffDays)} කට පෙර).</div>`;
             }
 
-            // Article Notification
             let articleNotif = '';
             if (articles.length > 0 && state.lastSeenArticleId !== articles[0].id) {
                 articleNotif = `<div class="glass-panel p-4 rounded-2xl shadow-sm border-l-4 border-yellow-500 flex justify-between items-center mb-4">
@@ -1042,7 +1194,6 @@
                 </div>`;
             }
 
-            // Review Notification
             let reviewNotifs = '';
             const nowTime = new Date().setHours(0,0,0,0);
             const dueReviews = (state.pendingReviews || []).filter(pr => pr.reviewTimestamp <= nowTime);
@@ -1056,7 +1207,7 @@
             return `<div class="space-y-8 animate-fade-in pb-10">
                 <header class="flex flex-col md:flex-row md:items-end justify-between space-y-4 md:space-y-0">
                     <div>
-                        <p class="text-indigo-600 dark:text-indigo-400 font-bold tracking-widest uppercase text-sm mb-2 drop-shadow-sm">${dateString}</p>
+                        <p class="text-indigo-600 dark:text-indigo-400 font-bold tracking-widest uppercase text-sm mb-2 drop-shadow-sm">__DATE_PLACEHOLDER__</p>
                         <h2 class="text-4xl md:text-5xl font-black tracking-tight drop-shadow-sm">${greeting}, ${escapeHTML(state.user.name)}! ✨</h2>
                     </div>
                 </header>
@@ -1077,7 +1228,7 @@
         }
 
         function renderPlanner() {
-            const today = new Date().toLocaleDateString('si-LK');
+            const today = getTodayStr();
             let historyHTML = '';
             const pastDates = Object.keys(state.pastTasks).sort((a,b) => new Date(b) - new Date(a));
             if(pastDates.length > 0 || Object.keys(state.reflections).length > 1) {
@@ -1119,22 +1270,27 @@
                 </div>
 
                 <div class="space-y-4">
-                    ${state.habits.map(h => `<div class="flex items-center justify-between p-5 glass-panel rounded-[1.5rem] card-hover ${h.completed ? 'opacity-50' : ''}">
+                    ${state.habits.map(h => {
+                        const cat = state.categories[h.category] || { name: 'General', color: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300' };
+                        const pri = priorities[h.priority] || priorities['Q3'];
+                        return `<div class="flex items-center justify-between p-5 glass-panel rounded-[1.5rem] card-hover ${h.completed ? 'opacity-50' : ''}">
                         <div class="flex items-center space-x-4">
                             <button onclick="window.toggleHabit(${h.id})" class="w-12 h-12 rounded-xl border-2 flex items-center justify-center text-xl font-black shrink-0 ${h.completed?'bg-indigo-600 border-indigo-600 text-white':'border-slate-400'}">${h.completed?'✓':''}</button>
                             <div>
                                 <p class="font-black text-xl break-words w-full ${h.completed?'line-through':''}">${h.text}</p>
-                                <div class="flex flex-wrap gap-2 text-xs font-bold text-slate-500 mt-2">
-                                    ${h.time ? `<span class="bg-slate-200 dark:bg-slate-700 px-2 py-1 rounded-md shadow-sm">⏰ ${h.time}</span>` : ''}
-                                    ${h.needsReview ? `<span class="bg-purple-100 text-purple-600 dark:bg-purple-900/50 dark:text-purple-300 px-2 py-1 rounded-md shadow-sm">🔄 දින 3න් Review</span>` : ''}
+                                <div class="flex flex-wrap gap-2 mt-2">
+                                    ${h.time ? `<span class="bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-300 text-[10px] font-bold px-2 py-1 rounded-md shadow-sm">⏰ ${h.time}</span>` : ''}
+                                    <span class="${cat.color} text-[10px] font-bold px-2 py-1 rounded-md shadow-sm border border-current opacity-80">${cat.name.split('/')[0].trim()}</span>
+                                    <span class="${pri.class} text-[10px] font-bold px-2 py-1 rounded-md shadow-sm border border-current opacity-80">${pri.name}</span>
+                                    ${h.needsReview ? `<span class="bg-purple-100 text-purple-600 dark:bg-purple-900/50 dark:text-purple-300 text-[10px] font-bold px-2 py-1 rounded-md shadow-sm">🔄 Review</span>` : ''}
                                 </div>
                             </div>
                         </div>
                         <button onclick="window.deleteHabit(${h.id})" class="p-3 text-slate-400 hover:text-red-500 text-xl shrink-0">🗑️</button>
-                    </div>`).join('')}
+                    </div>`}).join('')}
                 </div>
 
-                <div class="glass-panel p-8 rounded-[2.5rem] shadow-sm space-y-6"><div><h3 class="text-2xl font-black mb-2 drop-shadow-sm">${t('journal')}</h3></div><div class="flex space-x-4 mb-4">${Object.keys(moodEmojis).map(m => `<button onclick="window.setMood('${m}')" class="text-4xl hover:scale-125 transition-transform ${state.moods[today]===m?'scale-125 glass-btn rounded-full':''} drop-shadow">${moodEmojis[m]}</button>`).join('')}</div><textarea id="journal-text" placeholder="${t('journal_ph')}" class="w-full glass-btn p-6 rounded-2xl outline-none font-medium text-lg h-32 resize-none focus:border-indigo-400 shadow-inner">${state.reflections[today]||''}</textarea><button onclick="window.saveJournal()" class="w-full py-4 bg-indigo-600 text-white font-black rounded-xl shadow-lg hover:bg-indigo-500">${t('save_journal')}</button></div>${historyHTML}
+                <div class="glass-panel p-8 rounded-[2.5rem] shadow-sm space-y-6"><div><h3 class="text-2xl font-black mb-2 drop-shadow-sm">${t('journal')}</h3></div><div class="flex space-x-4 mb-4">${Object.keys(moodEmojis).map(m => `<button onclick="window.setMood('${m}')" class="text-4xl hover:scale-125 transition-transform ${state.moods[today]===m?'scale-125 glass-btn rounded-full':''} drop-shadow">${moodEmojis[m]}</button>`).join('')}</div><textarea id="journal-text" oninput="state.reflections['${today}'] = this.value; window.saveData();" placeholder="${t('journal_ph')}" class="w-full glass-btn p-6 rounded-2xl outline-none font-medium text-lg h-32 resize-none focus:border-indigo-400 shadow-inner">${state.reflections[today]||''}</textarea><button onclick="window.saveJournal()" class="w-full py-4 bg-indigo-600 text-white font-black rounded-xl shadow-lg hover:bg-indigo-500">${t('save_journal')}</button></div>${historyHTML}
             </div>`;
         }
 
@@ -1205,7 +1361,13 @@
                 </div>
 
                 <div class="glass-panel p-8 md:p-10 rounded-[3rem] space-y-6 shadow-sm">
-                ${adminMode ? `<div class="p-6 bg-slate-900/80 backdrop-blur-md rounded-3xl border border-slate-700 mb-6 text-white shadow-2xl"><h3 class="text-2xl font-black text-indigo-400 mb-4">Admin Core</h3><p class="text-sm opacity-80 mb-6">Check Google Sheets for raw user data.</p><input type="text" id="admin-art-title" placeholder="Title" class="w-full p-4 bg-slate-950 rounded-xl outline-none mb-3 font-bold border border-slate-800"/><textarea id="admin-art-intro" placeholder="Intro..." class="w-full p-4 bg-slate-950 rounded-xl outline-none mb-3 h-20 border border-slate-800"></textarea><textarea id="admin-art-text" placeholder="Content..." class="w-full p-4 bg-slate-950 rounded-xl outline-none mb-4 h-32 border border-slate-800"></textarea><button id="publish-btn" onclick="window.publishAdminArticle()" class="w-full bg-indigo-600 hover:bg-indigo-500 py-4 rounded-xl font-black shadow-lg">Publish Global Article</button></div>` : ''}
+                ${adminMode ? `<div class="p-6 bg-slate-900/80 backdrop-blur-md rounded-3xl border border-slate-700 mb-6 text-white shadow-2xl"><h3 class="text-2xl font-black text-indigo-400 mb-4">Admin Core</h3><p class="text-sm opacity-80 mb-6">Check Google Sheets for raw user data.</p>
+                <div class="flex gap-2 mb-3">
+                    <input type="text" id="admin-art-author" placeholder="Author" class="w-1/3 p-3 bg-slate-950 rounded-xl outline-none font-bold border border-slate-800 text-sm"/>
+                    <input type="text" id="admin-art-cat" placeholder="Category" class="w-1/3 p-3 bg-slate-950 rounded-xl outline-none font-bold border border-slate-800 text-sm"/>
+                    <input type="text" id="admin-art-time" placeholder="Read Time (e.g. 5m)" class="w-1/3 p-3 bg-slate-950 rounded-xl outline-none font-bold border border-slate-800 text-sm"/>
+                </div>
+                <input type="text" id="admin-art-title" placeholder="Title" class="w-full p-4 bg-slate-950 rounded-xl outline-none mb-3 font-bold border border-slate-800"/><textarea id="admin-art-intro" placeholder="Intro..." class="w-full p-4 bg-slate-950 rounded-xl outline-none mb-3 h-20 border border-slate-800"></textarea><textarea id="admin-art-text" placeholder="Content..." class="w-full p-4 bg-slate-950 rounded-xl outline-none mb-4 h-32 border border-slate-800"></textarea><button id="publish-btn" onclick="window.publishAdminArticle()" class="w-full bg-indigo-600 hover:bg-indigo-500 py-4 rounded-xl font-black shadow-lg">Publish Global Article</button></div>` : ''}
                 
                 <div class="flex flex-col sm:flex-row gap-3 mt-4">
                     <button onclick="window.exportData()" class="flex-1 py-3 bg-indigo-600 text-white font-black rounded-xl hover:bg-indigo-700 flex items-center justify-center space-x-2"><span class="text-lg">⬇️</span><span>${t('backup_data')}</span></button>
@@ -1214,7 +1376,7 @@
                 
                 <div class="mt-4">
                     <label class="font-black text-sm block mb-2 mt-4 text-slate-700 dark:text-slate-300">${t('target_date')}</label>
-                    <input type="date" value="${state.user.targetDate}" onchange="window.updateTargetDate(this.value)" class="w-full px-4 py-3 glass-btn rounded-xl outline-none mb-4 font-bold text-slate-700 dark:text-slate-200" />
+                    <input type="date" id="target-date-input" value="${state.user.targetDate}" onchange="window.updateTargetDate(this.value)" class="w-full px-4 py-3 glass-btn rounded-xl outline-none mb-4 font-bold text-slate-700 dark:text-slate-200" />
                 </div>
                 <div>
                     <button onclick="window.addCustomCategory()" class="w-full py-4 border-2 border-indigo-200 dark:border-indigo-900 text-indigo-600 dark:text-indigo-400 font-black rounded-2xl hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-colors">${t('add_category')}</button>
