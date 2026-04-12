@@ -233,7 +233,6 @@
         function initApp() {
             render(); 
 
-            // පරිශීලකයාගේ දත්ත LocalStorage හි තිබේ නම්, auto-login වීම සහ නැවත මුරපද නොඇසීම මෙතැනින් සිදු වේ.
             try {
                 let savedData = localStorage.getItem(USER_DATA_KEY);
                 if (savedData) {
@@ -249,12 +248,57 @@
                         timerState.timeLeft = (state.timerSettings.focus || 25) * 60;
                         checkNewDay(); 
                         applyTheme();
+                        
+                        // NEW: Trigger background sync for cross-device updates
+                        syncFromCloudSilently(state.user.email, state.user.password);
                     }
                 }
                 fetchArticlesFromGoogleSheet();
                 if(isAdmin()) fetchUsersFromGoogleSheet();
             } catch(e) { console.error("Init Error:", e); } 
             finally { isAppLoading = false; render(); }
+        }
+
+        // NEW FUNCTION: Quietly updates state if changes happened on another device
+        async function syncFromCloudSilently(email, password) {
+            if (!GOOGLE_SHEET_USERS_CSV_URL || GOOGLE_SHEET_USERS_CSV_URL.includes("YOUR_")) return;
+
+            try {
+                const response = await fetch(GOOGLE_SHEET_USERS_CSV_URL + "&t=" + Date.now(), { cache: 'no-store' });
+                const csvData = await response.text();
+                Papa.parse(csvData, { header: true, skipEmptyLines: true, complete: function(results) {
+                    const getField = (row, searchStr) => {
+                        const key = Object.keys(row).find(k => k.toLowerCase().replace(/\s/g, '') === searchStr.toLowerCase() || k.toLowerCase().includes(searchStr.toLowerCase()));
+                        return key ? row[key] : null;
+                    };
+
+                    const cloudUser = results.data.find(u => {
+                        const rowEmail = getField(u, 'email') || '';
+                        return String(rowEmail).trim().toLowerCase() === email.toLowerCase();
+                    });
+
+                    if (cloudUser) {
+                        const cloudPass = getField(cloudUser, 'password') || getField(cloudUser, 'pass') || '';
+                        if (String(cloudPass).trim() === password) {
+                            const stateJSON = getField(cloudUser, 'statejson') || getField(cloudUser, 'statedata') || '';
+                            if (stateJSON && stateJSON.trim().startsWith('{')) {
+                                try { 
+                                    const cloudState = JSON.parse(stateJSON); 
+                                    // Merge the cloud data over the local data
+                                    state = { ...state, ...cloudState };
+                                    // Save the fresh data to local storage
+                                    localStorage.setItem(USER_DATA_KEY, JSON.stringify(state));
+                                    let registry = JSON.parse(localStorage.getItem(USERS_REGISTRY_KEY)) || {};
+                                    registry[state.user.email] = state;
+                                    localStorage.setItem(USERS_REGISTRY_KEY, JSON.stringify(registry));
+                                    
+                                    render(); // Update UI with fresh data
+                                } catch(err) {} 
+                            }
+                        }
+                    }
+                }});
+            } catch (error) { console.error("Background sync failed", error); }
         }
 
         function checkNewDay() {
@@ -331,26 +375,22 @@
 
             let registry = JSON.parse(localStorage.getItem(USERS_REGISTRY_KEY)) || {};
             
-            // 1. Local Device එකෙහි පරණ දත්ත තිබේදැයි බැලීම (Fast login without checking sheet)
-            if(registry[e] && registry[e].user && registry[e].user.password === p) {
-                loginSuccess(registry[e]);
-                return;
-            }
-
-            // 2. අලුත් Device එකකින් පැමිණියේ නම් Cloud එකෙන් (Google Sheet) ගෙන්වා ගැනීම
             if (!GOOGLE_SHEET_USERS_CSV_URL || GOOGLE_SHEET_USERS_CSV_URL.includes("YOUR_")) {
+                // Offline / No Cloud configuration fallback
+                if(registry[e] && registry[e].user && registry[e].user.password === p) {
+                    loginSuccess(registry[e]);
+                    return;
+                }
                 showToast("විද්‍යුත් තැපෑල හෝ මුරපදය වැරදියි.", "error");
                 return;
             }
 
             showToast("Cloud දත්ත පරීක්ෂා කරමින්...", "info");
             try {
-                // Cache මඟහැරීම සඳහා අහඹු අංකයක් එකතු කිරීම
                 const response = await fetch(GOOGLE_SHEET_USERS_CSV_URL + "&t=" + Date.now() + Math.random(), { cache: 'no-store' });
                 const csvData = await response.text();
                 Papa.parse(csvData, { header: true, skipEmptyLines: true, complete: function(results) {
                     
-                    // Header වල අකුරු (Simple/Capital) වෙනස් වුණත් දත්ත නිවැරදිව ලබා ගැනීමට
                     const getField = (row, searchStr) => {
                         const key = Object.keys(row).find(k => k.toLowerCase().replace(/\s/g, '') === searchStr.toLowerCase() || k.toLowerCase().includes(searchStr.toLowerCase()));
                         return key ? row[key] : null;
@@ -373,7 +413,6 @@
                             }
                             
                             if (!loadedState) {
-                                // Fallback Data - State JSON එක නැත්නම් සාමාන්‍ය දත්ත වලින් Load කිරීම
                                 loadedState = {
                                     language: 'si', activeTab: 'home', flippedCards: {}, isNewUser: false,
                                     user: { name: getField(cloudUser, 'name') || '', email: e, password: p, joined: getField(cloudUser, 'joineddate') || getField(cloudUser, 'joined') || new Date().toLocaleDateString('si-LK'), targetDate: '', theme: 'light', xp: parseInt(getField(cloudUser, 'xp'))||0, level: parseInt(getField(cloudUser, 'level'))||1 },
@@ -388,11 +427,23 @@
                             showToast("මුරපදය (Password) වැරදියි.", "error");
                         }
                     } else {
-                        showToast("මෙම ඊමේල් ලිපිනය සඳහා ගිණුමක් නොමැත. (මෑතකදී සෑදූ ගිණුමක් නම් විනාඩි 5ක් පමණ රැඳී සිටින්න)", "error");
+                        // Cloud missed it, fallback to local if it exists
+                        if(registry[e] && registry[e].user && registry[e].user.password === p) {
+                            showToast("Cloud දත්ත නොමැත, Local දත්ත භාවිතා වේ.", "info");
+                            loginSuccess(registry[e]);
+                        } else {
+                            showToast("මෙම ඊමේල් ලිපිනය සඳහා ගිණුමක් නොමැත.", "error");
+                        }
                     }
                 }});
             } catch(err) {
-                showToast("අන්තර්ජාල දෝෂයක්. කරුණාකර නැවත උත්සාහ කරන්න.", "error");
+                // Network Error Fallback
+                if(registry[e] && registry[e].user && registry[e].user.password === p) {
+                    showToast("අන්තර්ජාල දෝෂයකි. Local දත්ත භාවිතා වේ.", "info");
+                    loginSuccess(registry[e]);
+                } else {
+                    showToast("අන්තර්ජාල දෝෂයක්. කරුණාකර නැවත උත්සාහ කරන්න.", "error");
+                }
             }
         }
 
@@ -474,21 +525,33 @@
             } catch (error) { console.error(error); }
         }
 
+        let syncTimeout = null; // Debounce variable
+
         function syncUserStatsToGoogleSheet() {
-            // දත්ත වෙනස් වූ විට පමණක් සම්පූර්ණ State එක Cloud එකට යවයි
+            // Only proceed if URL is valid and it's an existing user
             if (!GOOGLE_SCRIPT_URL || GOOGLE_SCRIPT_URL.includes("YOUR_") || state.isNewUser) return;
-            const formData = new URLSearchParams();
-            formData.append('action', 'saveUser'); 
-            formData.append('name', state.user.name); 
-            formData.append('email', state.user.email); 
-            formData.append('password', state.user.password);
-            formData.append('level', state.user.level); 
-            formData.append('xp', state.user.xp); 
-            formData.append('focusMinutes', state.stats.totalFocusMinutes || 0); 
-            formData.append('joinedDate', state.user.joined);
-            formData.append('stateData', JSON.stringify(state)); 
             
-            fetch(GOOGLE_SCRIPT_URL, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: formData.toString(), mode: 'no-cors' }).catch(e=>e);
+            // Debounce: Wait 2.5 seconds after the last action before firing the API request
+            clearTimeout(syncTimeout);
+            syncTimeout = setTimeout(() => {
+                const formData = new URLSearchParams();
+                formData.append('action', 'saveUser'); 
+                formData.append('name', state.user.name); 
+                formData.append('email', state.user.email); 
+                formData.append('password', state.user.password);
+                formData.append('level', state.user.level); 
+                formData.append('xp', state.user.xp); 
+                formData.append('focusMinutes', state.stats.totalFocusMinutes || 0); 
+                formData.append('joinedDate', state.user.joined);
+                formData.append('stateData', JSON.stringify(state)); 
+                
+                fetch(GOOGLE_SCRIPT_URL, { 
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, 
+                    body: formData.toString(), 
+                    mode: 'no-cors' 
+                }).catch(e => console.error("Sync Error:", e));
+            }, 2500);
         }
 
         function publishAdminArticle() {
