@@ -89,6 +89,16 @@
             const d = new Date();
             return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
         }
+        
+        function safeJSONParse(key, fallback = {}) {
+            try {
+                const data = localStorage.getItem(key);
+                return data ? JSON.parse(data) : fallback;
+            } catch(e) {
+                console.warn(`Corrupted localStorage data for ${key}`, e);
+                return fallback;
+            }
+        }
 
         // ==========================================
         // 2. DICTIONARY & LEVELS
@@ -182,7 +192,7 @@
         // ==========================================
         // 4. UI HELPERS & AUDIO API
         // ==========================================
-        function escapeHTML(str) { return str ? str.replace(/[&<>'"]/g, tag => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'}[tag])) : ''; }
+        function escapeHTML(str) { return str ? String(str).replace(/[&<>'"]/g, tag => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'}[tag])) : ''; }
         function isAdmin() { return state.user.email === 'admin@mindsetos.com' && state.user.password === 'sadew12125'; }
 
         function showToast(msg, type='info') {
@@ -238,22 +248,20 @@
         // ==========================================
         function initApp() {
             try {
-                let savedData = localStorage.getItem(USER_DATA_KEY);
-                if (savedData) {
-                    let parsed = JSON.parse(savedData);
-                    if (parsed.user && parsed.user.email) {
-                        state = { ...state, ...parsed, isNewUser: false };
-                        if(!state.lastModified) state.lastModified = 0;
-                        if(!state.pastTasks) state.pastTasks = {}; 
-                        if(!state.dailyFocus) state.dailyFocus = {};
-                        if(!state.pendingReviews) state.pendingReviews = [];
-                        if(!state.readArticles) state.readArticles = []; 
-                        if(!state.timerSettings) state.timerSettings = { focus: 25, break: 5 }; 
-                        
-                        timerState.timeLeft = (state.timerSettings.focus || 25) * 60;
-                        applyTheme();
-                        syncFromCloudSilently(state.user.email, state.user.password);
-                    }
+                let parsed = safeJSONParse(USER_DATA_KEY, null);
+                if (parsed && parsed.user && parsed.user.email) {
+                    state = { ...state, ...parsed, isNewUser: false };
+                    if(!state.lastModified) state.lastModified = 0;
+                    if(!state.pastTasks) state.pastTasks = {}; 
+                    if(!state.dailyFocus) state.dailyFocus = {};
+                    if(!state.pendingReviews) state.pendingReviews = [];
+                    if(!state.readArticles) state.readArticles = []; 
+                    if(!state.timerSettings) state.timerSettings = { focus: 25, break: 5 }; 
+                    if(state.stats && state.stats.totalFocusMinutes === undefined) state.stats.totalFocusMinutes = 0;
+                    
+                    timerState.timeLeft = (state.timerSettings.focus || 25) * 60;
+                    applyTheme();
+                    syncFromCloudSilently(state.user.email, state.user.password);
                 }
                 fetchArticlesFromGoogleSheet();
                 if(isAdmin()) fetchUsersFromGoogleSheet();
@@ -295,7 +303,7 @@
                                     if (cloudTime > localTime) {
                                         state = { ...state, ...cloudState };
                                         localStorage.setItem(USER_DATA_KEY, JSON.stringify(state));
-                                        let registry = JSON.parse(localStorage.getItem(USERS_REGISTRY_KEY)) || {};
+                                        let registry = safeJSONParse(USERS_REGISTRY_KEY, {});
                                         registry[state.user.email] = state;
                                         localStorage.setItem(USERS_REGISTRY_KEY, JSON.stringify(registry));
                                         
@@ -364,7 +372,7 @@
             
             const doSave = () => {
                 localStorage.setItem(USER_DATA_KEY, JSON.stringify(state)); 
-                let registry = JSON.parse(localStorage.getItem(USERS_REGISTRY_KEY)) || {};
+                let registry = safeJSONParse(USERS_REGISTRY_KEY, {});
                 registry[state.user.email] = state;
                 localStorage.setItem(USERS_REGISTRY_KEY, JSON.stringify(registry));
                 syncUserStatsToGoogleSheet(); 
@@ -386,7 +394,7 @@
             if(!n || !e || p.length < 6) return showToast("කරුණාකර නිවැරදි තොරතුරු ඇතුළත් කරන්න (අවම වශයෙන් මුරපදයට අකුරු 6ක් අවශ්‍යයි).", "error");
             if(!emailRegex.test(e)) return showToast("කරුණාකර නිවැරදි ඊමේල් ලිපිනයක් ඇතුළත් කරන්න.", "error");
 
-            let registry = JSON.parse(localStorage.getItem(USERS_REGISTRY_KEY)) || {};
+            let registry = safeJSONParse(USERS_REGISTRY_KEY, {});
             if(registry[e]) return showToast("මෙම විද්‍යුත් තැපෑල දැනටමත් භාවිතයේ පවතී. කරුණාකර ලොග් වන්න.", "error");
 
             state = {
@@ -412,7 +420,7 @@
             if(!e || !p) return showToast("කරුණාකර විද්‍යුත් තැපෑල සහ මුරපදය ඇතුළත් කරන්න.", "error");
             if(!emailRegex.test(e)) return showToast("කරුණාකර නිවැරදි ඊමේල් ලිපිනයක් ඇතුළත් කරන්න.", "error");
 
-            let registry = JSON.parse(localStorage.getItem(USERS_REGISTRY_KEY)) || {};
+            let registry = safeJSONParse(USERS_REGISTRY_KEY, {});
             
             if (!GOOGLE_SHEET_USERS_CSV_URL || GOOGLE_SHEET_USERS_CSV_URL.includes("YOUR_")) {
                 if(registry[e] && registry[e].user && registry[e].user.password === p) {
@@ -491,7 +499,7 @@
             if(!state.timerSettings) state.timerSettings = { focus: 25, break: 5 };
             timerState.timeLeft = (state.timerSettings.focus || 25) * 60;
             
-            let registry = JSON.parse(localStorage.getItem(USERS_REGISTRY_KEY)) || {};
+            let registry = safeJSONParse(USERS_REGISTRY_KEY, {});
             registry[state.user.email] = state;
             localStorage.setItem(USERS_REGISTRY_KEY, JSON.stringify(registry));
             localStorage.setItem(USER_DATA_KEY, JSON.stringify(state)); 
@@ -507,7 +515,7 @@
             showPromptModal("ඔබගේ විද්‍යුත් තැපෑල (Email) ඇතුළත් කරන්න:", (email) => {
                 const e = email.trim().toLowerCase();
                 if (!e || !emailRegex.test(e)) return showToast("කරුණාකර නිවැරදි ඊමේල් ලිපිනයක් ඇතුළත් කරන්න.", "error");
-                let registry = JSON.parse(localStorage.getItem(USERS_REGISTRY_KEY)) || {};
+                let registry = safeJSONParse(USERS_REGISTRY_KEY, {});
                 if (!registry[e]) {
                     return showToast("මෙම විද්‍යුත් තැපෑලට අදාළ ගිණුමක් නොමැත.", "error");
                 }
@@ -579,7 +587,19 @@
                 const response = await fetch(GOOGLE_SHEET_ARTICLES_CSV_URL + "&t=" + Date.now(), { cache: 'no-store' });
                 const csvData = await response.text();
                 Papa.parse(csvData, { header: true, skipEmptyLines: true, complete: function(results) {
-                        const fetchedArticles = results.data.map(row => ({ id: row.ID, title: row.Title, author: row.Author || 'MindsetOS', category: row.Category || 'General', icon: row.Icon || '📚', color: row.Color || 'text-indigo-500', readTime: row.ReadTime || '5m', excerpt: row.Excerpt, intro: row.Intro, sections: [{title: row.Sec1Title || 'අන්තර්ගතය', text: row.Sec1Text || ''}], science: row.Science || '' })).filter(a => a.id && a.title);
+                        const fetchedArticles = results.data.map(row => ({ 
+                            id: escapeHTML(row.ID), 
+                            title: escapeHTML(row.Title), 
+                            author: escapeHTML(row.Author || 'MindsetOS'), 
+                            category: escapeHTML(row.Category || 'General'), 
+                            icon: escapeHTML(row.Icon || '📚'), 
+                            color: escapeHTML(row.Color || 'text-indigo-500'), 
+                            readTime: escapeHTML(row.ReadTime || '5m'), 
+                            excerpt: escapeHTML(row.Excerpt), 
+                            intro: escapeHTML(row.Intro), 
+                            sections: [{title: escapeHTML(row.Sec1Title || 'අන්තර්ගතය'), text: escapeHTML(row.Sec1Text || '')}], 
+                            science: escapeHTML(row.Science || '') 
+                        })).filter(a => a.id && a.title);
                         if(fetchedArticles.length > 0) { articles = [...fetchedArticles, ...defaultArticles]; if(state.activeTab === 'library' || state.activeTab === 'home' || state.selectedArticleId) render(); }
                     } });
             } catch (error) { console.error(error); }
@@ -660,7 +680,7 @@
             
             const newArtID = 'art-' + Date.now();
             const formData = new URLSearchParams();
-            formData.append('action', 'saveArticle'); formData.append('ID', newArtID); formData.append('Title', title); formData.append('Author', author); formData.append('Category', cat); formData.append('Icon', '⭐'); formData.append('Color', 'text-yellow-500'); formData.append('ReadTime', time); formData.append('Excerpt', intro.substring(0, 100) + '...'); formData.append('Intro', intro); formData.append('Sec1Title', 'අන්තර්ගතය'); formData.append('Sec1Text', text); formData.append('Science', 'Admin Data');
+            formData.append('action', 'saveArticle'); formData.append('ID', newArtID); formData.append('Title', escapeHTML(title)); formData.append('Author', escapeHTML(author)); formData.append('Category', escapeHTML(cat)); formData.append('Icon', '⭐'); formData.append('Color', 'text-yellow-500'); formData.append('ReadTime', escapeHTML(time)); formData.append('Excerpt', escapeHTML(intro.substring(0, 100)) + '...'); formData.append('Intro', escapeHTML(intro)); formData.append('Sec1Title', 'අන්තර්ගතය'); formData.append('Sec1Text', escapeHTML(text)); formData.append('Science', 'Admin Data');
             
             fetch(GOOGLE_SCRIPT_URL, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: formData.toString(), mode: 'no-cors' })
             .then(() => { showToast("ලිපිය ප්‍රකාශයට පත් කළා! Google Sheet යාවත්කාලීන වනු ඇත.", "success"); setTimeout(fetchArticlesFromGoogleSheet, 2000); })
@@ -939,10 +959,10 @@
             window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
         }
 
-        // FIX: Clear All Data resets timer safely
+        // FIX: Clear All Data resets timer safely and avoids ghost streaks
         function clearAllData() {
             showConfirmModal(t('clear_all') + "?", () => {
-                state.habits = []; state.history = []; state.reflections = {}; state.moods = {}; state.flashcards = []; state.pastTasks = {}; state.dailyFocus = {}; state.streak.count = 0; state.pendingReviews = [];
+                state.habits = []; state.history = []; state.reflections = {}; state.moods = {}; state.flashcards = []; state.pastTasks = {}; state.dailyFocus = {}; state.streak = { count: 0, lastDate: null }; state.pendingReviews = [];
                 resetTimer();
                 saveData(true); render(); showToast("ලැයිස්තු හිස් කරන ලදී.", "success");
             });
@@ -957,7 +977,7 @@
 
                 setTimeout(() => {
                     localStorage.removeItem(USER_DATA_KEY); 
-                    let registry = JSON.parse(localStorage.getItem(USERS_REGISTRY_KEY)) || {};
+                    let registry = safeJSONParse(USERS_REGISTRY_KEY, {});
                     delete registry[state.user.email];
                     localStorage.setItem(USERS_REGISTRY_KEY, JSON.stringify(registry));
                     location.reload();
@@ -1315,7 +1335,7 @@
         }
 
         function renderFlashcards() {
-            return `<div class="max-w-4xl mx-auto space-y-10 pb-20"><header class="text-center"><h2 class="text-4xl font-black drop-shadow-md">${t('flashcards')}</h2></header><div class="glass-panel p-6 rounded-[2rem] flex flex-col md:flex-row gap-4"><input type="text" id="fc-q" placeholder="ප්‍රශ්නය (Question)..." class="flex-1 px-4 py-3 glass-btn rounded-xl outline-none font-bold"/><input type="text" id="fc-a" placeholder="පිළිතුර (Answer)..." class="flex-1 px-4 py-3 glass-btn rounded-xl outline-none font-bold"/><button onclick="window.addFlashcard()" class="bg-indigo-600 text-white px-6 py-3 rounded-xl font-black">${t('add_btn')}</button></div><div class="grid grid-cols-1 md:grid-cols-2 gap-6 perspective">${state.flashcards.length === 0 ? `<div class="col-span-full text-center py-10 text-slate-400 font-bold">ආරම්භ කිරීමට ෆ්ලෑෂ් කාඩ්පතක් එක් කරන්න.</div>` : state.flashcards.map(f => `<div class="relative h-48 w-full group cursor-pointer" onclick="window.flipCardDOM(${f.id}, this)"><div class="absolute inset-0 w-full h-full preserve-3d ${state.flippedCards[f.id] ? 'rotate-y-180' : ''}"><div class="absolute inset-0 backface-hidden glass-panel rounded-[2rem] p-6 flex flex-col justify-center items-center shadow-sm"><span class="text-xs font-bold text-indigo-500 mb-2">ප්‍රශ්නය</span><h3 class="text-xl font-black text-center break-words w-full">${f.q}</h3><button onclick="event.stopPropagation(); window.deleteFlashcard(${f.id})" class="absolute top-4 right-4 text-slate-400 hover:text-red-500 text-lg">🗑️</button></div><div class="absolute inset-0 backface-hidden rotate-y-180 bg-indigo-600/90 text-white rounded-[2rem] p-6 flex flex-col justify-center items-center shadow-md"><span class="text-xs font-bold text-indigo-200 mb-2">පිළිතුර</span><h3 class="text-2xl font-black text-center break-words w-full">${f.a}</h3></div></div></div>`).join('')}</div></div>`;
+            return `<div class="max-w-4xl mx-auto space-y-10 pb-20"><header class="text-center"><h2 class="text-4xl font-black drop-shadow-md">${t('flashcards')}</h2></header><div class="glass-panel p-6 rounded-[2rem] flex flex-col md:flex-row gap-4"><input type="text" id="fc-q" placeholder="ප්‍රශ්නය (Question)..." class="flex-1 px-4 py-3 glass-btn rounded-xl outline-none font-bold"/><input type="text" id="fc-a" placeholder="පිළිතුර (Answer)..." class="flex-1 px-4 py-3 glass-btn rounded-xl outline-none font-bold"/><button onclick="window.addFlashcard()" class="bg-indigo-600 text-white px-6 py-3 rounded-xl font-black">${t('add_btn')}</button></div><div class="grid grid-cols-1 md:grid-cols-2 gap-6 perspective">${state.flashcards.length === 0 ? `<div class="col-span-full text-center py-10 text-slate-400 font-bold">ආරම්භ කිරීමට ෆ්ලෑෂ් කාඩ්පතක් එක් කරන්න.</div>` : state.flashcards.map(f => `<div class="relative h-48 w-full group cursor-pointer" onclick="window.flipCardDOM('${f.id}', this)"><div class="absolute inset-0 w-full h-full preserve-3d ${state.flippedCards[f.id] ? 'rotate-y-180' : ''}"><div class="absolute inset-0 backface-hidden glass-panel rounded-[2rem] p-6 flex flex-col justify-center items-center shadow-sm"><span class="text-xs font-bold text-indigo-500 mb-2">ප්‍රශ්නය</span><h3 class="text-xl font-black text-center break-words w-full">${f.q}</h3><button onclick="event.stopPropagation(); window.deleteFlashcard(${f.id})" class="absolute top-4 right-4 text-slate-400 hover:text-red-500 text-lg">🗑️</button></div><div class="absolute inset-0 backface-hidden rotate-y-180 bg-indigo-600/90 text-white rounded-[2rem] p-6 flex flex-col justify-center items-center shadow-md"><span class="text-xs font-bold text-indigo-200 mb-2">පිළිතුර</span><h3 class="text-2xl font-black text-center break-words w-full">${f.a}</h3></div></div></div>`).join('')}</div></div>`;
         }
 
         function renderLibrary() {
