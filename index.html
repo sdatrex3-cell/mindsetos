@@ -80,6 +80,7 @@
         
         let isAppLoading = true; 
         window.authMode = 'login'; 
+        let todayHolidayMessage = null; // New variable for the holiday banner
         
         const GOOGLE_SHEET_ARTICLES_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vShQaas57qfq3ElS57vD9c85buElPk8F7o6EDs4JjNFY-JKBZpOCBUIFg4tgex7Ojy6TxUsh3tuyzdf/pub?gid=0&single=true&output=csv";
         const GOOGLE_SHEET_USERS_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vShQaas57qfq3ElS57vD9c85buElPk8F7o6EDs4JjNFY-JKBZpOCBUIFg4tgex7Ojy6TxUsh3tuyzdf/pub?gid=1423780323&single=true&output=csv"; 
@@ -97,6 +98,43 @@
             } catch(e) {
                 console.warn(`Corrupted localStorage data for ${key}`, e);
                 return fallback;
+            }
+        }
+
+        // Fetch Today's Holiday Automatically
+        async function fetchTodayHoliday() {
+            const d = new Date();
+            const mmdd = String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+            
+            // ලංකාවේ ප්‍රධාන ස්ථාවර නිවාඩු දින කිහිපයක් (API එකේ නොපෙන්වන අවස්ථා සඳහා)
+            const fixedHolidays = {
+                '01-01': 'නව වසර',
+                '02-04': 'ජාතික නිදහස් දිනය',
+                '04-13': 'සිංහල හා දෙමළ අලුත් අවුරුද්ද (පරණ අවුරුද්ද)',
+                '04-14': 'සිංහල හා දෙමළ අලුත් අවුරුද්ද',
+                '05-01': 'කම්කරු දිනය',
+                '12-25': 'නත්තල් දිනය'
+            };
+
+            if (fixedHolidays[mmdd]) {
+                todayHolidayMessage = fixedHolidays[mmdd];
+                if(state.activeTab === 'home') render();
+            }
+
+            try {
+                const year = d.getFullYear();
+                const res = await fetch(`https://date.nager.at/api/v3/PublicHolidays/${year}/LK`);
+                if (res.ok) {
+                    const holidays = await res.json();
+                    const todayStr = getTodayStr();
+                    const todayHoliday = holidays.find(h => h.date === todayStr);
+                    if (todayHoliday && !fixedHolidays[mmdd]) {
+                        todayHolidayMessage = todayHoliday.localName || todayHoliday.name;
+                        if(state.activeTab === 'home') render();
+                    }
+                }
+            } catch (e) {
+                // Silently ignore if network fails
             }
         }
 
@@ -273,6 +311,7 @@
                 }
                 fetchArticlesFromGoogleSheet();
                 if(isAdmin()) fetchUsersFromGoogleSheet();
+                fetchTodayHoliday(); // Checks for special day/holiday banner
             } catch(e) { console.error("Init Error:", e); } 
             finally { 
                 isAppLoading = false; 
@@ -1235,6 +1274,11 @@
                 </div>`;
             });
 
+            let holidayBanner = '';
+            if (typeof todayHolidayMessage !== 'undefined' && todayHolidayMessage) {
+                holidayBanner = `<div class="glass-panel p-4 rounded-2xl shadow-sm border-l-4 border-pink-500 flex items-center space-x-3 mb-4 animate-fade-in bg-gradient-to-r from-pink-50 to-transparent dark:from-pink-900/20 dark:to-transparent"><span class="text-2xl animate-pulse drop-shadow-md">✨</span><span class="font-bold text-sm text-pink-700 dark:text-pink-300">අද ${escapeHTML(todayHolidayMessage)} යි! ඔබට සුබ දවසක් වේවා!</span></div>`;
+            }
+
             return `<div class="space-y-8 animate-fade-in pb-10">
                 <header class="flex flex-col md:flex-row md:items-end justify-between space-y-4 md:space-y-0">
                     <div>
@@ -1243,7 +1287,7 @@
                     </div>
                 </header>
                 
-                <div class="mb-6">${targetHTML}${articleNotif}${reviewNotifs}</div>
+                <div class="mb-6">${holidayBanner}${targetHTML}${articleNotif}${reviewNotifs}</div>
 
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <button onclick="window.switchTab('timer')" class="glass-panel p-4 rounded-2xl shadow-sm flex items-center justify-center space-x-3 hover:bg-indigo-50/50 dark:hover:bg-indigo-900/50 transition-colors group"><span class="text-xl group-hover:scale-110 transition-transform drop-shadow">▶️</span><span class="font-bold text-sm">${t('deep_work')}</span></button>
