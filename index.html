@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#4f46e5">
     <title>MindsetOS - Ultimate Glassmorphism</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -73,6 +74,28 @@
 
     <script>
         // ==========================================
+        // DYNAMIC PWA MANIFEST
+        // ==========================================
+        const manifestJSON = {"name":"MindsetOS","short_name":"MindsetOS","start_url":".","display":"standalone","background_color":"#f8fafc","theme_color":"#4f46e5","icons":[{"src":"data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxOTIiIGhlaWdodD0iMTkyIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjNGY0NmU1Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtc2l6ZT0iODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIiBmaWxsPSIjZmZmIj7wn6eAPC90ZXh0Pjwvc3ZnPg==","sizes":"192x192","type":"image/svg+xml"}]};
+        const manifestLink = document.createElement('link');
+        manifestLink.rel = 'manifest';
+        manifestLink.href = 'data:application/manifest+json;charset=utf-8,' + encodeURIComponent(JSON.stringify(manifestJSON));
+        document.head.appendChild(manifestLink);
+
+        let pwaPrompt;
+        window.addEventListener('beforeinstallprompt', e => { 
+            e.preventDefault(); 
+            pwaPrompt = e; 
+            if(state && !state.isNewUser) render(); 
+        });
+        function installApp() { 
+            if(pwaPrompt) { 
+                pwaPrompt.prompt(); 
+                pwaPrompt.userChoice.then(() => { pwaPrompt = null; render(); }); 
+            } 
+        }
+
+        // ==========================================
         // 1. CONFIGURATION & UNIVERSAL UTILS
         // ==========================================
         const USER_DATA_KEY = "mindsetos_local_db_final"; 
@@ -80,7 +103,7 @@
         
         let isAppLoading = true; 
         window.authMode = 'login'; 
-        let todayHolidayMessage = null; // New variable for the holiday banner
+        let todayHolidayMessage = null; 
         
         const GOOGLE_SHEET_ARTICLES_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vShQaas57qfq3ElS57vD9c85buElPk8F7o6EDs4JjNFY-JKBZpOCBUIFg4tgex7Ojy6TxUsh3tuyzdf/pub?gid=0&single=true&output=csv";
         const GOOGLE_SHEET_USERS_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vShQaas57qfq3ElS57vD9c85buElPk8F7o6EDs4JjNFY-JKBZpOCBUIFg4tgex7Ojy6TxUsh3tuyzdf/pub?gid=1423780323&single=true&output=csv"; 
@@ -106,7 +129,6 @@
             const d = new Date();
             const mmdd = String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
             
-            // ලංකාවේ ප්‍රධාන ස්ථාවර නිවාඩු දින කිහිපයක් (API එකේ නොපෙන්වන අවස්ථා සඳහා)
             const fixedHolidays = {
                 '01-01': 'නව වසර',
                 '02-04': 'ජාතික නිදහස් දිනය',
@@ -133,9 +155,7 @@
                         if(state.activeTab === 'home') render();
                     }
                 }
-            } catch (e) {
-                // Silently ignore if network fails
-            }
+            } catch (e) {}
         }
 
         // ==========================================
@@ -214,7 +234,7 @@
                 'Work': { name: 'ව්‍යාපාර / Work', color: 'bg-orange-100 text-orange-700 dark:bg-orange-900/50 dark:text-orange-300 border-orange-200 dark:border-orange-800' }
             },
             adminUsersData: [], pendingReviews: [], appRating: 0, lastSeenArticleId: null,
-            readArticles: [], timerSettings: { focus: 25, break: 5 }
+            readArticles: [], timerSettings: { focus: 25, break: 5 }, soundType: 'noise'
         };
 
         const priorities = { 'Q1': { name: 'හදිසි/වැදගත්', class: 'bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400' }, 'Q2': { name: 'වැදගත් පමණි', class: 'bg-indigo-50 text-indigo-600 dark:bg-indigo-900/20 dark:text-indigo-400' }, 'Q3': { name: 'සාමාන්‍ය', class: 'bg-slate-50 text-slate-600 dark:bg-slate-800 dark:text-slate-400' } };
@@ -289,6 +309,14 @@
             } catch(e) { console.log("Audio API blocked or failed."); }
         }
 
+        function triggerPushNotification(message) {
+            if ('Notification' in window && Notification.permission === 'granted') {
+                try {
+                    new Notification("MindsetOS", { body: message, icon: "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxOTIiIGhlaWdodD0iMTkyIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjNGY0NmU1Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtc2l6ZT0iODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIiBmaWxsPSIjZmZmIj7wn6eAPC90ZXh0Pjwvc3ZnPg==" });
+                } catch(e) {}
+            }
+        }
+
         // ==========================================
         // 5. CORE INIT & BACKGROUND SYNC
         // ==========================================
@@ -303,6 +331,7 @@
                     if(!state.pendingReviews) state.pendingReviews = [];
                     if(!state.readArticles) state.readArticles = []; 
                     if(!state.timerSettings) state.timerSettings = { focus: 25, break: 5 }; 
+                    if(!state.soundType) state.soundType = 'noise';
                     if(state.stats && state.stats.totalFocusMinutes === undefined) state.stats.totalFocusMinutes = 0;
                     
                     timerState.timeLeft = (state.timerSettings.focus || 25) * 60;
@@ -311,7 +340,7 @@
                 }
                 fetchArticlesFromGoogleSheet();
                 if(isAdmin()) fetchUsersFromGoogleSheet();
-                fetchTodayHoliday(); // Checks for special day/holiday banner
+                fetchTodayHoliday(); 
             } catch(e) { console.error("Init Error:", e); } 
             finally { 
                 isAppLoading = false; 
@@ -454,7 +483,7 @@
                 stats: { totalFocusMinutes: 0 }, streak: { count: 0, lastDate: null },
                 categories: { 'Study': { name: 'අධ්‍යාපනය / Study', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 border-blue-200 dark:border-blue-800' } },
                 pendingReviews: [], appRating: 0, lastSeenArticleId: null,
-                readArticles: [], timerSettings: { focus: 25, break: 5 }
+                readArticles: [], timerSettings: { focus: 25, break: 5 }, soundType: 'noise'
             };
 
             saveData(true); 
@@ -514,7 +543,7 @@
                                         habits: [], history: [], reflections: {}, moods: {}, flashcards: [], pastTasks: {}, dailyFocus: {}, 
                                         stats: { totalFocusMinutes: parseInt(getField(cloudUser, 'focusminutes'))||0 }, streak: { count: 0, lastDate: null },
                                         categories: { 'Study': { name: 'අධ්‍යාපනය / Study', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/50' } },
-                                        pendingReviews: [], readArticles: [], timerSettings: { focus: 25, break: 5 }
+                                        pendingReviews: [], readArticles: [], timerSettings: { focus: 25, break: 5 }, soundType: 'noise'
                                     };
                                 }
                                 loginSuccess(loadedState);
@@ -547,6 +576,7 @@
             if(!state.pendingReviews) state.pendingReviews = [];
             if(!state.readArticles) state.readArticles = [];
             if(!state.timerSettings) state.timerSettings = { focus: 25, break: 5 };
+            if(!state.soundType) state.soundType = 'noise';
             timerState.timeLeft = (state.timerSettings.focus || 25) * 60;
             
             let registry = safeJSONParse(USERS_REGISTRY_KEY, {});
@@ -620,7 +650,7 @@
                     'Work': { name: 'ව්‍යාපාර / Work', color: 'bg-orange-100 text-orange-700 dark:bg-orange-900/50 dark:text-orange-300 border-orange-200 dark:border-orange-800' }
                 },
                 adminUsersData: [], pendingReviews: [], appRating: 0, lastSeenArticleId: null,
-                readArticles: [], timerSettings: { focus: 25, break: 5 }
+                readArticles: [], timerSettings: { focus: 25, break: 5 }, soundType: 'noise'
             };
             window.authMode = 'login'; 
             render(); 
@@ -853,22 +883,56 @@
         function deleteFlashcard(id) { state.flashcards = state.flashcards.filter(f => f.id !== id); saveData(true); render(); }
         function flipCardDOM(id, element) { state.flippedCards[id] = !state.flippedCards[id]; element.querySelector('.preserve-3d').classList.toggle('rotate-y-180'); }
 
-        let audioCtxObj = null; let noiseSourceNode = null;
+        let audioCtxObj = null;
+        let noiseSourceNode = null;
+        let activeOscillators = [];
+        
+        function setSoundType(type) { state.soundType = type; saveData(true); if(audioCtxObj){ toggleFocusSound(); toggleFocusSound(); } }
+        
         function toggleFocusSound() {
-            if (audioCtxObj) { audioCtxObj.close(); audioCtxObj = null; noiseSourceNode = null; return; }
+            if (audioCtxObj) { 
+                audioCtxObj.close(); audioCtxObj = null; noiseSourceNode = null; 
+                activeOscillators.forEach(o => o.stop()); activeOscillators = [];
+                return; 
+            }
             try {
                 const AC = window.AudioContext || window.webkitAudioContext;
                 if (!AC) return showToast("Audio API not supported in your browser.", "error");
                 audioCtxObj = new AC();
-                if (audioCtxObj.state === 'suspended') {
-                    audioCtxObj.resume();
+                if (audioCtxObj.state === 'suspended') audioCtxObj.resume();
+                
+                if (state.soundType === 'binaural') {
+                    // Binaural Beats (Alpha ~10Hz)
+                    const osc1 = audioCtxObj.createOscillator(); osc1.frequency.value = 200;
+                    const osc2 = audioCtxObj.createOscillator(); osc2.frequency.value = 210;
+                    const gainNode = audioCtxObj.createGain(); gainNode.gain.value = 0.5;
+                    
+                    if (audioCtxObj.createStereoPanner) {
+                        const panL = audioCtxObj.createStereoPanner(); panL.pan.value = -1;
+                        const panR = audioCtxObj.createStereoPanner(); panR.pan.value = 1;
+                        osc1.connect(panL); panL.connect(gainNode);
+                        osc2.connect(panR); panR.connect(gainNode);
+                    } else {
+                        osc1.connect(gainNode); osc2.connect(gainNode);
+                    }
+                    gainNode.connect(audioCtxObj.destination);
+                    osc1.start(); osc2.start();
+                    activeOscillators.push(osc1, osc2);
+                } else {
+                    // Noise (White/Rain)
+                    const buffer = audioCtxObj.createBuffer(1, audioCtxObj.sampleRate * 2, audioCtxObj.sampleRate);
+                    const data = buffer.getChannelData(0);
+                    for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+                    noiseSourceNode = audioCtxObj.createBufferSource(); noiseSourceNode.buffer = buffer; noiseSourceNode.loop = true;
+                    
+                    const filter = audioCtxObj.createBiquadFilter(); 
+                    if (state.soundType === 'rain') {
+                        filter.type = 'lowpass'; filter.frequency.value = 200; 
+                    } else {
+                        filter.type = 'lowpass'; filter.frequency.value = 400; // default noise
+                    }
+                    noiseSourceNode.connect(filter); filter.connect(audioCtxObj.destination); noiseSourceNode.start();
                 }
-                const buffer = audioCtxObj.createBuffer(1, audioCtxObj.sampleRate * 2, audioCtxObj.sampleRate);
-                const data = buffer.getChannelData(0);
-                for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
-                noiseSourceNode = audioCtxObj.createBufferSource(); noiseSourceNode.buffer = buffer; noiseSourceNode.loop = true;
-                const filter = audioCtxObj.createBiquadFilter(); filter.type = 'lowpass'; filter.frequency.value = 400; 
-                noiseSourceNode.connect(filter); filter.connect(audioCtxObj.destination); noiseSourceNode.start();
                 showToast('අවධානය සඳහා නාදය ක්‍රියාත්මකයි', 'success');
             } catch(e) { console.log(e); }
         }
@@ -890,6 +954,11 @@
 
         function toggleTimer() {
             initAudioCtx();
+
+            // Request Notification Permission
+            if ('Notification' in window && Notification.permission !== 'granted' && Notification.permission !== 'denied') {
+                Notification.requestPermission();
+            }
 
             if (timerState.phase === 'running' || timerState.phase === 'break-running') { 
                 clearInterval(timerState.interval); 
@@ -919,6 +988,7 @@
                     clearInterval(timerState.interval); 
                     timerState.targetEndTime = null;
                     playAlarm(); 
+                    
                     if(timerState.mode === 'focus') { 
                         let focusMins = state.timerSettings?.focus || 25;
                         addXP(focusMins); state.stats.totalFocusMinutes += focusMins; 
@@ -927,8 +997,10 @@
                         saveData(true); 
                         timerState.phase = 'focus-ended';
                         showToast("අවධානය යොමුකළ කාලය අවසන්!", "success"); 
+                        triggerPushNotification("අවධානය යොමුකළ කාලය අවසන්! විවේකයක් ගන්න.");
                     } else { 
                         showToast("විවේක කාලය අවසන්!", "info"); 
+                        triggerPushNotification("විවේක කාලය අවසන්! නැවත වැඩට යමු.");
                         resetTimer();
                     }
                     render();
@@ -981,6 +1053,24 @@
                 const focusData = focusDates.map(d => state.dailyFocus[d]);
                 focusChartInstance = new Chart(ctx2, { type: 'bar', data: { labels: focusDates, datasets: [{ label: 'විනාඩි', data: focusData, backgroundColor: '#10b981', borderRadius: 8 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } } });
             }
+        }
+
+        function generateHeatmap() {
+            let html = '<div class="flex flex-wrap gap-2 justify-center mt-6">';
+            const today = new Date();
+            for(let i=89; i>=0; i--) { 
+                const d = new Date(); d.setDate(today.getDate() - i);
+                const dateStr = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+                const focus = state.dailyFocus[dateStr] || 0;
+                let color = 'bg-slate-200 dark:bg-slate-800 opacity-50'; 
+                if(focus > 0) color = 'bg-indigo-300 dark:bg-indigo-900';
+                if(focus > 25) color = 'bg-indigo-400 dark:bg-indigo-700';
+                if(focus > 60) color = 'bg-indigo-500 dark:bg-indigo-500';
+                if(focus > 120) color = 'bg-indigo-600 dark:bg-indigo-400';
+                html += `<div class="w-4 h-4 rounded-sm ${color} transition-all hover:scale-125 cursor-pointer" title="${dateStr}: ${focus} විනාඩි"></div>`;
+            }
+            html += '</div>';
+            return html;
         }
 
         function shareToWhatsApp() {
@@ -1136,7 +1226,7 @@
             deleteFlashcard, flipCardDOM, toggleFocusSound, toggleTimer, resetTimer, startBreakManual,
             skipBreakManual, shareToWhatsApp, publishAdminArticle, deleteAdminArticle,
             exportData, importData, updateTargetDate, addCustomCategory, clearAllData, deleteAccount,
-            dismissReview, setRating, submitFeedback, updateTimerSettings
+            dismissReview, setRating, submitFeedback, updateTimerSettings, setSoundType, installApp
         });
 
         function render() {
@@ -1233,7 +1323,8 @@
         
         function renderSidebar() {
             const tabs = [{ id:'home', icon:'📊', l:t('home') }, { id:'planner', icon:'✅', l:t('planner') }, { id:'timer', icon:'⏱️', l:t('deep_work') }, { id:'flashcards', icon:'🗂️', l:t('flashcards') }, { id:'library', icon:'📖', l:t('library') }, { id:'stats', icon:'📈', l:t('stats') }, { id:'profile', icon:'⚙️', l:t('profile') }];
-            return `<nav class="fixed bottom-0 left-0 w-full md:top-0 md:w-24 lg:w-72 md:h-full glass-nav z-50 flex md:flex-col p-3 md:p-6 lg:p-8 justify-around md:justify-start space-y-0 md:space-y-2 shadow-lg print-hidden"><div class="hidden md:flex items-center space-x-4 mb-8 cursor-pointer" onclick="window.switchTab('home')"><div class="bg-indigo-600 p-3 rounded-2xl text-2xl shadow-lg">🧠</div><div class="hidden lg:block"><h1 class="font-black text-2xl tracking-tighter text-slate-900 dark:text-white">Mindset<span class="text-indigo-600">OS</span></h1></div></div>${tabs.map(tab => `<button onclick="window.switchTab('${tab.id}')" class="flex flex-col lg:flex-row items-center lg:space-x-4 p-2 lg:p-4 rounded-2xl transition-all w-full group relative ${state.activeTab === tab.id && !state.selectedArticleId ? 'bg-indigo-600/90 text-white shadow-xl' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-200/50 dark:hover:bg-slate-800/50'}"><div class="relative"><span class="text-xl ${state.activeTab===tab.id?'scale-125 inline-block transition-transform':''}">${tab.icon}</span></div><span class="text-[10px] lg:text-[15px] font-bold mt-1 lg:mt-0 ${state.activeTab===tab.id && !state.selectedArticleId?'text-white':''} hidden sm:block">${tab.l}</span></button>`).join('')}</nav>`;
+            const installBtnHTML = pwaPrompt ? `<button onclick="window.installApp()" class="flex flex-col lg:flex-row items-center lg:space-x-4 p-2 lg:p-4 rounded-2xl transition-all w-full group relative text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 mt-auto"><div class="relative"><span class="text-xl">⬇️</span></div><span class="text-[10px] lg:text-[15px] font-bold mt-1 lg:mt-0 hidden sm:block">Install App</span></button>` : '';
+            return `<nav class="fixed bottom-0 left-0 w-full md:top-0 md:w-24 lg:w-72 md:h-full glass-nav z-50 flex md:flex-col p-3 md:p-6 lg:p-8 justify-around md:justify-start space-y-0 md:space-y-2 shadow-lg print-hidden"><div class="hidden md:flex items-center space-x-4 mb-8 cursor-pointer" onclick="window.switchTab('home')"><div class="bg-indigo-600 p-3 rounded-2xl text-2xl shadow-lg">🧠</div><div class="hidden lg:block"><h1 class="font-black text-2xl tracking-tighter text-slate-900 dark:text-white">Mindset<span class="text-indigo-600">OS</span></h1></div></div>${tabs.map(tab => `<button onclick="window.switchTab('${tab.id}')" class="flex flex-col lg:flex-row items-center lg:space-x-4 p-2 lg:p-4 rounded-2xl transition-all w-full group relative ${state.activeTab === tab.id && !state.selectedArticleId ? 'bg-indigo-600/90 text-white shadow-xl' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-200/50 dark:hover:bg-slate-800/50'}"><div class="relative"><span class="text-xl ${state.activeTab===tab.id?'scale-125 inline-block transition-transform':''}">${tab.icon}</span></div><span class="text-[10px] lg:text-[15px] font-bold mt-1 lg:mt-0 ${state.activeTab===tab.id && !state.selectedArticleId?'text-white':''} hidden sm:block">${tab.l}</span></button>`).join('')}${installBtnHTML}</nav>`;
         }
 
         function renderHome() {
@@ -1386,7 +1477,18 @@
                 </div>`;
             }
 
-            return `<div class="max-w-xl mx-auto space-y-10 text-center pb-20"><header><h2 class="text-4xl font-black drop-shadow-md">${t('timer_title')}</h2></header><div class="glass-panel p-12 rounded-[3rem] relative shadow-xl"><div class="flex justify-center space-x-2 mb-8"><button onclick="window.toggleFocusSound()" class="px-4 py-2 rounded-lg text-xs font-bold border glass-btn shadow-sm">SOUND (BETA)</button></div>${settingsUI}<div class="relative w-72 h-72 mx-auto mb-10 flex items-center justify-center"><div class="absolute inset-0 bg-slate-200/50 dark:bg-slate-700/50 rounded-full shadow-inner"></div><div id="timer-circle-bg" class="absolute inset-0 timer-circle transition-all duration-500"></div><div class="absolute inset-4 glass-panel rounded-full flex flex-col items-center justify-center"><span class="text-sm font-bold text-slate-500 uppercase tracking-widest mb-1">${timerState.mode} MODE</span><span id="timer-display" class="text-7xl font-black drop-shadow-md">${String(Math.floor(timerState.timeLeft / 60)).padStart(2, '0')}:${String(timerState.timeLeft % 60).padStart(2, '0')}</span></div></div>${controlButtons}</div></div>`;
+            return `<div class="max-w-xl mx-auto space-y-10 text-center pb-20"><header><h2 class="text-4xl font-black drop-shadow-md">${t('timer_title')}</h2></header><div class="glass-panel p-12 rounded-[3rem] relative shadow-xl">
+                <div class="flex flex-col items-center justify-center space-y-2 mb-8">
+                    <div class="flex space-x-2">
+                        <button onclick="window.toggleFocusSound()" class="px-4 py-2 rounded-lg text-xs font-bold border glass-btn shadow-sm hover:scale-105 transition-transform">SOUND (BETA) ${audioCtxObj ? '🔊' : '🔇'}</button>
+                    </div>
+                    <select onchange="window.setSoundType(this.value)" class="bg-transparent text-xs font-bold text-slate-500 dark:text-slate-400 outline-none cursor-pointer">
+                        <option value="noise" ${state.soundType==='noise'?'selected':''}>White Noise</option>
+                        <option value="rain" ${state.soundType==='rain'?'selected':''}>Rain</option>
+                        <option value="binaural" ${state.soundType==='binaural'?'selected':''}>Binaural Beats (Alpha)</option>
+                    </select>
+                </div>
+                ${settingsUI}<div class="relative w-72 h-72 mx-auto mb-10 flex items-center justify-center"><div class="absolute inset-0 bg-slate-200/50 dark:bg-slate-700/50 rounded-full shadow-inner"></div><div id="timer-circle-bg" class="absolute inset-0 timer-circle transition-all duration-500"></div><div class="absolute inset-4 glass-panel rounded-full flex flex-col items-center justify-center"><span class="text-sm font-bold text-slate-500 uppercase tracking-widest mb-1">${timerState.mode} MODE</span><span id="timer-display" class="text-7xl font-black drop-shadow-md">${String(Math.floor(timerState.timeLeft / 60)).padStart(2, '0')}:${String(timerState.timeLeft % 60).padStart(2, '0')}</span></div></div>${controlButtons}</div></div>`;
         }
 
         function renderFlashcards() {
@@ -1407,7 +1509,13 @@
         }
 
         function renderStats() {
-            return `<div class="space-y-10 pb-20"><header class="text-center"><h2 class="text-4xl font-black drop-shadow-md">${t('stats')}</h2></header><div class="grid grid-cols-1 md:grid-cols-2 gap-6"><div class="glass-panel p-8 rounded-[2rem] text-center shadow-sm"><h4 class="text-5xl font-black mb-2 drop-shadow-md">${Math.floor((state.stats.totalFocusMinutes || 0)/60)}<span class="text-2xl text-slate-500">h</span> ${((state.stats.totalFocusMinutes || 0)%60)}<span class="text-2xl text-slate-500">m</span></h4><p class="font-bold uppercase tracking-widest text-xs text-slate-500">${t('total_focus')}</p></div><div class="glass-panel p-8 rounded-[2rem] text-center shadow-sm"><h4 class="text-5xl font-black mb-2 drop-shadow-md text-orange-500">${state.streak.count}</h4><p class="font-bold uppercase tracking-widest text-xs text-slate-500">Current Streak (Days)</p></div></div><div class="grid grid-cols-1 lg:grid-cols-2 gap-8"><div class="glass-panel p-8 rounded-[3rem] shadow-sm"><h4 class="font-black mb-6 text-center text-slate-600 dark:text-slate-300 drop-shadow-sm">${t('progress_chart')}</h4><div class="chart-container"><canvas id="progressChart"></canvas></div></div><div class="glass-panel p-8 rounded-[3rem] shadow-sm"><h4 class="font-black mb-6 text-center text-slate-600 dark:text-slate-300 drop-shadow-sm">${t('focus_chart')}</h4><div class="chart-container"><canvas id="focusChart"></canvas></div></div></div></div>`;
+            return `<div class="space-y-10 pb-20"><header class="text-center"><h2 class="text-4xl font-black drop-shadow-md">${t('stats')}</h2></header><div class="grid grid-cols-1 md:grid-cols-2 gap-6"><div class="glass-panel p-8 rounded-[2rem] text-center shadow-sm"><h4 class="text-5xl font-black mb-2 drop-shadow-md">${Math.floor((state.stats.totalFocusMinutes || 0)/60)}<span class="text-2xl text-slate-500">h</span> ${((state.stats.totalFocusMinutes || 0)%60)}<span class="text-2xl text-slate-500">m</span></h4><p class="font-bold uppercase tracking-widest text-xs text-slate-500">${t('total_focus')}</p></div><div class="glass-panel p-8 rounded-[2rem] text-center shadow-sm"><h4 class="text-5xl font-black mb-2 drop-shadow-md text-orange-500">${state.streak.count}</h4><p class="font-bold uppercase tracking-widest text-xs text-slate-500">Current Streak (Days)</p></div></div><div class="grid grid-cols-1 lg:grid-cols-2 gap-8"><div class="glass-panel p-8 rounded-[3rem] shadow-sm"><h4 class="font-black mb-6 text-center text-slate-600 dark:text-slate-300 drop-shadow-sm">${t('progress_chart')}</h4><div class="chart-container"><canvas id="progressChart"></canvas></div></div><div class="glass-panel p-8 rounded-[3rem] shadow-sm"><h4 class="font-black mb-6 text-center text-slate-600 dark:text-slate-300 drop-shadow-sm">${t('focus_chart')}</h4><div class="chart-container"><canvas id="focusChart"></canvas></div></div>
+            <div class="glass-panel p-8 rounded-[3rem] shadow-sm lg:col-span-2">
+                <h4 class="font-black mb-2 text-center text-slate-600 dark:text-slate-300 drop-shadow-sm">කාර්යශීලීතා සිතියම (Activity Heatmap)</h4>
+                <p class="text-xs text-center text-slate-500 mb-6">පසුගිය දින 90ක Focus කාලය</p>
+                ${generateHeatmap()}
+            </div>
+            </div></div>`;
         }
 
         function renderProfile() {
