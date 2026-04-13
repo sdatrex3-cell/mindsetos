@@ -68,7 +68,7 @@
 <body class="text-slate-900 dark:text-slate-100 overflow-x-hidden transition-colors duration-300 print:bg-white">
 
     <div id="app-root"></div>
-    <div id="toast-container" class="fixed top-24 right-6 z-50 flex flex-col space-y-2 pointer-events-none z-[120]"></div>
+    <div id="toast-container" class="fixed top-24 right-6 flex flex-col space-y-2 pointer-events-none z-[120]"></div>
     <div id="modal-container" class="fixed inset-0 z-[100] hidden items-center justify-center bg-slate-900/60 backdrop-blur-md transition-opacity"></div>
 
     <script>
@@ -223,14 +223,22 @@
             };
         }
 
-        function playAlarm() {
+        const initAudioCtx = () => {
             try {
                 if (!globalAudioCtx) {
-                    globalAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                    const AC = window.AudioContext || window.webkitAudioContext;
+                    if (AC) globalAudioCtx = new AC();
                 }
-                if (globalAudioCtx.state === 'suspended') {
-                    globalAudioCtx.resume();
+                if (globalAudioCtx && globalAudioCtx.state === 'suspended') {
+                    globalAudioCtx.resume().catch(e=>console.log("Audio resume blocked", e));
                 }
+            } catch(err) { console.log(err); }
+        };
+
+        function playAlarm() {
+            initAudioCtx();
+            try {
+                if (!globalAudioCtx) return;
                 const playTone = (freq, startTime, duration) => {
                     const osc = globalAudioCtx.createOscillator(); const gain = globalAudioCtx.createGain();
                     osc.connect(gain); gain.connect(globalAudioCtx.destination);
@@ -278,50 +286,52 @@
             try {
                 const response = await fetch(GOOGLE_SHEET_USERS_CSV_URL + "&t=" + Date.now(), { cache: 'no-store' });
                 const csvData = await response.text();
-                Papa.parse(csvData, { header: true, skipEmptyLines: true, complete: function(results) {
-                    const getField = (row, searchStr) => {
-                        const key = Object.keys(row).find(k => k.toLowerCase().replace(/\s/g, '') === searchStr.toLowerCase() || k.toLowerCase().includes(searchStr.toLowerCase()));
-                        return key ? row[key] : null;
-                    };
+                if (typeof Papa !== 'undefined') {
+                    Papa.parse(csvData, { header: true, skipEmptyLines: true, complete: function(results) {
+                        const getField = (row, searchStr) => {
+                            const key = Object.keys(row).find(k => k.toLowerCase().replace(/\s/g, '') === searchStr.toLowerCase() || k.toLowerCase().includes(searchStr.toLowerCase()));
+                            return key ? row[key] : null;
+                        };
 
-                    const cloudUser = results.data.find(u => {
-                        const rowEmail = getField(u, 'email') || '';
-                        return String(rowEmail).trim().toLowerCase() === email.toLowerCase();
-                    });
+                        const cloudUser = results.data.find(u => {
+                            const rowEmail = getField(u, 'email') || '';
+                            return String(rowEmail).trim().toLowerCase() === email.toLowerCase();
+                        });
 
-                    const localTime = state.lastModified || 0;
+                        const localTime = state.lastModified || 0;
 
-                    if (cloudUser) {
-                        const cloudPass = getField(cloudUser, 'password') || getField(cloudUser, 'pass') || '';
-                        if (String(cloudPass).trim() === password) {
-                            const stateJSON = getField(cloudUser, 'statejson') || getField(cloudUser, 'statedata') || '';
-                            if (stateJSON && stateJSON.trim().startsWith('{')) {
-                                try { 
-                                    const cloudState = JSON.parse(stateJSON); 
-                                    const cloudTime = cloudState.lastModified || 0;
+                        if (cloudUser) {
+                            const cloudPass = getField(cloudUser, 'password') || getField(cloudUser, 'pass') || '';
+                            if (String(cloudPass).trim() === password) {
+                                const stateJSON = getField(cloudUser, 'statejson') || getField(cloudUser, 'statedata') || '';
+                                if (stateJSON && stateJSON.trim().startsWith('{')) {
+                                    try { 
+                                        const cloudState = JSON.parse(stateJSON); 
+                                        const cloudTime = cloudState.lastModified || 0;
 
-                                    if (cloudTime > localTime) {
-                                        state = { ...state, ...cloudState };
-                                        localStorage.setItem(USER_DATA_KEY, JSON.stringify(state));
-                                        let registry = safeJSONParse(USERS_REGISTRY_KEY, {});
-                                        registry[state.user.email] = state;
-                                        localStorage.setItem(USERS_REGISTRY_KEY, JSON.stringify(registry));
-                                        
-                                        const activeEl = document.activeElement;
-                                        const isTyping = activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA');
-                                        if (!isTyping) {
-                                            render(); 
+                                        if (cloudTime > localTime) {
+                                            state = { ...state, ...cloudState };
+                                            localStorage.setItem(USER_DATA_KEY, JSON.stringify(state));
+                                            let registry = safeJSONParse(USERS_REGISTRY_KEY, {});
+                                            registry[state.user.email] = state;
+                                            localStorage.setItem(USERS_REGISTRY_KEY, JSON.stringify(registry));
+                                            
+                                            const activeEl = document.activeElement;
+                                            const isTyping = activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA');
+                                            if (!isTyping) {
+                                                render(); 
+                                            }
+                                        } else if (localTime > cloudTime) {
+                                            syncUserStatsToGoogleSheet(true);
                                         }
-                                    } else if (localTime > cloudTime) {
-                                        syncUserStatsToGoogleSheet(true);
-                                    }
-                                } catch(err) {} 
+                                    } catch(err) {} 
+                                }
                             }
+                        } else {
+                            syncUserStatsToGoogleSheet(true);
                         }
-                    } else {
-                        syncUserStatsToGoogleSheet(true);
-                    }
-                }});
+                    }});
+                }
             } catch (error) { console.error("Background sync failed", error); }
         }
 
@@ -391,7 +401,7 @@
             const n = document.getElementById('init-name')?.value.trim(); 
             const e = document.getElementById('init-email')?.value.trim().toLowerCase(); 
             const p = document.getElementById('init-password')?.value; 
-            if(!n || !e || p.length < 6) return showToast("කරුණාකර නිවැරදි තොරතුරු ඇතුළත් කරන්න (අවම වශයෙන් මුරපදයට අකුරු 6ක් අවශ්‍යයි).", "error");
+            if(!n || !e || !p || p.length < 6) return showToast("කරුණාකර නිවැරදි තොරතුරු ඇතුළත් කරන්න (අවම වශයෙන් මුරපදයට අකුරු 6ක් අවශ්‍යයි).", "error");
             if(!emailRegex.test(e)) return showToast("කරුණාකර නිවැරදි ඊමේල් ලිපිනයක් ඇතුළත් කරන්න.", "error");
 
             let registry = safeJSONParse(USERS_REGISTRY_KEY, {});
@@ -435,52 +445,53 @@
             try {
                 const response = await fetch(GOOGLE_SHEET_USERS_CSV_URL + "&t=" + Date.now() + Math.random(), { cache: 'no-store' });
                 const csvData = await response.text();
-                Papa.parse(csvData, { header: true, skipEmptyLines: true, complete: function(results) {
-                    
-                    const getField = (row, searchStr) => {
-                        const key = Object.keys(row).find(k => k.toLowerCase().replace(/\s/g, '') === searchStr.toLowerCase() || k.toLowerCase().includes(searchStr.toLowerCase()));
-                        return key ? row[key] : null;
-                    };
+                if (typeof Papa !== 'undefined') {
+                    Papa.parse(csvData, { header: true, skipEmptyLines: true, complete: function(results) {
+                        const getField = (row, searchStr) => {
+                            const key = Object.keys(row).find(k => k.toLowerCase().replace(/\s/g, '') === searchStr.toLowerCase() || k.toLowerCase().includes(searchStr.toLowerCase()));
+                            return key ? row[key] : null;
+                        };
 
-                    const cloudUser = results.data.find(u => {
-                        const rowEmail = getField(u, 'email') || u.Email || u.email || '';
-                        return String(rowEmail).trim().toLowerCase() === e;
-                    });
-                    
-                    if (cloudUser) {
-                        const cloudPass = getField(cloudUser, 'password') || getField(cloudUser, 'pass') || cloudUser.Password || cloudUser.password || '';
-                        if (String(cloudPass).trim() === p) {
-                            let loadedState = null;
-                            const stateJSON = getField(cloudUser, 'statejson') || getField(cloudUser, 'statedata') || cloudUser.StateJSON || cloudUser.StateData || '';
-                            
-                            if (stateJSON && stateJSON.trim().startsWith('{')) {
-                                try { loadedState = JSON.parse(stateJSON); } catch(err) { console.error("Parse Error", err); }
+                        const cloudUser = results.data.find(u => {
+                            const rowEmail = getField(u, 'email') || u.Email || u.email || '';
+                            return String(rowEmail).trim().toLowerCase() === e;
+                        });
+                        
+                        if (cloudUser) {
+                            const cloudPass = getField(cloudUser, 'password') || getField(cloudUser, 'pass') || cloudUser.Password || cloudUser.password || '';
+                            if (String(cloudPass).trim() === p) {
+                                let loadedState = null;
+                                const stateJSON = getField(cloudUser, 'statejson') || getField(cloudUser, 'statedata') || cloudUser.StateJSON || cloudUser.StateData || '';
+                                
+                                if (stateJSON && stateJSON.trim().startsWith('{')) {
+                                    try { loadedState = JSON.parse(stateJSON); } catch(err) { console.error("Parse Error", err); }
+                                }
+                                
+                                if (!loadedState) {
+                                    loadedState = {
+                                        lastModified: Date.now(),
+                                        language: 'si', activeTab: 'home', flippedCards: {}, isNewUser: false,
+                                        user: { name: getField(cloudUser, 'name') || '', email: e, password: p, joined: getField(cloudUser, 'joineddate') || getField(cloudUser, 'joined') || getTodayStr(), targetDate: '', theme: 'light', xp: parseInt(getField(cloudUser, 'xp'))||0, level: parseInt(getField(cloudUser, 'level'))||1 },
+                                        habits: [], history: [], reflections: {}, moods: {}, flashcards: [], pastTasks: {}, dailyFocus: {}, 
+                                        stats: { totalFocusMinutes: parseInt(getField(cloudUser, 'focusminutes'))||0 }, streak: { count: 0, lastDate: null },
+                                        categories: { 'Study': { name: 'අධ්‍යාපනය / Study', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/50' } },
+                                        pendingReviews: [], readArticles: [], timerSettings: { focus: 25, break: 5 }
+                                    };
+                                }
+                                loginSuccess(loadedState);
+                            } else {
+                                showToast("මුරපදය (Password) වැරදියි.", "error");
                             }
-                            
-                            if (!loadedState) {
-                                loadedState = {
-                                    lastModified: Date.now(),
-                                    language: 'si', activeTab: 'home', flippedCards: {}, isNewUser: false,
-                                    user: { name: getField(cloudUser, 'name') || '', email: e, password: p, joined: getField(cloudUser, 'joineddate') || getField(cloudUser, 'joined') || getTodayStr(), targetDate: '', theme: 'light', xp: parseInt(getField(cloudUser, 'xp'))||0, level: parseInt(getField(cloudUser, 'level'))||1 },
-                                    habits: [], history: [], reflections: {}, moods: {}, flashcards: [], pastTasks: {}, dailyFocus: {}, 
-                                    stats: { totalFocusMinutes: parseInt(getField(cloudUser, 'focusminutes'))||0 }, streak: { count: 0, lastDate: null },
-                                    categories: { 'Study': { name: 'අධ්‍යාපනය / Study', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/50' } },
-                                    pendingReviews: [], readArticles: [], timerSettings: { focus: 25, break: 5 }
-                                };
+                        } else {
+                            if(registry[e] && registry[e].user && registry[e].user.password === p) {
+                                showToast("Cloud දත්ත නොමැත, Local දත්ත භාවිතා වේ.", "info");
+                                loginSuccess(registry[e]);
+                            } else {
+                                showToast("මෙම ඊමේල් ලිපිනය සඳහා ගිණුමක් නොමැත.", "error");
                             }
-                            loginSuccess(loadedState);
-                        } else {
-                            showToast("මුරපදය (Password) වැරදියි.", "error");
                         }
-                    } else {
-                        if(registry[e] && registry[e].user && registry[e].user.password === p) {
-                            showToast("Cloud දත්ත නොමැත, Local දත්ත භාවිතා වේ.", "info");
-                            loginSuccess(registry[e]);
-                        } else {
-                            showToast("මෙම ඊමේල් ලිපිනය සඳහා ගිණුමක් නොමැත.", "error");
-                        }
-                    }
-                }});
+                    }});
+                }
             } catch(err) {
                 if(registry[e] && registry[e].user && registry[e].user.password === p) {
                     showToast("අන්තර්ජාල දෝෂයකි. Local දත්ත භාවිතා වේ.", "info");
@@ -510,7 +521,6 @@
             if(isAdmin()) fetchUsersFromGoogleSheet();
         }
 
-        // FIX: Force Sync Password change immediately
         function handleForgotPassword() {
             showPromptModal("ඔබගේ විද්‍යුත් තැපෑල (Email) ඇතුළත් කරන්න:", (email) => {
                 const e = email.trim().toLowerCase();
@@ -557,7 +567,6 @@
 
         function switchAuthMode() { window.authMode = window.authMode === 'login' ? 'register' : 'login'; render(); }
         
-        // FIX: Clear State entirely on Logout to prevent data bleed
         function logout() { 
             localStorage.removeItem(USER_DATA_KEY); 
             state = {
@@ -586,22 +595,24 @@
             try {
                 const response = await fetch(GOOGLE_SHEET_ARTICLES_CSV_URL + "&t=" + Date.now(), { cache: 'no-store' });
                 const csvData = await response.text();
-                Papa.parse(csvData, { header: true, skipEmptyLines: true, complete: function(results) {
-                        const fetchedArticles = results.data.map(row => ({ 
-                            id: escapeHTML(row.ID), 
-                            title: escapeHTML(row.Title), 
-                            author: escapeHTML(row.Author || 'MindsetOS'), 
-                            category: escapeHTML(row.Category || 'General'), 
-                            icon: escapeHTML(row.Icon || '📚'), 
-                            color: escapeHTML(row.Color || 'text-indigo-500'), 
-                            readTime: escapeHTML(row.ReadTime || '5m'), 
-                            excerpt: escapeHTML(row.Excerpt), 
-                            intro: escapeHTML(row.Intro), 
-                            sections: [{title: escapeHTML(row.Sec1Title || 'අන්තර්ගතය'), text: escapeHTML(row.Sec1Text || '')}], 
-                            science: escapeHTML(row.Science || '') 
-                        })).filter(a => a.id && a.title);
-                        if(fetchedArticles.length > 0) { articles = [...fetchedArticles, ...defaultArticles]; if(state.activeTab === 'library' || state.activeTab === 'home' || state.selectedArticleId) render(); }
+                if (typeof Papa !== 'undefined') {
+                    Papa.parse(csvData, { header: true, skipEmptyLines: true, complete: function(results) {
+                            const fetchedArticles = results.data.map(row => ({ 
+                                id: escapeHTML(row.ID), 
+                                title: escapeHTML(row.Title), 
+                                author: escapeHTML(row.Author || 'MindsetOS'), 
+                                category: escapeHTML(row.Category || 'General'), 
+                                icon: escapeHTML(row.Icon || '📚'), 
+                                color: escapeHTML(row.Color || 'text-indigo-500'), 
+                                readTime: escapeHTML(row.ReadTime || '5m'), 
+                                excerpt: escapeHTML(row.Excerpt), 
+                                intro: escapeHTML(row.Intro), 
+                                sections: [{title: escapeHTML(row.Sec1Title || 'අන්තර්ගතය'), text: escapeHTML(row.Sec1Text || '')}], 
+                                science: escapeHTML(row.Science || '') 
+                            })).filter(a => a.id && a.title);
+                            if(fetchedArticles.length > 0) { articles = [...fetchedArticles, ...defaultArticles]; if(state.activeTab === 'library' || state.activeTab === 'home' || state.selectedArticleId) render(); }
                     } });
+                }
             } catch (error) { console.error(error); }
         }
 
@@ -610,18 +621,20 @@
             try {
                 const response = await fetch(GOOGLE_SHEET_USERS_CSV_URL + "&t=" + Date.now(), { cache: 'no-store' });
                 const csvData = await response.text();
-                Papa.parse(csvData, { header: true, skipEmptyLines: true, complete: function(results) {
-                        const getField = (row, searchStr) => {
-                            const key = Object.keys(row).find(k => k.toLowerCase().replace(/\s/g, '') === searchStr.toLowerCase() || k.toLowerCase().includes(searchStr.toLowerCase()));
-                            return key ? row[key] : null;
-                        };
-                        state.adminUsersData = results.data.map(row => ({ 
-                            name: getField(row, 'name'), email: getField(row, 'email'), password: getField(row, 'password') || getField(row, 'pass'), level: getField(row, 'level'), xp: getField(row, 'xp'), 
-                            totalFocusMinutes: getField(row, 'focusminutes'), joined: getField(row, 'joineddate') || getField(row, 'joined'), stateData: getField(row, 'statejson') || getField(row, 'statedata')
-                        })).filter(u => u.email);
-                        state.adminUsersData.sort((a,b) => (parseInt(b.xp) || 0) - (parseInt(a.xp) || 0));
-                        if(state.activeTab === 'profile' && isAdmin()) render();
+                if (typeof Papa !== 'undefined') {
+                    Papa.parse(csvData, { header: true, skipEmptyLines: true, complete: function(results) {
+                            const getField = (row, searchStr) => {
+                                const key = Object.keys(row).find(k => k.toLowerCase().replace(/\s/g, '') === searchStr.toLowerCase() || k.toLowerCase().includes(searchStr.toLowerCase()));
+                                return key ? row[key] : null;
+                            };
+                            state.adminUsersData = results.data.map(row => ({ 
+                                name: getField(row, 'name'), email: getField(row, 'email'), password: getField(row, 'password') || getField(row, 'pass'), level: getField(row, 'level'), xp: getField(row, 'xp'), 
+                                totalFocusMinutes: getField(row, 'focusminutes'), joined: getField(row, 'joineddate') || getField(row, 'joined'), stateData: getField(row, 'statejson') || getField(row, 'statedata')
+                            })).filter(u => u.email);
+                            state.adminUsersData.sort((a,b) => (parseInt(b.xp) || 0) - (parseInt(a.xp) || 0));
+                            if(state.activeTab === 'profile' && isAdmin()) render();
                     } });
+                }
             } catch (error) { console.error(error); }
         }
 
@@ -647,8 +660,7 @@
                     method: 'POST', 
                     headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, 
                     body: formData.toString(), 
-                    mode: 'no-cors',
-                    keepalive: true
+                    mode: 'no-cors'
                 }).catch(e => console.error("Sync Error:", e));
             };
 
@@ -726,7 +738,6 @@
             }
         }
         
-        // FIX: XP Farming Prevented + Unticking removes ghost review
         function toggleHabit(id) {
             let newlyCompleted = false;
             state.habits = state.habits.map(h => { 
@@ -781,7 +792,7 @@
             saveData(true);
         }
         
-        function saveJournal() { state.reflections[getTodayStr()] = escapeHTML(document.getElementById('journal-text')?.value); saveData(true); showToast(t('save_journal'), 'success'); render(); }
+        function saveJournal() { state.reflections[getTodayStr()] = document.getElementById('journal-text')?.value; saveData(true); showToast(t('save_journal'), 'success'); render(); }
         function setMood(mood) { state.moods[getTodayStr()] = mood; saveData(true); render(); }
 
         function addFlashcard() { 
@@ -807,7 +818,9 @@
         function toggleFocusSound() {
             if (audioCtxObj) { audioCtxObj.close(); audioCtxObj = null; noiseSourceNode = null; return; }
             try {
-                audioCtxObj = new (window.AudioContext || window.webkitAudioContext)();
+                const AC = window.AudioContext || window.webkitAudioContext;
+                if (!AC) return showToast("Audio API not supported in your browser.", "error");
+                audioCtxObj = new AC();
                 if (audioCtxObj.state === 'suspended') {
                     audioCtxObj.resume();
                 }
@@ -837,12 +850,7 @@
         }
 
         function toggleTimer() {
-            if (!globalAudioCtx) {
-                globalAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            }
-            if (globalAudioCtx.state === 'suspended') {
-                globalAudioCtx.resume();
-            }
+            initAudioCtx();
 
             if (timerState.phase === 'running' || timerState.phase === 'break-running') { 
                 clearInterval(timerState.interval); 
@@ -902,12 +910,7 @@
             timerState.mode = 'break';
             timerState.timeLeft = (state.timerSettings?.break || 5) * 60;
             timerState.phase = 'break-running';
-            if (!globalAudioCtx) {
-                globalAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            }
-            if (globalAudioCtx.state === 'suspended') {
-                globalAudioCtx.resume();
-            }
+            initAudioCtx();
             startTimerInterval();
             render();
         }
@@ -923,6 +926,7 @@
         }
 
         function initCharts() {
+            if (typeof Chart === 'undefined') return;
             const ctx1 = document.getElementById('progressChart');
             if(ctx1) {
                 if(progressChartInstance) progressChartInstance.destroy();
@@ -959,7 +963,6 @@
             window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
         }
 
-        // FIX: Clear All Data resets timer safely and avoids ghost streaks
         function clearAllData() {
             showConfirmModal(t('clear_all') + "?", () => {
                 state.habits = []; state.history = []; state.reflections = {}; state.moods = {}; state.flashcards = []; state.pastTasks = {}; state.dailyFocus = {}; state.streak = { count: 0, lastDate: null }; state.pendingReviews = [];
@@ -1106,8 +1109,8 @@
                 const activeEl = document.getElementById(activeId);
                 if(activeEl && activeEl.setSelectionRange) {
                     try { 
-                        // FIX: Prevent cursor crash on input types that don't support it
-                        if (activeEl.type !== 'time' && activeEl.type !== 'date' && activeEl.type !== 'number' && activeEl.type !== 'email') {
+                        const supportedTypes = ['text', 'search', 'url', 'tel', 'password'];
+                        if (supportedTypes.includes(activeEl.type)) {
                             cursorStart = activeEl.selectionStart; cursorEnd = activeEl.selectionEnd; 
                         }
                     } catch(err){}
@@ -1167,7 +1170,8 @@
                     focusEl.focus();
                     if (focusEl.setSelectionRange) {
                         try { 
-                            if (focusEl.type !== 'time' && focusEl.type !== 'date' && focusEl.type !== 'number' && focusEl.type !== 'email') {
+                            const supportedTypes = ['text', 'search', 'url', 'tel', 'password'];
+                            if (supportedTypes.includes(focusEl.type)) {
                                 focusEl.setSelectionRange(cursorStart, cursorEnd); 
                             }
                         } catch(err){}
@@ -1197,13 +1201,16 @@
 
             let targetHTML = '';
             if(state.user.targetDate) {
-                const tDate = new Date(state.user.targetDate); tDate.setHours(0,0,0,0);
-                const todayD = new Date(); todayD.setHours(0,0,0,0);
-                const diffTime = tDate - todayD;
-                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                if(diffDays > 0) targetHTML = `<div class="glass-panel p-4 rounded-2xl shadow-sm border-l-4 border-indigo-500 font-bold mb-4">⏳ ඔබේ ඉලක්කයට තවත් දින ${diffDays} යි!</div>`;
-                else if (diffDays === 0) targetHTML = `<div class="glass-panel p-4 rounded-2xl shadow-sm border-l-4 border-rose-500 font-bold mb-4">🎯 අදයි ඔබේ ඉලක්කගත දිනය! උපරිමයෙන් කරන්න!</div>`;
-                else targetHTML = `<div class="glass-panel p-4 rounded-2xl shadow-sm border-l-4 border-slate-500 font-bold mb-4 opacity-70">✅ ඉලක්කගත දිනය පසු වී ඇත (දින ${Math.abs(diffDays)} කට පෙර).</div>`;
+                const tDate = new Date(state.user.targetDate);
+                if (!isNaN(tDate)) {
+                    tDate.setHours(0,0,0,0);
+                    const todayD = new Date(); todayD.setHours(0,0,0,0);
+                    const diffTime = tDate - todayD;
+                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                    if(diffDays > 0) targetHTML = `<div class="glass-panel p-4 rounded-2xl shadow-sm border-l-4 border-indigo-500 font-bold mb-4">⏳ ඔබේ ඉලක්කයට තවත් දින ${diffDays} යි!</div>`;
+                    else if (diffDays === 0) targetHTML = `<div class="glass-panel p-4 rounded-2xl shadow-sm border-l-4 border-rose-500 font-bold mb-4">🎯 අදයි ඔබේ ඉලක්කගත දිනය! උපරිමයෙන් කරන්න!</div>`;
+                    else targetHTML = `<div class="glass-panel p-4 rounded-2xl shadow-sm border-l-4 border-slate-500 font-bold mb-4 opacity-70">✅ ඉලක්කගත දිනය පසු වී ඇත (දින ${Math.abs(diffDays)} කට පෙර).</div>`;
+                }
             }
 
             let articleNotif = '';
@@ -1263,7 +1270,7 @@
                         historyHTML += `</ul></div>`;
                     }
                     if (state.reflections[d]) {
-                        historyHTML += `<div><p class="text-xs uppercase font-bold text-slate-500 mb-2">Journal</p><p class="text-sm font-medium italic opacity-90 border-l-2 border-indigo-400 pl-3">${state.reflections[d]}</p></div>`;
+                        historyHTML += `<div><p class="text-xs uppercase font-bold text-slate-500 mb-2">Journal</p><p class="text-sm font-medium italic opacity-90 border-l-2 border-indigo-400 pl-3">${escapeHTML(state.reflections[d])}</p></div>`;
                     }
                     historyHTML += `</div>`;
                 });
@@ -1310,7 +1317,7 @@
                     </div>`}).join('')}
                 </div>
 
-                <div class="glass-panel p-8 rounded-[2.5rem] shadow-sm space-y-6"><div><h3 class="text-2xl font-black mb-2 drop-shadow-sm">${t('journal')}</h3></div><div class="flex space-x-4 mb-4">${Object.keys(moodEmojis).map(m => `<button onclick="window.setMood('${m}')" class="text-4xl hover:scale-125 transition-transform ${state.moods[today]===m?'scale-125 glass-btn rounded-full':''} drop-shadow">${moodEmojis[m]}</button>`).join('')}</div><textarea id="journal-text" oninput="state.reflections['${today}'] = this.value; window.saveData();" placeholder="${t('journal_ph')}" class="w-full glass-btn p-6 rounded-2xl outline-none font-medium text-lg h-32 resize-none focus:border-indigo-400 shadow-inner">${state.reflections[today]||''}</textarea><button onclick="window.saveJournal()" class="w-full py-4 bg-indigo-600 text-white font-black rounded-xl shadow-lg hover:bg-indigo-500">${t('save_journal')}</button></div>${historyHTML}
+                <div class="glass-panel p-8 rounded-[2.5rem] shadow-sm space-y-6"><div><h3 class="text-2xl font-black mb-2 drop-shadow-sm">${t('journal')}</h3></div><div class="flex space-x-4 mb-4">${Object.keys(moodEmojis).map(m => `<button onclick="window.setMood('${m}')" class="text-4xl hover:scale-125 transition-transform ${state.moods[today]===m?'scale-125 glass-btn rounded-full':''} drop-shadow">${moodEmojis[m]}</button>`).join('')}</div><textarea id="journal-text" oninput="state.reflections['${today}'] = this.value; window.saveData();" placeholder="${t('journal_ph')}" class="w-full glass-btn p-6 rounded-2xl outline-none font-medium text-lg h-32 resize-none focus:border-indigo-400 shadow-inner">${escapeHTML(state.reflections[today]||'')}</textarea><button onclick="window.saveJournal()" class="w-full py-4 bg-indigo-600 text-white font-black rounded-xl shadow-lg hover:bg-indigo-500">${t('save_journal')}</button></div>${historyHTML}
             </div>`;
         }
 
@@ -1361,9 +1368,9 @@
                 <header class="text-center"><h2 class="text-4xl font-black drop-shadow-md">${t('profile')}</h2></header>
                 
                 <div class="glass-panel p-8 md:p-10 rounded-[3rem] shadow-sm text-center">
-                    <div class="w-24 h-24 bg-gradient-to-tr from-indigo-500 to-purple-500 rounded-full flex items-center justify-center mx-auto mb-4 shadow-xl text-4xl text-white font-black">${state.user.name.charAt(0).toUpperCase()}</div>
-                    <h3 class="text-3xl font-black mb-1">${state.user.name}</h3>
-                    <p class="text-slate-500 font-bold mb-6">${state.user.email}</p>
+                    <div class="w-24 h-24 bg-gradient-to-tr from-indigo-500 to-purple-500 rounded-full flex items-center justify-center mx-auto mb-4 shadow-xl text-4xl text-white font-black">${escapeHTML(state.user.name).charAt(0).toUpperCase()}</div>
+                    <h3 class="text-3xl font-black mb-1">${escapeHTML(state.user.name)}</h3>
+                    <p class="text-slate-500 font-bold mb-6">${escapeHTML(state.user.email)}</p>
                     <div class="flex justify-center space-x-8 border-t border-slate-300 dark:border-slate-700 pt-6">
                         <div><p class="text-2xl font-black text-indigo-500">${state.user.level}</p><p class="text-[10px] uppercase font-bold text-indigo-400 mt-1 break-words w-24">${getLevelName(state.user.level)}</p></div>
                         <div><p class="text-2xl font-black text-emerald-500">${state.user.xp}</p><p class="text-[10px] uppercase font-bold text-slate-500 mt-1">XP</p></div>
