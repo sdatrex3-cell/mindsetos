@@ -952,7 +952,11 @@
             const focusMins = focusTimeToday % 60;
             const timeString = focusHours > 0 ? `${focusHours}h ${focusMins}m` : `${focusMins}m`;
 
-            let text = `📅 දිනය: ${new Date().toLocaleDateString('si-LK')}\n⏱️ අද Focus Time: ${timeString}\n\n`;
+            const dateNum = new Date().getDate();
+            const digitEmojis = ['0️⃣', '1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣'];
+            const dateEmoji = String(dateNum).split('').map(d => digitEmojis[d]).join('');
+
+            let text = `${dateEmoji} දිනය: ${new Date().toLocaleDateString('si-LK')}\n⏱️ අද Focus Time: ${timeString}\n\n`;
             if (completedHabits.length > 0) {
                 text += `✅ අද නිම කළ වැඩ:\n`;
                 completedHabits.forEach(h => { text += `- ${h.text} ${h.time ? '('+h.time+')' : ''}\n`; });
