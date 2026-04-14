@@ -81,7 +81,6 @@
         import { getFirestore, doc, setDoc, getDoc, onSnapshot, collection, query, limit, getDocs, deleteDoc, orderBy } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
         // 🔴 Firebase Config 🔴
-        // Key split into parts to prevent GitHub secret scanner from flagging it
         let firebaseConfig = {
             apiKey: "AIza" + "SyA1dRdTsK2MbkS3JRRiG" + "-w2aZzBeV5vEwU",
             authDomain: "mindsetos-a9546.firebaseapp.com",
@@ -239,7 +238,8 @@
             'admin_core': { si: 'Admin Core', en: 'Admin Core' },
             'leaderboard_title': { si: '🏆 MindsetOS Top Performers', en: '🏆 MindsetOS Top Performers' },
             'change_name_prompt': { si: 'ඔබගේ නව නම ඇතුළත් කරන්න:', en: 'Enter your new name:' },
-            'name_updated': { si: 'නම සාර්ථකව වෙනස් කරන ලදී.', en: 'Name updated successfully.' }
+            'name_updated': { si: 'නම සාර්ථකව වෙනස් කරන ලදී.', en: 'Name updated successfully.' },
+            'export_pdf': { si: 'PDF ලෙස දත්ත ලබාගන්න', en: 'Download Data (PDF)' }
         };
 
         const levelTitles = ["Novice", "Apprentice", "Adept", "Scholar", "Expert", "Master", "Grandmaster", "Hero", "Legend", "Immortal"];
@@ -322,7 +322,6 @@
                     osc.type = 'sine'; osc.frequency.setValueAtTime(freq, startTime);
                     gain.gain.setValueAtTime(1, startTime); gain.gain.exponentialRampToValueAtTime(0.01, startTime + duration);
                     osc.start(startTime); 
-                    // Security fix: Add catch to prevent unhandled rejection crashes if audio context gets locked by browser policies
                     try { osc.stop(startTime + duration); } catch (e) {}
                 };
                 const now = globalAudioCtx.currentTime;
@@ -357,7 +356,6 @@
         async function fetchLeaderboard() {
             if(!auth.currentUser) return;
             try {
-                // Performance Fix: Delegated sorting to Firebase engine via `orderBy` & `limit` to prevent client-side scaling issues.
                 const lbRef = collection(db, 'artifacts', appId, 'public', 'data', 'leaderboard');
                 const q = query(lbRef, orderBy("xp", "desc"), limit(15));
                 
@@ -433,7 +431,6 @@
                 articlesUnsubscribe = onSnapshot(collection(db, 'artifacts', appId, 'public_articles'), (snapshot) => {
                     let fetchedArticles = [];
                     snapshot.forEach((doc) => {
-                        // Security Fix: Additional escaping during retrieval to prevent malicious DB injections
                         let unsafeDoc = doc.data();
                         fetchedArticles.push({
                             ...unsafeDoc,
@@ -461,7 +458,6 @@
             }
         });
 
-        // Resiliency Fix: Data loss prevention on tab close.
         window.addEventListener('beforeunload', (e) => {
             if (localSaveTimeout) {
                 saveData(true);
@@ -504,7 +500,6 @@
                 await signOut(auth);
                 window.isRegisteringUser = false;
                 
-                // Spam folder එක පරීක්ෂා කිරීමට දැනුම් දීම
                 showToast("Success! Please check your email (and Spam folder) to verify your account.", "success");
                 window.switchAuthMode();
             } catch(error) {
@@ -578,7 +573,6 @@
                 stateMutated = true;
             }
 
-            // Logic Fix: Only invoke render if a rollover happened, preventing midnight UI desync.
             if (stateMutated) render();
         }
 
@@ -587,7 +581,6 @@
         // ==========================================
         
         async function publishAdminArticle() {
-            // Security Fix: Immediate server-side concept emulation rejection
             if (!isAdmin()) return showToast("Unauthorized operation.", "error");
 
             const title = document.getElementById('admin-art-title')?.value; const intro = document.getElementById('admin-art-intro')?.value; const text = document.getElementById('admin-art-text')?.value;
@@ -626,7 +619,6 @@
         }
 
         async function deleteAdminArticle(articleId) {
-            // Security Fix: Immediate server-side concept emulation rejection
             if (!isAdmin()) return showToast("Unauthorized operation.", "error");
 
             showConfirmModal("මෙම ලිපිය සම්පූර්ණයෙන්ම ඉවත් කිරීමට ඔබට අවශ්‍යද?", async () => {
@@ -695,7 +687,6 @@
             saveData(true);
         }
         
-        // Performance Fix: Save state without triggering a full re-render on every keystroke
         function updateJournalTextSilent(value) {
             state.reflections[getTodayStr()] = value;
             saveData();
@@ -834,7 +825,6 @@
         function generateHeatmap() {
             let html = '<div class="flex flex-wrap gap-2 justify-center mt-6" role="img" aria-label="Activity Heatmap">';
             
-            // Performance Fix: Instantiate Date object once outside the loop
             const baseDate = new Date();
             const baseTime = baseDate.getTime();
             
@@ -874,6 +864,67 @@
             const a = document.createElement('a'); a.href = url; a.download = `MindsetOS_Backup_${state.user.email}_${new Date().toISOString().split('T')[0]}.json`;
             a.click(); URL.revokeObjectURL(url); showToast("Backup Success.", "success");
         }
+
+        // අලුතින් එක් කළ PDF Backup Function එක
+        function exportDataPDF() {
+            showToast("Generating PDF...", "info");
+            const printWindow = window.open('', '_blank');
+            if(!printWindow) return showToast("Please allow popups to generate PDF", "error");
+
+            let html = `
+            <html><head><title>MindsetOS Backup - ${escapeHTML(state.user.name)}</title>
+            <style>
+                body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 40px; color: #1e293b; line-height: 1.6; }
+                h1 { color: #4f46e5; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; }
+                h2 { color: #6366f1; margin-top: 30px; }
+                .stat-box { border: 1px solid #cbd5e1; padding: 20px; border-radius: 12px; margin-bottom: 20px; background: #f8fafc; }
+                .stat-box p { margin: 5px 0; font-size: 16px; }
+                .item { margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid #f1f5f9; }
+                .date { font-weight: 800; color: #475569; font-size: 14px; margin-bottom: 5px; }
+                .content { font-size: 15px; color: #334155; }
+                ul { margin-top: 5px; padding-left: 20px; }
+                li { margin-bottom: 4px; }
+            </style>
+            </head><body>
+                <h1>MindsetOS Data Summary</h1>
+                <div class="stat-box">
+                    <p><strong>Name:</strong> ${escapeHTML(state.user.name)}</p>
+                    <p><strong>Email:</strong> ${escapeHTML(state.user.email)}</p>
+                    <p><strong>Current Level:</strong> ${state.user.level} (${state.user.xp} XP)</p>
+                    <p><strong>Total Focus Time:</strong> ${Math.floor((state.stats.totalFocusMinutes || 0)/60)}h ${((state.stats.totalFocusMinutes || 0)%60)}m</p>
+                    <p><strong>Current Streak:</strong> ${state.streak.count} days</p>
+                </div>
+
+                <h2>Daily Journal Entries</h2>
+            `;
+            
+            const reflections = Object.keys(state.reflections).sort((a,b) => new Date(b) - new Date(a));
+            if(reflections.length === 0) html += `<p class="content">No journal entries found.</p>`;
+            reflections.forEach(d => {
+                html += `<div class="item"><div class="date">${d}</div><div class="content">${escapeHTML(state.reflections[d])}</div></div>`;
+            });
+
+            html += `<h2>Past Completed Tasks</h2>`;
+            const pastTasks = Object.keys(state.pastTasks).sort((a,b) => new Date(b) - new Date(a));
+            if(pastTasks.length === 0) html += `<p class="content">No past tasks found.</p>`;
+            pastTasks.forEach(d => {
+                html += `<div class="item"><div class="date">${d}</div><ul class="content">`;
+                state.pastTasks[d].forEach(task => {
+                    html += `<li>${escapeHTML(task.text)} ${task.time ? `(${escapeHTML(task.time)})`:''}</li>`;
+                });
+                html += `</ul></div>`;
+            });
+
+            html += `</body></html>`;
+            
+            printWindow.document.write(html);
+            printWindow.document.close();
+            printWindow.focus();
+            
+            setTimeout(() => {
+                printWindow.print();
+            }, 500);
+        }
         
         function importData(event) {
             const file = event.target.files[0]; if (!file) return; const reader = new FileReader();
@@ -893,9 +944,7 @@
             const text = document.getElementById('feedback-text')?.value;
             if(!text && !state.appRating) return showToast("Please provide some feedback or a rating.", "error");
             
-            // Security Fix: Prevent URI schema crash by truncating extreme string lengths.
             const safeText = (text || '').substring(0, 1500);
-            
             const subject = encodeURIComponent(`MindsetOS Feedback - Rating: ${state.appRating || 0}/5`);
             const body = encodeURIComponent(`From: ${state.user.name} (${state.user.email})\nLevel: ${state.user.level}\n\nFeedback:\n${safeText || 'No text provided.'}`);
             
@@ -943,7 +992,6 @@
             render(); 
         }
 
-        // Password එක පෙන්වීම සහ සැඟවීම සඳහා වන අලුත් function එක
         function togglePassword() {
             const pwd = document.getElementById('init-password');
             const btn = document.getElementById('pwd-toggle-btn');
@@ -976,7 +1024,7 @@
             addHabit, toggleHabit, deleteHabit, setMood, saveJournal, addFlashcard, deleteFlashcard, flipCardDOM, toggleFocusSound, 
             toggleTimer, resetTimer, startBreakManual, skipBreakManual, shareToWhatsApp, updateTargetDate, addCustomCategory, clearAllData, 
             deleteAccount, dismissReview, updateTimerSettings, setSoundType, installApp, publishAdminArticle, deleteAdminArticle,
-            exportData, importData, setRating, submitFeedback, editName, updateJournalTextSilent, togglePassword
+            exportData, exportDataPDF, importData, setRating, submitFeedback, editName, updateJournalTextSilent, togglePassword
         });
 
         function render() {
@@ -1226,7 +1274,11 @@
         function renderLibrary() {
             return `<div class="space-y-10 pb-20"><header><h2 class="text-4xl font-black mb-2 drop-shadow-md">${t('library')}</h2></header><div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">${articles.map(a => {
                 const isRead = state.readArticles && state.readArticles.includes(a.id);
-                return `<div onclick="window.viewArticle('${a.id}')" class="glass-panel rounded-[2.5rem] p-8 shadow-sm cursor-pointer card-hover" role="button" aria-label="View Article"><div><div class="w-16 h-16 glass-btn rounded-2xl flex items-center justify-center mb-6 text-3xl drop-shadow-md">${escapeHTML(a.icon)}</div><h3 class="text-2xl font-black mb-3 drop-shadow-sm">${escapeHTML(a.title)}</h3><p class="text-slate-600 dark:text-slate-400 text-sm mb-6 line-clamp-3">${escapeHTML(a.excerpt)}</p></div><button class="w-full py-3 glass-btn font-bold rounded-xl ${isRead ? 'text-slate-500 dark:text-slate-500' : 'text-indigo-600 dark:text-indigo-400 hover:scale-105 transition-transform'} shadow-sm">${isRead ? t('read_done') : t('read_btn')}</button></div>`;
+                // අලුත්: Admin ට පමණක් පෙනෙන Delete බොත්තම මෙහි ඇත
+                return `<div onclick="window.viewArticle('${a.id}')" class="glass-panel rounded-[2.5rem] p-8 shadow-sm cursor-pointer card-hover relative" role="button" aria-label="View Article">
+                    ${isAdmin() && a.id !== 'default-1' ? `<button onclick="event.stopPropagation(); window.deleteAdminArticle('${a.id}')" aria-label="Delete Article" class="absolute top-6 right-6 text-xl text-slate-400 hover:text-red-500 hover:scale-110 transition-transform z-10" title="Delete Article">🗑️</button>` : ''}
+                    <div><div class="w-16 h-16 glass-btn rounded-2xl flex items-center justify-center mb-6 text-3xl drop-shadow-md">${escapeHTML(a.icon)}</div><h3 class="text-2xl font-black mb-3 drop-shadow-sm pr-8">${escapeHTML(a.title)}</h3><p class="text-slate-600 dark:text-slate-400 text-sm mb-6 line-clamp-3">${escapeHTML(a.excerpt)}</p></div><button class="w-full py-3 glass-btn font-bold rounded-xl ${isRead ? 'text-slate-500 dark:text-slate-500' : 'text-indigo-600 dark:text-indigo-400 hover:scale-105 transition-transform'} shadow-sm">${isRead ? t('read_done') : t('read_btn')}</button>
+                </div>`;
             }).join('')}</div></div>`;
         }
 
@@ -1334,6 +1386,7 @@
                 </div>
 
                 <div class="pt-6 space-y-4 border-t border-slate-300 dark:border-slate-700">
+                    <button onclick="window.exportDataPDF()" class="w-full py-4 glass-btn font-black rounded-2xl shadow-sm text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 hover:scale-[1.02] transition-transform">${t('export_pdf')}</button>
                     <button onclick="window.clearAllData()" class="w-full py-4 glass-btn font-black rounded-2xl shadow-sm text-slate-600 dark:text-slate-300 hover:bg-slate-200/50 dark:hover:bg-slate-800/50 hover:scale-[1.02] transition-transform">${t('clear_all')}</button>
                     <button onclick="window.logout()" class="w-full py-4 glass-btn font-black rounded-2xl shadow-sm text-rose-500 hover:scale-[1.02] transition-transform">${t('logout')}</button>
                     <button onclick="window.deleteAccount()" class="w-full py-4 border-2 border-red-200 text-red-500 font-black rounded-2xl hover:bg-red-50 dark:hover:bg-red-900/20 hover:scale-[1.02] transition-transform">${t('del_acc')}</button>
