@@ -398,63 +398,72 @@
                     return; 
                 }
 
-                const docRef = doc(db, 'artifacts', appId, 'users', user.uid, 'data', 'state');
-                const docSnap = await getDoc(docRef);
-                
-                if (docSnap.exists()) {
-                    state = { ...defaultState, ...docSnap.data(), isNewUser: false };
-                } else {
-                    const localData = safeJSONParse(USER_DATA_KEY, null);
-                    if (localData && localData.user && localData.user.email === user.email) {
-                        state = { ...defaultState, ...localData, isNewUser: false };
-                        if (!state.user.trialEnds) state.user.trialEnds = Date.now() + (200 * 24 * 60 * 60 * 1000);
-                        await setDoc(docRef, state); 
-                        localStorage.removeItem(USER_DATA_KEY); 
-                        showToast("Old data successfully migrated to Cloud!", "success");
+                try {
+                    const docRef = doc(db, 'artifacts', appId, 'users', user.uid, 'data', 'state');
+                    const docSnap = await getDoc(docRef);
+                    
+                    if (docSnap.exists()) {
+                        state = { ...defaultState, ...docSnap.data(), isNewUser: false };
                     } else {
-                        state = { ...defaultState, isNewUser: false, user: { ...defaultState.user, name: user.displayName || "User", email: user.email, joined: getTodayStr(), trialEnds: Date.now() + (200 * 24 * 60 * 60 * 1000) } };
-                        await setDoc(docRef, state);
-                    }
-                }
-                
-                state.activeTab = 'home'; // Route to home
-                timerState.timeLeft = (state.timerSettings.focus || 25) * 60;
-                applyTheme();
-                updatePublicLeaderboard();
-
-                if (unsubscribeSnapshot) unsubscribeSnapshot();
-                unsubscribeSnapshot = onSnapshot(docRef, (snapshot) => {
-                    if (snapshot.exists()) {
-                        const remoteState = snapshot.data();
-                        if (remoteState.lastModified > (state.lastModified || 0)) {
-                            state = { ...state, ...remoteState };
-                            render();
+                        const localData = safeJSONParse(USER_DATA_KEY, null);
+                        if (localData && localData.user && localData.user.email === user.email) {
+                            state = { ...defaultState, ...localData, isNewUser: false };
+                            if (!state.user.trialEnds) state.user.trialEnds = Date.now() + (200 * 24 * 60 * 60 * 1000);
+                            await setDoc(docRef, state); 
+                            localStorage.removeItem(USER_DATA_KEY); 
+                            showToast("Old data successfully migrated to Cloud!", "success");
+                        } else {
+                            state = { ...defaultState, isNewUser: false, user: { ...defaultState.user, name: user.displayName || "User", email: user.email, joined: getTodayStr(), trialEnds: Date.now() + (200 * 24 * 60 * 60 * 1000) } };
+                            await setDoc(docRef, state);
                         }
                     }
-                }, (error) => { console.error("Firestore Listen Error:", error); });
+                    
+                    state.activeTab = 'home'; // Route to home
+                    timerState.timeLeft = (state.timerSettings.focus || 25) * 60;
+                    applyTheme();
+                    updatePublicLeaderboard();
 
-                if (articlesUnsubscribe) articlesUnsubscribe();
-                articlesUnsubscribe = onSnapshot(collection(db, 'artifacts', appId, 'public_articles'), (snapshot) => {
-                    let fetchedArticles = [];
-                    snapshot.forEach((doc) => {
-                        let unsafeDoc = doc.data();
-                        fetchedArticles.push({
-                            ...unsafeDoc,
-                            title: escapeHTML(unsafeDoc.title),
-                            author: escapeHTML(unsafeDoc.author),
-                            intro: escapeHTML(unsafeDoc.intro),
-                            sections: unsafeDoc.sections ? unsafeDoc.sections.map(s => ({ title: escapeHTML(s.title), text: escapeHTML(s.text) })) : []
+                    if (unsubscribeSnapshot) unsubscribeSnapshot();
+                    unsubscribeSnapshot = onSnapshot(docRef, (snapshot) => {
+                        if (snapshot.exists()) {
+                            const remoteState = snapshot.data();
+                            if (remoteState.lastModified > (state.lastModified || 0)) {
+                                state = { ...state, ...remoteState };
+                                render();
+                            }
+                        }
+                    }, (error) => { console.error("Firestore Listen Error:", error); });
+
+                    if (articlesUnsubscribe) articlesUnsubscribe();
+                    articlesUnsubscribe = onSnapshot(collection(db, 'artifacts', appId, 'public_articles'), (snapshot) => {
+                        let fetchedArticles = [];
+                        snapshot.forEach((doc) => {
+                            let unsafeDoc = doc.data();
+                            fetchedArticles.push({
+                                ...unsafeDoc,
+                                title: escapeHTML(unsafeDoc.title),
+                                author: escapeHTML(unsafeDoc.author),
+                                intro: escapeHTML(unsafeDoc.intro),
+                                sections: unsafeDoc.sections ? unsafeDoc.sections.map(s => ({ title: escapeHTML(s.title), text: escapeHTML(s.text) })) : []
+                            });
                         });
-                    });
-                    articles = [...fetchedArticles.sort((a,b) => b.timestamp - a.timestamp), ...defaultArticles];
-                    if (state.activeTab === 'library' || state.activeTab === 'home' || state.selectedArticleId) {
-                        render();
-                    }
-                }, (e) => { console.error("Error fetching articles:", e); });
+                        articles = [...fetchedArticles.sort((a,b) => b.timestamp - a.timestamp), ...defaultArticles];
+                        if (state.activeTab === 'library' || state.activeTab === 'home' || state.selectedArticleId) {
+                            render();
+                        }
+                    }, (e) => { console.error("Error fetching articles:", e); });
 
-                isAppLoading = false;
-                render();
-                fetchLeaderboard();
+                    isAppLoading = false;
+                    render();
+                    fetchLeaderboard();
+                } catch (e) {
+                    console.error("Critical Firebase Error:", e);
+                    showToast("Database Error: " + e.message, "error");
+                    isAppLoading = false;
+                    state.isNewUser = true; 
+                    await signOut(auth); 
+                    render();
+                }
             } else {
                 state.isNewUser = true;
                 if (unsubscribeSnapshot) { unsubscribeSnapshot(); unsubscribeSnapshot = null; }
@@ -498,11 +507,19 @@
                 window.isRegisteringUser = true;
                 const userCredential = await createUserWithEmailAndPassword(auth, e, p);
                 
+                try {
+                    await sendEmailVerification(userCredential.user);
+                } catch (emailErr) { console.error(emailErr); }
+
                 const trialEnds = Date.now() + (200 * 24 * 60 * 60 * 1000);
                 const initialState = { ...defaultState, isNewUser: false, lastModified: Date.now(), user: { name: n, email: e, joined: getTodayStr(), targetDate: '', theme: 'light', xp: 0, level: 1, trialEnds: trialEnds } };
-                await setDoc(doc(db, 'artifacts', appId, 'users', userCredential.user.uid, 'data', 'state'), initialState);
                 
-                await sendEmailVerification(userCredential.user);
+                try {
+                    await setDoc(doc(db, 'artifacts', appId, 'users', userCredential.user.uid, 'data', 'state'), initialState);
+                } catch (dbErr) {
+                    console.error("Database save failed:", dbErr);
+                }
+
                 await signOut(auth);
                 window.isRegisteringUser = false;
                 
@@ -510,7 +527,7 @@
                 window.switchAuthMode();
             } catch(error) {
                 window.isRegisteringUser = false;
-                let msg = "An error occurred during registration.";
+                let msg = "Error: " + error.message;
                 if(error.code === 'auth/email-already-in-use') msg = "This email is already in use.";
                 else if(error.code === 'auth/weak-password') msg = "Password is too weak.";
                 showToast(msg, "error");
@@ -532,7 +549,7 @@
                 }
                 state.activeTab = 'home'; // Route to home
             } catch(error) {
-                let msg = "Invalid email or password.";
+                let msg = error.code === 'auth/invalid-credential' ? "Invalid email or password." : "Error: " + error.message;
                 showToast(msg, "error");
             }
         }
