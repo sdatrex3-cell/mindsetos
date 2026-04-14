@@ -239,7 +239,13 @@
             'leaderboard_title': { si: '🏆 MindsetOS Top Performers', en: '🏆 MindsetOS Top Performers' },
             'change_name_prompt': { si: 'ඔබගේ නව නම ඇතුළත් කරන්න:', en: 'Enter your new name:' },
             'name_updated': { si: 'නම සාර්ථකව වෙනස් කරන ලදී.', en: 'Name updated successfully.' },
-            'export_pdf': { si: 'PDF ලෙස දත්ත ලබාගන්න', en: 'Download Data (PDF)' }
+            'export_pdf': { si: 'PDF ලෙස දත්ත ලබාගන්න', en: 'Download Data (PDF)' },
+            'wa_date': { si: 'දිනය:', en: 'Date:' },
+            'wa_focus': { si: 'අද දවසේ Focus කාලය:', en: 'Today\'s Focus Time:' },
+            'wa_done': { si: 'සම්පූර්ණ කළ වැඩ:', en: 'Completed Tasks:' },
+            'wa_none': { si: 'අද කිසිවක් සම්පූර්ණ කර නැත.', en: 'Nothing completed today yet.' },
+            'wa_level': { si: 'මගේ Level එක:', en: 'My Level:' },
+            'wa_xp': { si: 'ලබාගත් XP:', en: 'Earned XP:' }
         };
 
         const levelTitles = ["Novice", "Apprentice", "Adept", "Scholar", "Expert", "Master", "Grandmaster", "Hero", "Legend", "Immortal"];
@@ -500,7 +506,7 @@
                 await signOut(auth);
                 window.isRegisteringUser = false;
                 
-                showToast("Success! Please check your email (and Spam folder) to verify your account.", "success");
+                showToast("Success! Verification link sent. Please check your Inbox and Spam folder.", "success");
                 window.switchAuthMode();
             } catch(error) {
                 window.isRegisteringUser = false;
@@ -537,7 +543,7 @@
                 if (!e || !emailRegex.test(e)) return showToast("Please enter a valid email.", "error");
                 try {
                     await sendPasswordResetEmail(auth, e);
-                    showToast("A password reset link has been sent to your email.", "success");
+                    showToast("Password reset link sent! Please check your Inbox and Spam folder.", "success");
                 } catch(error) {
                     showToast("No account found with this email.", "error");
                 }
@@ -843,16 +849,23 @@
         }
 
         function shareToWhatsApp() {
-            const todayStr = getTodayStr(); const completedHabits = state.habits.filter(h => h.completed); 
-            const focusTimeToday = state.dailyFocus[todayStr] || 0; const focusHours = Math.floor(focusTimeToday / 60); const focusMins = focusTimeToday % 60;
+            const todayStr = getTodayStr();
+            const completedHabits = state.habits.filter(h => h.completed); 
+            const focusTimeToday = state.dailyFocus[todayStr] || 0; 
+            const focusHours = Math.floor(focusTimeToday / 60); 
+            const focusMins = focusTimeToday % 60;
             const timeString = focusHours > 0 ? `${focusHours}h ${focusMins}m` : `${focusMins}m`;
-            const digitEmojis = ['0️⃣', '1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣'];
-            const dateEmoji = String(new Date().getDate()).split('').map(d => digitEmojis[d] || d).join('');
 
-            let text = `${dateEmoji} ${t('wa_date')} ${new Date().toLocaleDateString(state.language === 'en' ? 'en-US' : 'si-LK')}\n⏱️ ${t('wa_focus')} ${timeString}\n\n`;
-            if (completedHabits.length > 0) { text += `✅ ${t('wa_done')}\n`; completedHabits.forEach(h => { text += `- ${h.text} ${h.time ? '('+h.time+')' : ''}\n`; }); } 
-            else { text += `✅ ${t('wa_done')} ${t('wa_none')}\n`; }
-            text += `\n🚀 (via MindsetOS)`;
+            let text = `📅 *${t('wa_date')}* ${new Date().toLocaleDateString(state.language === 'en' ? 'en-US' : 'si-LK')}\n`;
+            text += `⏱️ *${t('wa_focus')}* ${timeString}\n\n`;
+            
+            if (completedHabits.length > 0) { 
+                text += `✅ *${t('wa_done')}*\n`; 
+                completedHabits.forEach(h => { text += `  🔸 ${escapeHTML(h.text)} ${h.time ? '('+escapeHTML(h.time)+')' : ''}\n`; }); 
+            } else { 
+                text += `✅ *${t('wa_done')}* ${t('wa_none')}\n`; 
+            }
+            text += `\n🔗 (via MindsetOS)`;
             window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank', 'noopener,noreferrer');
         }
 
@@ -865,7 +878,6 @@
             a.click(); URL.revokeObjectURL(url); showToast("Backup Success.", "success");
         }
 
-        // අලුතින් එක් කළ PDF Backup Function එක
         function exportDataPDF() {
             showToast("Generating PDF...", "info");
             const printWindow = window.open('', '_blank');
