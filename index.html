@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#4f46e5">
-    <title>MindsetOS - Ultimate Glassmorphism</title>
+    <title>MindsetOS - Global Edition</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -69,10 +69,34 @@
 <body class="text-slate-900 dark:text-slate-100 overflow-x-hidden transition-colors duration-300 print:bg-white">
 
     <div id="app-root"></div>
-    <div id="toast-container" class="fixed top-24 right-6 flex flex-col space-y-2 pointer-events-none z-[120]"></div>
-    <div id="modal-container" class="fixed inset-0 z-[100] hidden items-center justify-center bg-slate-900/60 backdrop-blur-md transition-opacity"></div>
+    <div id="toast-container" class="fixed top-24 right-6 flex flex-col space-y-2 pointer-events-none z-[120]" aria-live="polite"></div>
+    <div id="modal-container" class="fixed inset-0 z-[100] hidden items-center justify-center bg-slate-900/60 backdrop-blur-md transition-opacity" role="dialog" aria-modal="true"></div>
 
-    <script>
+    <script type="module">
+        // ==========================================
+        // FIREBASE INITIALIZATION & IMPORTS
+        // ==========================================
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendEmailVerification, onAuthStateChanged, signOut, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc, onSnapshot, collection, query, limit, getDocs, deleteDoc, orderBy } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+        let firebaseConfig = {
+            apiKey: "AIzaSyA1dRdTsK2MbkS3JRRiG-w2aZzBeV5vEwU",
+            authDomain: "mindsetos-a9546.firebaseapp.com",
+            databaseURL: "https://mindsetos-a9546-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "mindsetos-a9546",
+            storageBucket: "mindsetos-a9546.firebasestorage.app",
+            messagingSenderId: "809444314305",
+            appId: "1:809444314305:web:3f4bb3d5115cc2411e9840",
+            measurementId: "G-MDFBZ7JFGK"
+        };
+        
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = 'mindsetos-global';
+        const MY_ADMIN_EMAIL = "sdatrex3@gmail.com"; 
+
         // ==========================================
         // DYNAMIC PWA MANIFEST
         // ==========================================
@@ -96,56 +120,38 @@
         }
 
         // ==========================================
-        // 1. CONFIGURATION & UNIVERSAL UTILS
+        // CONFIGURATION & UNIVERSAL UTILS
         // ==========================================
         const USER_DATA_KEY = "mindsetos_local_db_final"; 
-        const USERS_REGISTRY_KEY = "mindsetos_users_registry"; 
-        
         let isAppLoading = true; 
         window.authMode = 'login'; 
         let todayHolidayMessage = null; 
-        
-        const GOOGLE_SHEET_ARTICLES_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vShQaas57qfq3ElS57vD9c85buElPk8F7o6EDs4JjNFY-JKBZpOCBUIFg4tgex7Ojy6TxUsh3tuyzdf/pub?gid=0&single=true&output=csv";
-        const GOOGLE_SHEET_USERS_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vShQaas57qfq3ElS57vD9c85buElPk8F7o6EDs4JjNFY-JKBZpOCBUIFg4tgex7Ojy6TxUsh3tuyzdf/pub?gid=1423780323&single=true&output=csv"; 
-        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzJZYxni7XVjMkwU-h-XJdHsa4jkVDUei8ZyArZLw4HAOWypI4DfuVvcqY0Q8oMQhNl/exec";
+        let unsubscribeSnapshot = null;
+        let articlesUnsubscribe = null; 
+        let globalLeaderboard = []; 
+        let audioCtxObj = null; 
+        let noiseSourceNode = null; 
+        let activeOscillators = [];
+        let timerState = { mode: 'focus', phase: 'idle', timeLeft: 25 * 60, targetEndTime: null, interval: null };
+        let progressChartInstance = null, focusChartInstance = null;
 
         function getTodayStr() {
             const d = new Date();
             return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
         }
-        
+
         function safeJSONParse(key, fallback = {}) {
-            try {
-                const data = localStorage.getItem(key);
-                return data ? JSON.parse(data) : fallback;
-            } catch(e) {
-                console.warn(`Corrupted localStorage data for ${key}`, e);
-                return fallback;
-            }
+            try { const data = localStorage.getItem(key); return data ? JSON.parse(data) : fallback; } 
+            catch(e) { return fallback; }
         }
 
-        // Fetch Today's Holiday Automatically
         async function fetchTodayHoliday() {
             const d = new Date();
             const mmdd = String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
-            
-            const fixedHolidays = {
-                '01-01': 'නව වසර',
-                '02-04': 'ජාතික නිදහස් දිනය',
-                '04-13': 'සිංහල හා දෙමළ අලුත් අවුරුද්ද (පරණ අවුරුද්ද)',
-                '04-14': 'සිංහල හා දෙමළ අලුත් අවුරුද්ද',
-                '05-01': 'කම්කරු දිනය',
-                '12-25': 'නත්තල් දිනය'
-            };
-
-            if (fixedHolidays[mmdd]) {
-                todayHolidayMessage = fixedHolidays[mmdd];
-                if(state.activeTab === 'home') render();
-            }
-
+            const fixedHolidays = { '01-01': 'නව වසර', '02-04': 'ජාතික නිදහස් දිනය', '04-13': 'සිංහල හා දෙමළ අලුත් අවුරුද්ද (පරණ අවුරුද්ද)', '04-14': 'සිංහල හා දෙමළ අලුත් අවුරුද්ද', '05-01': 'කම්කරු දිනය', '12-25': 'නත්තල් දිනය' };
+            if (fixedHolidays[mmdd]) { todayHolidayMessage = fixedHolidays[mmdd]; if(state.activeTab === 'home') render(); }
             try {
-                const year = d.getFullYear();
-                const res = await fetch(`https://date.nager.at/api/v3/PublicHolidays/${year}/LK`);
+                const res = await fetch(`https://date.nager.at/api/v3/PublicHolidays/${d.getFullYear()}/LK`);
                 if (res.ok) {
                     const holidays = await res.json();
                     const todayStr = getTodayStr();
@@ -159,7 +165,7 @@
         }
 
         // ==========================================
-        // 2. DICTIONARY & LEVELS
+        // DICTIONARY & LEVELS
         // ==========================================
         const dict = {
             'greeting_m': { si: 'සුබ උදෑසනක්', en: 'Good Morning' },
@@ -197,35 +203,54 @@
             'del_acc': { si: 'සම්පූර්ණ ගිණුම මකා දමන්න', en: 'Delete Account Entirely' },
             'target_date': { si: 'විභාගය/ඉලක්ක දිනය:', en: 'Target / Exam Date:' },
             'add_category': { si: 'අලුත් කාණ්ඩයක් එක් කරන්න', en: 'Add Custom Category' },
-            'login': { si: 'ලොග් වන්න', en: 'Login' },
-            'register': { si: 'ලියාපදිංචි වන්න', en: 'Register' },
-            'no_account': { si: 'ගිණුමක් නැද්ද?', en: 'No account?' },
-            'have_account': { si: 'දැනටමත් ගිණුමක් තිබේද?', en: 'Have an account?' },
-            'forgot_password': { si: 'මුරපදය අමතකද?', en: 'Forgot Password?' }
+            'subscribe': { si: 'දායකත්වය ලබාගන්න', en: 'Subscribe Now' },
+            'trial_left': { si: 'නොමිලේ දින ඉතිරිව ඇත:', en: 'Free Trial Days Left:' },
+            'trial_exp': { si: 'ඔබගේ අත්හදා බැලීමේ කාලය අවසන්.', en: 'Free trial has expired.' },
+            'sound_beta': { si: 'SOUND (BETA)', en: 'SOUND (BETA)' },
+            'heatmap_title': { si: 'කාර්යශීලීතා සිතියම (Activity Heatmap)', en: 'Activity Heatmap' },
+            'heatmap_desc': { si: 'පසුගිය දින 90ක Focus කාලය', en: 'Last 90 Days Focus Time' },
+            'feedback_title': { si: '⭐ යෙදුම ගැන ඔබේ අදහස (Feedback)', en: '⭐ Your Feedback' },
+            'feedback_ph': { si: 'මෙහි ඔබේ අදහස් ලියන්න...', en: 'Write your feedback here...' },
+            'send_btn': { si: 'යවන්න (Email)', en: 'Send (Email)' },
+            'q_ph': { si: 'ප්‍රශ්නය (Question)...', en: 'Question...' },
+            'a_ph': { si: 'පිළිතුර (Answer)...', en: 'Answer...' },
+            'review_chk': { si: 'දින 3කින් නැවත මතක් කරන්න (Review in 3 days)', en: 'Remind me again in 3 days (Review)' },
+            'read_btn': { si: 'කියවන්න (+5 XP)', en: 'Read (+5 XP)' },
+            'read_done': { si: 'කියෙව්වා', en: 'Read' },
+            'article_new': { si: '📰 නව ලිපියක් පලවිය:', en: '📰 New Article Published:' },
+            'article_read': { si: 'කියවන්න', en: 'Read' },
+            'remind_title': { si: '🔔 මතක් කිරීම:', en: '🔔 Reminder:' },
+            'remind_desc': { si: 'අද නැවත අධ්‍යයනය (Review) කරන්න!', en: 'Review this today!' },
+            'remind_dismiss': { si: 'මතක් කිරීම අවසන්', en: 'Dismiss' },
+            'today': { si: 'අද', en: 'Today' },
+            'percent': { si: 'ලකුණු ප්‍රතිශතය', en: 'Score Percentage' },
+            'minutes': { si: 'විනාඩි', en: 'Minutes' },
+            'no_fc': { si: 'ආරම්භ කිරීමට ෆ්ලෑෂ් කාඩ්පතක් එක් කරන්න.', en: 'Add a flashcard to get started.' },
+            'fc_q': { si: 'ප්‍රශ්නය', en: 'Question' },
+            'fc_a': { si: 'පිළිතුර', en: 'Answer' },
+            'target_rem': { si: '⏳ ඔබේ ඉලක්කයට තවත් දින', en: '⏳ Days left for your target: ' },
+            'target_today': { si: '🎯 අදයි ඔබේ ඉලක්කගත දිනය! උපරිමයෙන් කරන්න!', en: '🎯 Today is your target date! Do your best!' },
+            'target_passed': { si: '✅ ඉලක්කගත දිනය පසු වී ඇත', en: '✅ Target date has passed ' },
+            'holiday_msg_1': { si: 'අද', en: 'Today is' },
+            'holiday_msg_2': { si: 'යි! ඔබට සුබ දවසක් වේවා!', en: '! Have a great day!' },
+            'install_app': { si: 'Install App', en: 'Install App' },
+            'admin_core': { si: 'Admin Core', en: 'Admin Core' },
+            'leaderboard_title': { si: '🏆 MindsetOS Top Performers', en: '🏆 MindsetOS Top Performers' },
+            'change_name_prompt': { si: 'ඔබගේ නව නම ඇතුළත් කරන්න:', en: 'Enter your new name:' },
+            'name_updated': { si: 'නම සාර්ථකව වෙනස් කරන ලදී.', en: 'Name updated successfully.' }
         };
 
-        const levelTitles = [
-            "ආධුනිකයා (Novice)", "ශිෂ්‍යයා (Apprentice)", "පුහුණුකරු (Adept)", 
-            "විශාරද (Scholar)", "ප්‍රවීණ (Expert)", "ස්වාමියා (Master)", 
-            "මහා ස්වාමියා (Grandmaster)", "වීරයා (Hero)", "පුරාවෘත්තය (Legend)", "අමරණීය (Immortal)"
-        ];
-
-        function getLevelName(lvl) {
-            let idx = Math.floor((lvl - 1) / 10);
-            if(idx > 9) idx = 9;
-            return levelTitles[idx];
-        }
-
+        const levelTitles = ["Novice", "Apprentice", "Adept", "Scholar", "Expert", "Master", "Grandmaster", "Hero", "Legend", "Immortal"];
+        function getLevelName(lvl) { let idx = Math.floor((lvl - 1) / 10); if(idx > 9) idx = 9; return levelTitles[idx]; }
         function t(key) { return dict[key] ? dict[key][state.language || 'si'] : key; }
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
         // ==========================================
-        // 3. STATE MANAGEMENT
+        // STATE MANAGEMENT
         // ==========================================
-        let state = {
-            lastModified: 0, 
-            language: 'si', activeTab: 'home', selectedArticleId: null, flippedCards: {}, isNewUser: true,
-            user: { name: '', email: '', password: '', joined: '', targetDate: '', theme: 'light', xp: 0, level: 1 },
+        const defaultState = {
+            lastModified: 0, language: 'si', activeTab: 'home', selectedArticleId: null, flippedCards: {}, isNewUser: true,
+            user: { name: '', email: '', joined: '', targetDate: '', theme: 'light', xp: 0, level: 1, trialEnds: 0 },
             habits: [], history: [], reflections: {}, moods: {}, flashcards: [], pastTasks: {}, dailyFocus: {}, 
             stats: { totalFocusMinutes: 0 }, streak: { count: 0, lastDate: null },
             categories: {
@@ -233,25 +258,22 @@
                 'Health': { name: 'සෞඛ්‍යය / Health', color: 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300 border-green-200 dark:border-green-800' },
                 'Work': { name: 'ව්‍යාපාර / Work', color: 'bg-orange-100 text-orange-700 dark:bg-orange-900/50 dark:text-orange-300 border-orange-200 dark:border-orange-800' }
             },
-            adminUsersData: [], pendingReviews: [], appRating: 0, lastSeenArticleId: null,
-            readArticles: [], timerSettings: { focus: 25, break: 5 }, soundType: 'noise'
+            readArticles: [], timerSettings: { focus: 25, break: 5 }, soundType: 'noise', pendingReviews: []
         };
 
+        let state = JSON.parse(JSON.stringify(defaultState));
+        
         const priorities = { 'Q1': { name: 'හදිසි/වැදගත්', class: 'bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400' }, 'Q2': { name: 'වැදගත් පමණි', class: 'bg-indigo-50 text-indigo-600 dark:bg-indigo-900/20 dark:text-indigo-400' }, 'Q3': { name: 'සාමාන්‍ය', class: 'bg-slate-50 text-slate-600 dark:bg-slate-800 dark:text-slate-400' } };
         const moodEmojis = { 'great': '🤩', 'good': '😊', 'neutral': '😐', 'bad': '😫' };
         
-        let timerState = { mode: 'focus', phase: 'idle', timeLeft: 25 * 60, targetEndTime: null, interval: null };
-        let progressChartInstance = null, focusChartInstance = null;
-        let globalAudioCtx = null;
-
         const defaultArticles = [{ id: "default-1", title: "මනස සන්සුන් කරගැනීමේ විද්‍යාව", author: "MindsetOS Team", category: "Health", icon: "🧘‍♂️", color: "text-blue-500", readTime: "විනාඩි 3", excerpt: "මානසික ආතතිය අවම කරගැනීමට හා අවධානය වැඩි කරගැනීමට...", intro: "ඔබේ මනස සන්සුන් කිරීම යනු හුදු විවේකයක් පමණක් නොව, මොළයේ ක්‍රියාකාරීත්වය වර්ධනය කරන විද්‍යාත්මක ක්‍රියාවලියකි.", sections: [{title: "හුස්ම ගැනීමේ වැදගත්කම", text: "ගැඹුරු හුස්ම ගැනීම් මගින් රුධිර පීඩනය පාලනය කර ස්නායු පද්ධතිය සන්සුන් කරයි."}], science: "Deep breathing activates the parasympathetic nervous system, lowering cortisol levels." }];
         let articles = [...defaultArticles];
 
         // ==========================================
-        // 4. UI HELPERS & AUDIO API
+        // UI HELPERS (Security: Defense in Depth)
         // ==========================================
         function escapeHTML(str) { return str ? String(str).replace(/[&<>'"]/g, tag => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'}[tag])) : ''; }
-        function isAdmin() { return state.user.email === 'admin@mindsetos.com' && state.user.password === 'sadew12125'; }
+        function isAdmin() { return state.user.email === MY_ADMIN_EMAIL; }
 
         function showToast(msg, type='info') {
             const container = document.getElementById('toast-container'); const el = document.createElement('div');
@@ -263,7 +285,7 @@
 
         function showConfirmModal(message, onConfirm) {
             const container = document.getElementById('modal-container');
-            container.innerHTML = `<div class="bg-white dark:bg-darkcard p-8 rounded-[2rem] shadow-2xl max-w-sm w-full mx-4 animate-slide-up border border-slate-200 dark:border-slate-700"><h3 class="text-xl font-black mb-4 text-slate-900 dark:text-white">තහවුරු කිරීම</h3><p class="text-slate-600 dark:text-slate-300 mb-8 font-medium">${message}</p><div class="flex space-x-4"><button id="modal-cancel" class="flex-1 py-3 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">අවලංගු කරන්න</button><button id="modal-confirm" class="flex-1 py-3 bg-rose-600 text-white font-bold rounded-xl hover:bg-rose-700 transition-colors">ඔව්, තහවුරුයි</button></div></div>`;
+            container.innerHTML = `<div class="bg-white dark:bg-darkcard p-8 rounded-[2rem] shadow-2xl max-w-sm w-full mx-4 animate-slide-up border border-slate-200 dark:border-slate-700"><h3 class="text-xl font-black mb-4 text-slate-900 dark:text-white">Confirmation</h3><p class="text-slate-600 dark:text-slate-300 mb-8 font-medium">${message}</p><div class="flex space-x-4"><button id="modal-cancel" aria-label="Cancel" class="flex-1 py-3 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">Cancel</button><button id="modal-confirm" aria-label="Confirm" class="flex-1 py-3 bg-rose-600 text-white font-bold rounded-xl hover:bg-rose-700 transition-colors">Confirm</button></div></div>`;
             container.classList.remove('hidden'); container.classList.add('flex');
             document.getElementById('modal-cancel').onclick = () => { container.classList.add('hidden'); container.classList.remove('flex'); };
             document.getElementById('modal-confirm').onclick = () => { container.classList.add('hidden'); container.classList.remove('flex'); onConfirm(); };
@@ -271,7 +293,7 @@
 
         function showPromptModal(message, onConfirm) {
             const container = document.getElementById('modal-container');
-            container.innerHTML = `<div class="bg-white dark:bg-darkcard p-8 rounded-[2rem] shadow-2xl max-w-sm w-full mx-4 animate-slide-up border border-slate-200 dark:border-slate-700"><h3 class="text-xl font-black mb-4 text-slate-900 dark:text-white">${message}</h3><input type="text" id="modal-input" class="w-full px-4 py-3 mb-8 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 outline-none font-bold text-slate-800 dark:text-white"/><div class="flex space-x-4"><button id="modal-cancel" class="flex-1 py-3 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">අවලංගු කරන්න</button><button id="modal-confirm" class="flex-1 py-3 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-colors">ඇතුළත් කරන්න</button></div></div>`;
+            container.innerHTML = `<div class="bg-white dark:bg-darkcard p-8 rounded-[2rem] shadow-2xl max-w-sm w-full mx-4 animate-slide-up border border-slate-200 dark:border-slate-700"><h3 class="text-xl font-black mb-4 text-slate-900 dark:text-white">${message}</h3><input type="text" id="modal-input" aria-label="Input field" class="w-full px-4 py-3 mb-8 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 outline-none font-bold text-slate-800 dark:text-white"/><div class="flex space-x-4"><button id="modal-cancel" aria-label="Cancel" class="flex-1 py-3 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">Cancel</button><button id="modal-confirm" aria-label="Submit" class="flex-1 py-3 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-colors">Submit</button></div></div>`;
             container.classList.remove('hidden'); container.classList.add('flex');
             document.getElementById('modal-cancel').onclick = () => { container.classList.add('hidden'); container.classList.remove('flex'); };
             document.getElementById('modal-confirm').onclick = () => {
@@ -283,14 +305,9 @@
 
         const initAudioCtx = () => {
             try {
-                if (!globalAudioCtx) {
-                    const AC = window.AudioContext || window.webkitAudioContext;
-                    if (AC) globalAudioCtx = new AC();
-                }
-                if (globalAudioCtx && globalAudioCtx.state === 'suspended') {
-                    globalAudioCtx.resume().catch(e=>console.log("Audio resume blocked", e));
-                }
-            } catch(err) { console.log(err); }
+                if (!globalAudioCtx) { const AC = window.AudioContext || window.webkitAudioContext; if (AC) globalAudioCtx = new AC(); }
+                if (globalAudioCtx && globalAudioCtx.state === 'suspended') globalAudioCtx.resume().catch(e=>e);
+            } catch(err) {}
         };
 
         function playAlarm() {
@@ -302,509 +319,339 @@
                     osc.connect(gain); gain.connect(globalAudioCtx.destination);
                     osc.type = 'sine'; osc.frequency.setValueAtTime(freq, startTime);
                     gain.gain.setValueAtTime(1, startTime); gain.gain.exponentialRampToValueAtTime(0.01, startTime + duration);
-                    osc.start(startTime); osc.stop(startTime + duration);
+                    osc.start(startTime); 
+                    // Security fix: Add catch to prevent unhandled rejection crashes if audio context gets locked by browser policies
+                    try { osc.stop(startTime + duration); } catch (e) {}
                 };
                 const now = globalAudioCtx.currentTime;
                 playTone(880, now, 0.2); playTone(1046, now + 0.3, 0.4); 
-            } catch(e) { console.log("Audio API blocked or failed."); }
+            } catch(e) {}
         }
 
         function triggerPushNotification(message) {
             if ('Notification' in window && Notification.permission === 'granted') {
+                try { new Notification("MindsetOS", { body: message, icon: "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxOTIiIGhlaWdodD0iMTkyIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjNGY0NmU1Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtc2l6ZT0iODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIiBmaWxsPSIjZmZmIj7wn6eAPC90ZXh0Pjwvc3ZnPg==" }); } catch(e) {}
+            }
+        }
+
+        // ==========================================
+        // LEADERBOARD LOGIC (Security & Scalability Update)
+        // ==========================================
+        async function updatePublicLeaderboard() {
+            if (!auth.currentUser || state.isNewUser) return;
+            if (isAdmin()) {
                 try {
-                    new Notification("MindsetOS", { body: message, icon: "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxOTIiIGhlaWdodD0iMTkyIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjNGY0NmU1Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtc2l6ZT0iODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIiBmaWxsPSIjZmZmIj7wn6eAPC90ZXh0Pjwvc3ZnPg==" });
+                    const lbRef = doc(db, 'artifacts', appId, 'public', 'data', 'leaderboard', auth.currentUser.uid);
+                    await deleteDoc(lbRef); // Hide admin
                 } catch(e) {}
+                return;
             }
+            try {
+                const lbRef = doc(db, 'artifacts', appId, 'public', 'data', 'leaderboard', auth.currentUser.uid);
+                await setDoc(lbRef, { name: state.user.name || "User", xp: state.user.xp || 0, level: state.user.level || 1, uid: auth.currentUser.uid, email: state.user.email });
+            } catch(e) { console.error(e); }
+        }
+
+        async function fetchLeaderboard() {
+            if(!auth.currentUser) return;
+            try {
+                // Performance Fix: Delegated sorting to Firebase engine via `orderBy` & `limit` to prevent client-side scaling issues.
+                const lbRef = collection(db, 'artifacts', appId, 'public', 'data', 'leaderboard');
+                const q = query(lbRef, orderBy("xp", "desc"), limit(15));
+                
+                const querySnapshot = await getDocs(q);
+                let usersList = [];
+                querySnapshot.forEach((doc) => {
+                    const d = doc.data();
+                    if (d.email !== MY_ADMIN_EMAIL && d.name !== "Admin") {
+                        usersList.push(d);
+                    }
+                });
+                globalLeaderboard = usersList.slice(0, 10); 
+                if (state.activeTab === 'profile') render();
+            } catch(e) { console.error("Leaderboard fetch error:", e); }
         }
 
         // ==========================================
-        // 5. CORE INIT & BACKGROUND SYNC
+        // FIREBASE AUTH & STATE MIGRATION
         // ==========================================
-        function initApp() {
-            try {
-                let parsed = safeJSONParse(USER_DATA_KEY, null);
-                if (parsed && parsed.user && parsed.user.email) {
-                    state = { ...state, ...parsed, isNewUser: false };
-                    if(!state.lastModified) state.lastModified = 0;
-                    if(!state.pastTasks) state.pastTasks = {}; 
-                    if(!state.dailyFocus) state.dailyFocus = {};
-                    if(!state.pendingReviews) state.pendingReviews = [];
-                    if(!state.readArticles) state.readArticles = []; 
-                    if(!state.timerSettings) state.timerSettings = { focus: 25, break: 5 }; 
-                    if(!state.soundType) state.soundType = 'noise';
-                    if(state.stats && state.stats.totalFocusMinutes === undefined) state.stats.totalFocusMinutes = 0;
-                    
-                    timerState.timeLeft = (state.timerSettings.focus || 25) * 60;
-                    applyTheme();
-                    syncFromCloudSilently(state.user.email, state.user.password);
+        window.isRegisteringUser = false;
+
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                if (!user.emailVerified && !window.isRegisteringUser) {
+                    showToast("Please verify your email address before logging in.", "error");
+                    await signOut(auth);
+                    state.isNewUser = true;
+                    isAppLoading = false;
+                    render();
+                    return;
                 }
-                fetchArticlesFromGoogleSheet();
-                if(isAdmin()) fetchUsersFromGoogleSheet();
-                fetchTodayHoliday(); 
-            } catch(e) { console.error("Init Error:", e); } 
-            finally { 
-                isAppLoading = false; 
-                render(); 
-            }
-        }
 
-        async function syncFromCloudSilently(email, password) {
-            if (!GOOGLE_SHEET_USERS_CSV_URL || GOOGLE_SHEET_USERS_CSV_URL.includes("YOUR_")) return;
+                if (!user.emailVerified && window.isRegisteringUser) {
+                    return; 
+                }
 
-            try {
-                const response = await fetch(GOOGLE_SHEET_USERS_CSV_URL + "&t=" + Date.now(), { cache: 'no-store' });
-                const csvData = await response.text();
-                if (typeof Papa !== 'undefined') {
-                    Papa.parse(csvData, { header: true, skipEmptyLines: true, complete: function(results) {
-                        const getField = (row, searchStr) => {
-                            const key = Object.keys(row).find(k => k.toLowerCase().replace(/\s/g, '') === searchStr.toLowerCase() || k.toLowerCase().includes(searchStr.toLowerCase()));
-                            return key ? row[key] : null;
-                        };
+                const docRef = doc(db, 'artifacts', appId, 'users', user.uid, 'data', 'state');
+                const docSnap = await getDoc(docRef);
+                
+                if (docSnap.exists()) {
+                    state = { ...defaultState, ...docSnap.data(), isNewUser: false };
+                } else {
+                    const localData = safeJSONParse(USER_DATA_KEY, null);
+                    if (localData && localData.user && localData.user.email === user.email) {
+                        state = { ...defaultState, ...localData, isNewUser: false };
+                        if (!state.user.trialEnds) state.user.trialEnds = Date.now() + (200 * 24 * 60 * 60 * 1000);
+                        await setDoc(docRef, state); 
+                        localStorage.removeItem(USER_DATA_KEY); 
+                        showToast("Old data successfully migrated to Cloud!", "success");
+                    } else {
+                        state = { ...defaultState, isNewUser: false, user: { ...defaultState.user, name: user.displayName || "User", email: user.email, joined: getTodayStr(), trialEnds: Date.now() + (200 * 24 * 60 * 60 * 1000) } };
+                        await setDoc(docRef, state);
+                    }
+                }
+                
+                state.activeTab = 'home'; // Route to home
+                timerState.timeLeft = (state.timerSettings.focus || 25) * 60;
+                applyTheme();
+                updatePublicLeaderboard();
 
-                        const cloudUser = results.data.find(u => {
-                            const rowEmail = getField(u, 'email') || '';
-                            return String(rowEmail).trim().toLowerCase() === email.toLowerCase();
-                        });
-
-                        const localTime = state.lastModified || 0;
-
-                        if (cloudUser) {
-                            const cloudPass = getField(cloudUser, 'password') || getField(cloudUser, 'pass') || '';
-                            if (String(cloudPass).trim() === password) {
-                                const stateJSON = getField(cloudUser, 'statejson') || getField(cloudUser, 'statedata') || '';
-                                if (stateJSON && stateJSON.trim().startsWith('{')) {
-                                    try { 
-                                        const cloudState = JSON.parse(stateJSON); 
-                                        const cloudTime = cloudState.lastModified || 0;
-
-                                        if (cloudTime > localTime) {
-                                            state = { ...state, ...cloudState };
-                                            localStorage.setItem(USER_DATA_KEY, JSON.stringify(state));
-                                            let registry = safeJSONParse(USERS_REGISTRY_KEY, {});
-                                            registry[state.user.email] = state;
-                                            localStorage.setItem(USERS_REGISTRY_KEY, JSON.stringify(registry));
-                                            
-                                            const activeEl = document.activeElement;
-                                            const isTyping = activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA');
-                                            if (!isTyping) {
-                                                render(); 
-                                            }
-                                        } else if (localTime > cloudTime) {
-                                            syncUserStatsToGoogleSheet(true);
-                                        }
-                                    } catch(err) {} 
-                                }
-                            }
-                        } else {
-                            syncUserStatsToGoogleSheet(true);
+                if (unsubscribeSnapshot) unsubscribeSnapshot();
+                unsubscribeSnapshot = onSnapshot(docRef, (snapshot) => {
+                    if (snapshot.exists()) {
+                        const remoteState = snapshot.data();
+                        if (remoteState.lastModified > (state.lastModified || 0)) {
+                            state = { ...state, ...remoteState };
+                            render();
                         }
-                    }});
-                }
-            } catch (error) { console.error("Background sync failed", error); }
-        }
+                    }
+                }, (error) => { console.error("Firestore Listen Error:", error); });
 
-        window.addEventListener('visibilitychange', () => {
-            if (document.visibilityState === 'visible' && !state.isNewUser && state.user.email) {
-                syncFromCloudSilently(state.user.email, state.user.password);
+                if (articlesUnsubscribe) articlesUnsubscribe();
+                articlesUnsubscribe = onSnapshot(collection(db, 'artifacts', appId, 'public_articles'), (snapshot) => {
+                    let fetchedArticles = [];
+                    snapshot.forEach((doc) => {
+                        // Security Fix: Additional escaping during retrieval to prevent malicious DB injections
+                        let unsafeDoc = doc.data();
+                        fetchedArticles.push({
+                            ...unsafeDoc,
+                            title: escapeHTML(unsafeDoc.title),
+                            author: escapeHTML(unsafeDoc.author),
+                            intro: escapeHTML(unsafeDoc.intro),
+                            sections: unsafeDoc.sections ? unsafeDoc.sections.map(s => ({ title: escapeHTML(s.title), text: escapeHTML(s.text) })) : []
+                        });
+                    });
+                    articles = [...fetchedArticles.sort((a,b) => b.timestamp - a.timestamp), ...defaultArticles];
+                    if (state.activeTab === 'library' || state.activeTab === 'home' || state.selectedArticleId) {
+                        render();
+                    }
+                }, (e) => { console.error("Error fetching articles:", e); });
+
+                isAppLoading = false;
+                render();
+                fetchLeaderboard();
+            } else {
+                state.isNewUser = true;
+                if (unsubscribeSnapshot) { unsubscribeSnapshot(); unsubscribeSnapshot = null; }
+                if (articlesUnsubscribe) { articlesUnsubscribe(); articlesUnsubscribe = null; }
+                isAppLoading = false;
+                render();
             }
         });
-        
-        setInterval(() => {
-            if (!state.isNewUser && state.user.email) {
-                syncFromCloudSilently(state.user.email, state.user.password);
-            }
-        }, 60000);
 
-        function checkNewDay() {
-            if (state.isNewUser) return;
-            const today = getTodayStr(); 
-            
-            if (!state.streak.lastDate) { 
-                state.streak.lastDate = today; 
-                state.streak.count = 1; 
-                updateHistory(); 
-            } else if (state.streak.lastDate !== today) {
-                const yest = new Date(); yest.setDate(yest.getDate() - 1);
-                const yestStr = yest.getFullYear() + '-' + String(yest.getMonth() + 1).padStart(2, '0') + '-' + String(yest.getDate()).padStart(2, '0');
-                
-                if (state.streak.lastDate === yestStr) {
-                    state.streak.count += 1; 
-                } else {
-                    state.streak.count = 1; 
-                }
-                
-                const completedYesterday = state.habits.filter(h => h.completed);
-                if(completedYesterday.length > 0) state.pastTasks[state.streak.lastDate] = completedYesterday;
-                
-                state.habits = state.habits.filter(h => !h.completed).map(h => ({ ...h, completed: false }));
-                state.streak.lastDate = today; 
-                updateHistory(); 
-                saveData();
+        // Resiliency Fix: Data loss prevention on tab close.
+        window.addEventListener('beforeunload', (e) => {
+            if (localSaveTimeout) {
+                saveData(true);
             }
-        }
+        });
 
         let localSaveTimeout = null;
         function saveData(immediate = false) { 
-            if (state.isNewUser) return;
+            if (state.isNewUser || !auth.currentUser) return;
             state.lastModified = Date.now(); 
             
-            const doSave = () => {
-                localStorage.setItem(USER_DATA_KEY, JSON.stringify(state)); 
-                let registry = safeJSONParse(USERS_REGISTRY_KEY, {});
-                registry[state.user.email] = state;
-                localStorage.setItem(USERS_REGISTRY_KEY, JSON.stringify(registry));
-                syncUserStatsToGoogleSheet(); 
+            const doSave = async () => {
+                try {
+                    const docRef = doc(db, 'artifacts', appId, 'users', auth.currentUser.uid, 'data', 'state');
+                    await setDoc(docRef, state);
+                } catch(e) { console.error("Save Error:", e); }
             };
 
-            if (immediate) {
-                clearTimeout(localSaveTimeout);
-                doSave();
-            } else {
-                clearTimeout(localSaveTimeout);
-                localSaveTimeout = setTimeout(doSave, 500);
-            }
+            if (immediate) { clearTimeout(localSaveTimeout); doSave(); } 
+            else { clearTimeout(localSaveTimeout); localSaveTimeout = setTimeout(doSave, 1500); }
         }
 
-        function handleRegister() { 
+        async function handleRegister() { 
             const n = document.getElementById('init-name')?.value.trim(); 
             const e = document.getElementById('init-email')?.value.trim().toLowerCase(); 
             const p = document.getElementById('init-password')?.value; 
-            if(!n || !e || !p || p.length < 6) return showToast("කරුණාකර නිවැරදි තොරතුරු ඇතුළත් කරන්න (අවම වශයෙන් මුරපදයට අකුරු 6ක් අවශ්‍යයි).", "error");
-            if(!emailRegex.test(e)) return showToast("කරුණාකර නිවැරදි ඊමේල් ලිපිනයක් ඇතුළත් කරන්න.", "error");
+            if(!n || !e || !p || p.length < 6) return showToast("Please enter valid details. Password must be at least 6 characters.", "error");
+            if(!emailRegex.test(e)) return showToast("Please enter a valid email address.", "error");
 
-            let registry = safeJSONParse(USERS_REGISTRY_KEY, {});
-            if(registry[e]) return showToast("මෙම විද්‍යුත් තැපෑල දැනටමත් භාවිතයේ පවතී. කරුණාකර ලොග් වන්න.", "error");
-
-            state = {
-                lastModified: Date.now(),
-                language: state.language, activeTab: 'home', selectedArticleId: null, flippedCards: {}, isNewUser: false,
-                user: { name: n, email: e, password: p, joined: getTodayStr(), targetDate: '', theme: 'light', xp: 0, level: 1 },
-                habits: [], history: [], reflections: {}, moods: {}, flashcards: [], pastTasks: {}, dailyFocus: {}, 
-                stats: { totalFocusMinutes: 0 }, streak: { count: 0, lastDate: null },
-                categories: { 'Study': { name: 'අධ්‍යාපනය / Study', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 border-blue-200 dark:border-blue-800' } },
-                pendingReviews: [], appRating: 0, lastSeenArticleId: null,
-                readArticles: [], timerSettings: { focus: 25, break: 5 }, soundType: 'noise'
-            };
-
-            saveData(true); 
-            applyTheme();
-            render(); 
-            showToast("සාර්ථකව ලියාපදිංචි විය!", "success");
+            try {
+                showToast("Creating account...", "info");
+                window.isRegisteringUser = true;
+                const userCredential = await createUserWithEmailAndPassword(auth, e, p);
+                
+                const trialEnds = Date.now() + (200 * 24 * 60 * 60 * 1000);
+                const initialState = { ...defaultState, isNewUser: false, lastModified: Date.now(), user: { name: n, email: e, joined: getTodayStr(), targetDate: '', theme: 'light', xp: 0, level: 1, trialEnds: trialEnds } };
+                await setDoc(doc(db, 'artifacts', appId, 'users', userCredential.user.uid, 'data', 'state'), initialState);
+                
+                await sendEmailVerification(userCredential.user);
+                await signOut(auth);
+                window.isRegisteringUser = false;
+                
+                // Spam folder එක පරීක්ෂා කිරීමට දැනුම් දීම
+                showToast("Success! Please check your email (and Spam folder) to verify your account.", "success");
+                window.switchAuthMode();
+            } catch(error) {
+                window.isRegisteringUser = false;
+                let msg = "An error occurred during registration.";
+                if(error.code === 'auth/email-already-in-use') msg = "This email is already in use.";
+                else if(error.code === 'auth/weak-password') msg = "Password is too weak.";
+                showToast(msg, "error");
+            }
         }
 
         async function handleLogin() {
             const e = document.getElementById('init-email')?.value.trim().toLowerCase(); 
             const p = document.getElementById('init-password')?.value; 
-            if(!e || !p) return showToast("කරුණාකර විද්‍යුත් තැපෑල සහ මුරපදය ඇතුළත් කරන්න.", "error");
-            if(!emailRegex.test(e)) return showToast("කරුණාකර නිවැරදි ඊමේල් ලිපිනයක් ඇතුළත් කරන්න.", "error");
+            if(!e || !p) return showToast("Please enter both email and password.", "error");
 
-            let registry = safeJSONParse(USERS_REGISTRY_KEY, {});
-            
-            if (!GOOGLE_SHEET_USERS_CSV_URL || GOOGLE_SHEET_USERS_CSV_URL.includes("YOUR_")) {
-                if(registry[e] && registry[e].user && registry[e].user.password === p) {
-                    loginSuccess(registry[e]);
+            try {
+                showToast("Authenticating...", "info");
+                const userCredential = await signInWithEmailAndPassword(auth, e, p);
+                if (!userCredential.user.emailVerified) {
+                    showToast("Please verify your email address by clicking the link we sent you.", "error");
+                    await signOut(auth);
                     return;
                 }
-                showToast("විද්‍යුත් තැපෑල හෝ මුරපදය වැරදියි.", "error");
-                return;
+                state.activeTab = 'home'; // Route to home
+            } catch(error) {
+                let msg = "Invalid email or password.";
+                showToast(msg, "error");
             }
-
-            showToast("Cloud දත්ත පරීක්ෂා කරමින්...", "info");
-            try {
-                const response = await fetch(GOOGLE_SHEET_USERS_CSV_URL + "&t=" + Date.now() + Math.random(), { cache: 'no-store' });
-                const csvData = await response.text();
-                if (typeof Papa !== 'undefined') {
-                    Papa.parse(csvData, { header: true, skipEmptyLines: true, complete: function(results) {
-                        const getField = (row, searchStr) => {
-                            const key = Object.keys(row).find(k => k.toLowerCase().replace(/\s/g, '') === searchStr.toLowerCase() || k.toLowerCase().includes(searchStr.toLowerCase()));
-                            return key ? row[key] : null;
-                        };
-
-                        const cloudUser = results.data.find(u => {
-                            const rowEmail = getField(u, 'email') || u.Email || u.email || '';
-                            return String(rowEmail).trim().toLowerCase() === e;
-                        });
-                        
-                        if (cloudUser) {
-                            const cloudPass = getField(cloudUser, 'password') || getField(cloudUser, 'pass') || cloudUser.Password || cloudUser.password || '';
-                            if (String(cloudPass).trim() === p) {
-                                let loadedState = null;
-                                const stateJSON = getField(cloudUser, 'statejson') || getField(cloudUser, 'statedata') || cloudUser.StateJSON || cloudUser.StateData || '';
-                                
-                                if (stateJSON && stateJSON.trim().startsWith('{')) {
-                                    try { loadedState = JSON.parse(stateJSON); } catch(err) { console.error("Parse Error", err); }
-                                }
-                                
-                                if (!loadedState) {
-                                    loadedState = {
-                                        lastModified: Date.now(),
-                                        language: 'si', activeTab: 'home', flippedCards: {}, isNewUser: false,
-                                        user: { name: getField(cloudUser, 'name') || '', email: e, password: p, joined: getField(cloudUser, 'joineddate') || getField(cloudUser, 'joined') || getTodayStr(), targetDate: '', theme: 'light', xp: parseInt(getField(cloudUser, 'xp'))||0, level: parseInt(getField(cloudUser, 'level'))||1 },
-                                        habits: [], history: [], reflections: {}, moods: {}, flashcards: [], pastTasks: {}, dailyFocus: {}, 
-                                        stats: { totalFocusMinutes: parseInt(getField(cloudUser, 'focusminutes'))||0 }, streak: { count: 0, lastDate: null },
-                                        categories: { 'Study': { name: 'අධ්‍යාපනය / Study', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/50' } },
-                                        pendingReviews: [], readArticles: [], timerSettings: { focus: 25, break: 5 }, soundType: 'noise'
-                                    };
-                                }
-                                loginSuccess(loadedState);
-                            } else {
-                                showToast("මුරපදය (Password) වැරදියි.", "error");
-                            }
-                        } else {
-                            if(registry[e] && registry[e].user && registry[e].user.password === p) {
-                                showToast("Cloud දත්ත නොමැත, Local දත්ත භාවිතා වේ.", "info");
-                                loginSuccess(registry[e]);
-                            } else {
-                                showToast("මෙම ඊමේල් ලිපිනය සඳහා ගිණුමක් නොමැත.", "error");
-                            }
-                        }
-                    }});
-                }
-            } catch(err) {
-                if(registry[e] && registry[e].user && registry[e].user.password === p) {
-                    showToast("අන්තර්ජාල දෝෂයකි. Local දත්ත භාවිතා වේ.", "info");
-                    loginSuccess(registry[e]);
-                } else {
-                    showToast("අන්තර්ජාල දෝෂයක්. කරුණාකර නැවත උත්සාහ කරන්න.", "error");
-                }
-            }
-        }
-
-        function loginSuccess(userData) {
-            state = { ...state, ...userData, isNewUser: false };
-            if(!state.lastModified) state.lastModified = Date.now();
-            if(!state.pendingReviews) state.pendingReviews = [];
-            if(!state.readArticles) state.readArticles = [];
-            if(!state.timerSettings) state.timerSettings = { focus: 25, break: 5 };
-            if(!state.soundType) state.soundType = 'noise';
-            timerState.timeLeft = (state.timerSettings.focus || 25) * 60;
-            
-            let registry = safeJSONParse(USERS_REGISTRY_KEY, {});
-            registry[state.user.email] = state;
-            localStorage.setItem(USERS_REGISTRY_KEY, JSON.stringify(registry));
-            localStorage.setItem(USER_DATA_KEY, JSON.stringify(state)); 
-            
-            applyTheme(); 
-            render(); 
-            showToast("සාර්ථකව ලොග් විය!", "success");
-            if(isAdmin()) fetchUsersFromGoogleSheet();
         }
 
         function handleForgotPassword() {
-            showPromptModal("ඔබගේ විද්‍යුත් තැපෑල (Email) ඇතුළත් කරන්න:", (email) => {
+            showPromptModal("Enter your registered Email address:", async (email) => {
                 const e = email.trim().toLowerCase();
-                if (!e || !emailRegex.test(e)) return showToast("කරුණාකර නිවැරදි ඊමේල් ලිපිනයක් ඇතුළත් කරන්න.", "error");
-                let registry = safeJSONParse(USERS_REGISTRY_KEY, {});
-                if (!registry[e]) {
-                    return showToast("මෙම විද්‍යුත් තැපෑලට අදාළ ගිණුමක් නොමැත.", "error");
+                if (!e || !emailRegex.test(e)) return showToast("Please enter a valid email.", "error");
+                try {
+                    await sendPasswordResetEmail(auth, e);
+                    showToast("A password reset link has been sent to your email.", "success");
+                } catch(error) {
+                    showToast("No account found with this email.", "error");
                 }
-                
-                setTimeout(() => {
-                    showPromptModal("නව මුරපදය ඇතුළත් කරන්න:", (newPass) => {
-                        if (!newPass || newPass.length < 6) return showToast("අවම වශයෙන් අකුරු 6ක් අවශ්‍යයි.", "error");
-                        
-                        registry[e].user.password = newPass;
-                        registry[e].lastModified = Date.now(); 
-                        localStorage.setItem(USERS_REGISTRY_KEY, JSON.stringify(registry));
-
-                        if (state.user && state.user.email === e) {
-                            state.user.password = newPass;
-                            state.lastModified = Date.now();
-                            saveData(true);
-                        }
-                        
-                        if (GOOGLE_SCRIPT_URL && !GOOGLE_SCRIPT_URL.includes("YOUR_")) {
-                            const formData = new URLSearchParams();
-                            formData.append('action', 'saveUser'); 
-                            formData.append('name', registry[e].user.name); 
-                            formData.append('email', e); 
-                            formData.append('password', newPass);
-                            formData.append('level', registry[e].user.level); 
-                            formData.append('xp', registry[e].user.xp); 
-                            formData.append('focusMinutes', registry[e].stats.totalFocusMinutes || 0); 
-                            formData.append('joinedDate', registry[e].user.joined);
-                            formData.append('stateData', JSON.stringify(registry[e])); 
-                            
-                            fetch(GOOGLE_SCRIPT_URL, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: formData.toString(), mode: 'no-cors' }).catch(err=>err);
-                        }
-                        
-                        showToast("මුරපදය යාවත්කාලීන කරන ලදී. කරුණාකර ලොග් වන්න.", "success");
-                    });
-                }, 300);
             });
         }
 
         function switchAuthMode() { window.authMode = window.authMode === 'login' ? 'register' : 'login'; render(); }
         
-        function logout() { 
-            localStorage.removeItem(USER_DATA_KEY); 
-            state = {
-                lastModified: 0, 
-                language: 'si', activeTab: 'home', selectedArticleId: null, flippedCards: {}, isNewUser: true,
-                user: { name: '', email: '', password: '', joined: '', targetDate: '', theme: 'light', xp: 0, level: 1 },
-                habits: [], history: [], reflections: {}, moods: {}, flashcards: [], pastTasks: {}, dailyFocus: {}, 
-                stats: { totalFocusMinutes: 0 }, streak: { count: 0, lastDate: null },
-                categories: {
-                    'Study': { name: 'අධ්‍යාපනය / Study', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300 border-blue-200 dark:border-blue-800' },
-                    'Health': { name: 'සෞඛ්‍යය / Health', color: 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300 border-green-200 dark:border-green-800' },
-                    'Work': { name: 'ව්‍යාපාර / Work', color: 'bg-orange-100 text-orange-700 dark:bg-orange-900/50 dark:text-orange-300 border-orange-200 dark:border-orange-800' }
-                },
-                adminUsersData: [], pendingReviews: [], appRating: 0, lastSeenArticleId: null,
-                readArticles: [], timerSettings: { focus: 25, break: 5 }, soundType: 'noise'
-            };
+        async function logout() { 
+            await signOut(auth);
+            state = JSON.parse(JSON.stringify(defaultState));
             window.authMode = 'login'; 
             render(); 
         }
 
-        // ==========================================
-        // 6. GOOGLE SHEETS
-        // ==========================================
-        async function fetchArticlesFromGoogleSheet() {
-            if (!GOOGLE_SHEET_ARTICLES_CSV_URL || GOOGLE_SHEET_ARTICLES_CSV_URL.includes("YOUR_")) return;
-            try {
-                const response = await fetch(GOOGLE_SHEET_ARTICLES_CSV_URL + "&t=" + Date.now(), { cache: 'no-store' });
-                const csvData = await response.text();
-                if (typeof Papa !== 'undefined') {
-                    Papa.parse(csvData, { header: true, skipEmptyLines: true, complete: function(results) {
-                            const fetchedArticles = results.data.map(row => ({ 
-                                id: escapeHTML(row.ID), 
-                                title: escapeHTML(row.Title), 
-                                author: escapeHTML(row.Author || 'MindsetOS'), 
-                                category: escapeHTML(row.Category || 'General'), 
-                                icon: escapeHTML(row.Icon || '📚'), 
-                                color: escapeHTML(row.Color || 'text-indigo-500'), 
-                                readTime: escapeHTML(row.ReadTime || '5m'), 
-                                excerpt: escapeHTML(row.Excerpt), 
-                                intro: escapeHTML(row.Intro), 
-                                sections: [{title: escapeHTML(row.Sec1Title || 'අන්තර්ගතය'), text: escapeHTML(row.Sec1Text || '')}], 
-                                science: escapeHTML(row.Science || '') 
-                            })).filter(a => a.id && a.title);
-                            if(fetchedArticles.length > 0) { articles = [...fetchedArticles, ...defaultArticles]; if(state.activeTab === 'library' || state.activeTab === 'home' || state.selectedArticleId) render(); }
-                    } });
-                }
-            } catch (error) { console.error(error); }
-        }
+        function checkNewDay() {
+            if (state.isNewUser) return;
+            const today = getTodayStr(); 
+            let stateMutated = false;
 
-        async function fetchUsersFromGoogleSheet() {
-            if (!GOOGLE_SHEET_USERS_CSV_URL || GOOGLE_SHEET_USERS_CSV_URL.includes("YOUR_")) return;
-            try {
-                const response = await fetch(GOOGLE_SHEET_USERS_CSV_URL + "&t=" + Date.now(), { cache: 'no-store' });
-                const csvData = await response.text();
-                if (typeof Papa !== 'undefined') {
-                    Papa.parse(csvData, { header: true, skipEmptyLines: true, complete: function(results) {
-                            const getField = (row, searchStr) => {
-                                const key = Object.keys(row).find(k => k.toLowerCase().replace(/\s/g, '') === searchStr.toLowerCase() || k.toLowerCase().includes(searchStr.toLowerCase()));
-                                return key ? row[key] : null;
-                            };
-                            state.adminUsersData = results.data.map(row => ({ 
-                                name: getField(row, 'name'), email: getField(row, 'email'), password: getField(row, 'password') || getField(row, 'pass'), level: getField(row, 'level'), xp: getField(row, 'xp'), 
-                                totalFocusMinutes: getField(row, 'focusminutes'), joined: getField(row, 'joineddate') || getField(row, 'joined'), stateData: getField(row, 'statejson') || getField(row, 'statedata')
-                            })).filter(u => u.email);
-                            state.adminUsersData.sort((a,b) => (parseInt(b.xp) || 0) - (parseInt(a.xp) || 0));
-                            if(state.activeTab === 'profile' && isAdmin()) render();
-                    } });
-                }
-            } catch (error) { console.error(error); }
-        }
-
-        let syncTimeout = null; 
-
-        function syncUserStatsToGoogleSheet(force = false) {
-            if (!GOOGLE_SCRIPT_URL || GOOGLE_SCRIPT_URL.includes("YOUR_") || state.isNewUser) return;
-            
-            const doSync = () => {
-                syncTimeout = null; 
-                const formData = new URLSearchParams();
-                formData.append('action', 'saveUser'); 
-                formData.append('name', state.user.name); 
-                formData.append('email', state.user.email); 
-                formData.append('password', state.user.password);
-                formData.append('level', state.user.level); 
-                formData.append('xp', state.user.xp); 
-                formData.append('focusMinutes', state.stats.totalFocusMinutes || 0); 
-                formData.append('joinedDate', state.user.joined);
-                formData.append('stateData', JSON.stringify(state)); 
+            if (!state.streak.lastDate) { 
+                state.streak.lastDate = today; state.streak.count = 1; updateHistory(); stateMutated = true;
+            } else if (state.streak.lastDate !== today) {
+                const yest = new Date(); yest.setDate(yest.getDate() - 1);
+                const yestStr = yest.getFullYear() + '-' + String(yest.getMonth() + 1).padStart(2, '0') + '-' + String(yest.getDate()).padStart(2, '0');
+                if (state.streak.lastDate === yestStr) state.streak.count += 1; else state.streak.count = 1; 
                 
-                fetch(GOOGLE_SCRIPT_URL, { 
-                    method: 'POST', 
-                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, 
-                    body: formData.toString(), 
-                    mode: 'no-cors'
-                }).catch(e => console.error("Sync Error:", e));
-            };
-
-            if (force) {
-                doSync();
-            } else {
-                clearTimeout(syncTimeout);
-                syncTimeout = setTimeout(doSync, 2500);
+                const completedYesterday = state.habits.filter(h => h.completed);
+                if(completedYesterday.length > 0) state.pastTasks[state.streak.lastDate] = completedYesterday;
+                
+                state.habits = state.habits.filter(h => !h.completed).map(h => ({ ...h, completed: false }));
+                state.streak.lastDate = today; updateHistory(); saveData();
+                stateMutated = true;
             }
+
+            // Logic Fix: Only invoke render if a rollover happened, preventing midnight UI desync.
+            if (stateMutated) render();
         }
 
-        window.addEventListener('beforeunload', () => {
-            if (syncTimeout) {
-                clearTimeout(syncTimeout);
-                syncUserStatsToGoogleSheet(true);
-            }
-        });
+        // ==========================================
+        // FIREBASE ARTICLES (Admin Security Implementation)
+        // ==========================================
+        
+        async function publishAdminArticle() {
+            // Security Fix: Immediate server-side concept emulation rejection
+            if (!isAdmin()) return showToast("Unauthorized operation.", "error");
 
-        function publishAdminArticle() {
             const title = document.getElementById('admin-art-title')?.value; const intro = document.getElementById('admin-art-intro')?.value; const text = document.getElementById('admin-art-text')?.value;
-            const author = document.getElementById('admin-art-author')?.value || 'Admin';
-            const cat = document.getElementById('admin-art-cat')?.value || 'General';
-            const time = document.getElementById('admin-art-time')?.value || '5m';
-            
-            if(!GOOGLE_SCRIPT_URL || GOOGLE_SCRIPT_URL.includes("YOUR_")) {
-                return showToast("කරුණාකර ඔබගේ Google Script URL එක කේතයට එක් කරන්න.", "error");
-            }
+            const author = document.getElementById('admin-art-author')?.value || 'Admin'; const cat = document.getElementById('admin-art-cat')?.value || 'General'; const time = document.getElementById('admin-art-time')?.value || '5m';
             if(!title || !intro || !text) return showToast("කරුණාකර සියලු විස්තර පුරවන්න.", "error");
             
             const newArtID = 'art-' + Date.now();
-            const formData = new URLSearchParams();
-            formData.append('action', 'saveArticle'); formData.append('ID', newArtID); formData.append('Title', escapeHTML(title)); formData.append('Author', escapeHTML(author)); formData.append('Category', escapeHTML(cat)); formData.append('Icon', '⭐'); formData.append('Color', 'text-yellow-500'); formData.append('ReadTime', escapeHTML(time)); formData.append('Excerpt', escapeHTML(intro.substring(0, 100)) + '...'); formData.append('Intro', escapeHTML(intro)); formData.append('Sec1Title', 'අන්තර්ගතය'); formData.append('Sec1Text', escapeHTML(text)); formData.append('Science', 'Admin Data');
-            
-            fetch(GOOGLE_SCRIPT_URL, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: formData.toString(), mode: 'no-cors' })
-            .then(() => { showToast("ලිපිය ප්‍රකාශයට පත් කළා! Google Sheet යාවත්කාලීන වනු ඇත.", "success"); setTimeout(fetchArticlesFromGoogleSheet, 2000); })
-            .catch(e => showToast("ජාලයේ දෝෂයක් (Network Error)", "error"));
+            const newArticle = {
+                id: newArtID,
+                title: escapeHTML(title),
+                author: escapeHTML(author),
+                category: escapeHTML(cat),
+                icon: '⭐',
+                color: 'text-yellow-500',
+                readTime: escapeHTML(time),
+                excerpt: escapeHTML(intro.substring(0, 100)) + '...',
+                intro: escapeHTML(intro),
+                sections: [{title: 'අන්තර්ගතය', text: escapeHTML(text)}],
+                science: 'Admin Data',
+                timestamp: Date.now()
+            };
+
+            try {
+                const articleRef = doc(db, 'artifacts', appId, 'public_articles', newArtID);
+                await setDoc(articleRef, newArticle);
+                showToast("ලිපිය සාර්ථකව ප්‍රකාශයට පත් කළා!", "success");
+                
+                if(document.getElementById('admin-art-title')) document.getElementById('admin-art-title').value = '';
+                if(document.getElementById('admin-art-intro')) document.getElementById('admin-art-intro').value = '';
+                if(document.getElementById('admin-art-text')) document.getElementById('admin-art-text').value = '';
+                
+            } catch(e) {
+                console.error("Error publishing article:", e);
+                showToast("ලිපිය පළකිරීමේදී දෝෂයක් මතු විය.", "error");
+            }
         }
 
-        function deleteAdminArticle(articleId) {
-            showConfirmModal("මෙම ලිපිය සම්පූර්ණයෙන්ම ඉවත් කිරීමට ඔබට අවශ්‍යද?", () => {
-                articles = articles.filter(a => a.id !== articleId); render();
-                showToast("ලිපිය ඉවත් කරන ලදී.", "success");
-                if(GOOGLE_SCRIPT_URL && !GOOGLE_SCRIPT_URL.includes("YOUR_")) {
-                    const formData = new URLSearchParams();
-                    formData.append('action', 'deleteArticle'); formData.append('ID', articleId);
-                    fetch(GOOGLE_SCRIPT_URL, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: formData.toString(), mode: 'no-cors' }).catch(e=>e);
+        async function deleteAdminArticle(articleId) {
+            // Security Fix: Immediate server-side concept emulation rejection
+            if (!isAdmin()) return showToast("Unauthorized operation.", "error");
+
+            showConfirmModal("මෙම ලිපිය සම්පූර්ණයෙන්ම ඉවත් කිරීමට ඔබට අවශ්‍යද?", async () => {
+                try {
+                    const articleRef = doc(db, 'artifacts', appId, 'public_articles', articleId);
+                    await deleteDoc(articleRef);
+                    showToast("ලිපිය සාර්ථකව ඉවත් කරන ලදී.", "success");
+                } catch(e) {
+                    console.error("Error deleting article:", e);
+                    showToast("ලිපිය මැකීමේදී දෝෂයක් මතු විය.", "error");
                 }
             });
         }
 
         // ==========================================
-        // 7. FEATURES & TIMER
+        // FEATURES & TIMER
         // ==========================================
         function addHabit() {
-            const inputEl = document.getElementById('habit-text');
-            const timeEl = document.getElementById('habit-time');
-            const reviewEl = document.getElementById('habit-review');
-            const text = inputEl?.value.trim();
-            const time = timeEl?.value;
-            const needsReview = reviewEl?.checked;
-            const cat = document.getElementById('habit-cat')?.value;
-            const pri = document.getElementById('habit-priority')?.value;
+            const inputEl = document.getElementById('habit-text'); const timeEl = document.getElementById('habit-time'); const reviewEl = document.getElementById('habit-review');
+            const text = inputEl?.value.trim(); const time = timeEl?.value; const needsReview = reviewEl?.checked;
+            const cat = document.getElementById('habit-cat')?.value; const pri = document.getElementById('habit-priority')?.value;
             
             if (text) { 
                 state.habits.unshift({ id: Date.now(), text: escapeHTML(text), time: time, needsReview: needsReview, category: cat, priority: pri, completed: false, date: getTodayStr() }); 
-                updateHistory(); 
-                if(inputEl) inputEl.value = ''; 
-                if(timeEl) timeEl.value = '';
-                if(reviewEl) reviewEl.checked = false;
-                render(); 
-                setTimeout(() => document.getElementById('habit-text')?.focus(), 50); 
-                showToast("කාර්යය ඇතුළත් කරන ලදී", "success");
-            } else {
-                showToast("කරුණාකර කාර්යයක් ඇතුළත් කරන්න", "error");
-            }
+                updateHistory(); if(inputEl) inputEl.value = ''; if(timeEl) timeEl.value = ''; if(reviewEl) reviewEl.checked = false;
+                render(); setTimeout(() => document.getElementById('habit-text')?.focus(), 50); showToast("Added successfully!", "success");
+            } else { showToast("Please enter a task", "error"); }
         }
         
         function toggleHabit(id) {
@@ -812,10 +659,7 @@
             state.habits = state.habits.map(h => { 
                 if(h.id === id) { 
                     if(!h.completed) {
-                        if (!h.xpAwarded) {
-                            newlyCompleted = true;
-                            h.xpAwarded = true; 
-                        }
+                        if (!h.xpAwarded) { newlyCompleted = true; h.xpAwarded = true; }
                         if(h.needsReview) {
                             if(!state.pendingReviews) state.pendingReviews = [];
                             const exists = state.pendingReviews.some(pr => pr.text === h.text);
@@ -825,33 +669,21 @@
                             }
                         }
                     } else {
-                        if(state.pendingReviews) {
-                            state.pendingReviews = state.pendingReviews.filter(pr => pr.text !== h.text);
-                        }
+                        if(state.pendingReviews) state.pendingReviews = state.pendingReviews.filter(pr => pr.text !== h.text);
                     }
                     return { ...h, completed: !h.completed }; 
                 } 
                 return h; 
             });
-            if(newlyCompleted) addXP(10);
+            if(newlyCompleted) { addXP(10); }
             updateHistory(); render();
         }
 
-        function dismissReview(id) {
-            if(state.pendingReviews) {
-                state.pendingReviews = state.pendingReviews.filter(r => r.id !== id);
-                saveData(true); render();
-            }
-        }
-
+        function dismissReview(id) { if(state.pendingReviews) { state.pendingReviews = state.pendingReviews.filter(r => r.id !== id); saveData(true); render(); } }
         function deleteHabit(id) { 
             const h = state.habits.find(x => x.id === id);
-            if(h && state.pendingReviews) {
-                state.pendingReviews = state.pendingReviews.filter(r => r.text !== h.text);
-            }
-            state.habits = state.habits.filter(h => h.id !== id); 
-            updateHistory(); 
-            render(); 
+            if(h && state.pendingReviews) state.pendingReviews = state.pendingReviews.filter(r => r.text !== h.text);
+            state.habits = state.habits.filter(h => h.id !== id); updateHistory(); render(); 
         }
         
         function updateHistory() {
@@ -861,39 +693,38 @@
             saveData(true);
         }
         
-        function saveJournal() { state.reflections[getTodayStr()] = document.getElementById('journal-text')?.value; saveData(true); showToast(t('save_journal'), 'success'); render(); }
+        // Performance Fix: Save state without triggering a full re-render on every keystroke
+        function updateJournalTextSilent(value) {
+            state.reflections[getTodayStr()] = value;
+            saveData();
+        }
+
+        function saveJournal() { 
+            const textEl = document.getElementById('journal-text');
+            if (textEl) state.reflections[getTodayStr()] = textEl.value; 
+            saveData(true); 
+            showToast(t('save_journal'), 'success'); 
+            render(); 
+        }
+        
         function setMood(mood) { state.moods[getTodayStr()] = mood; saveData(true); render(); }
 
         function addFlashcard() { 
-            const qEl = document.getElementById('fc-q');
-            const aEl = document.getElementById('fc-a');
-            const q = qEl?.value.trim(); 
-            const a = aEl?.value.trim(); 
+            const qEl = document.getElementById('fc-q'); const aEl = document.getElementById('fc-a');
+            const q = qEl?.value.trim(); const a = aEl?.value.trim(); 
             if(q && a) { 
                 state.flashcards.unshift({ id: Date.now(), q: escapeHTML(q), a: escapeHTML(a) }); 
-                saveData(true); 
-                qEl.value = ''; 
-                aEl.value = ''; 
-                render(); 
-                showToast("ෆ්ලෑෂ් කාඩ්පත එක් කරන ලදී", "success");
-            } else {
-                showToast("කරුණාකර ප්‍රශ්නය සහ පිළිතුර ඇතුළත් කරන්න.", "error");
-            }
+                saveData(true); qEl.value = ''; aEl.value = ''; render(); showToast("Added successfully!", "success");
+            } else { showToast("Please enter both question and answer.", "error"); }
         }
         function deleteFlashcard(id) { state.flashcards = state.flashcards.filter(f => f.id !== id); saveData(true); render(); }
         function flipCardDOM(id, element) { state.flippedCards[id] = !state.flippedCards[id]; element.querySelector('.preserve-3d').classList.toggle('rotate-y-180'); }
 
-        let audioCtxObj = null;
-        let noiseSourceNode = null;
-        let activeOscillators = [];
-        
         function setSoundType(type) { state.soundType = type; saveData(true); if(audioCtxObj){ toggleFocusSound(); toggleFocusSound(); } }
         
         function toggleFocusSound() {
             if (audioCtxObj) { 
-                audioCtxObj.close(); audioCtxObj = null; noiseSourceNode = null; 
-                activeOscillators.forEach(o => o.stop()); activeOscillators = [];
-                return; 
+                audioCtxObj.close(); audioCtxObj = null; noiseSourceNode = null; activeOscillators.forEach(o => o.stop()); activeOscillators = []; return; 
             }
             try {
                 const AC = window.AudioContext || window.webkitAudioContext;
@@ -902,38 +733,25 @@
                 if (audioCtxObj.state === 'suspended') audioCtxObj.resume();
                 
                 if (state.soundType === 'binaural') {
-                    // Binaural Beats (Alpha ~10Hz)
                     const osc1 = audioCtxObj.createOscillator(); osc1.frequency.value = 200;
                     const osc2 = audioCtxObj.createOscillator(); osc2.frequency.value = 210;
                     const gainNode = audioCtxObj.createGain(); gainNode.gain.value = 0.5;
-                    
                     if (audioCtxObj.createStereoPanner) {
                         const panL = audioCtxObj.createStereoPanner(); panL.pan.value = -1;
                         const panR = audioCtxObj.createStereoPanner(); panR.pan.value = 1;
-                        osc1.connect(panL); panL.connect(gainNode);
-                        osc2.connect(panR); panR.connect(gainNode);
-                    } else {
-                        osc1.connect(gainNode); osc2.connect(gainNode);
-                    }
-                    gainNode.connect(audioCtxObj.destination);
-                    osc1.start(); osc2.start();
-                    activeOscillators.push(osc1, osc2);
+                        osc1.connect(panL); panL.connect(gainNode); osc2.connect(panR); panR.connect(gainNode);
+                    } else { osc1.connect(gainNode); osc2.connect(gainNode); }
+                    gainNode.connect(audioCtxObj.destination); osc1.start(); osc2.start(); activeOscillators.push(osc1, osc2);
                 } else {
-                    // Noise (White/Rain)
                     const buffer = audioCtxObj.createBuffer(1, audioCtxObj.sampleRate * 2, audioCtxObj.sampleRate);
                     const data = buffer.getChannelData(0);
                     for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
                     noiseSourceNode = audioCtxObj.createBufferSource(); noiseSourceNode.buffer = buffer; noiseSourceNode.loop = true;
-                    
                     const filter = audioCtxObj.createBiquadFilter(); 
-                    if (state.soundType === 'rain') {
-                        filter.type = 'lowpass'; filter.frequency.value = 200; 
-                    } else {
-                        filter.type = 'lowpass'; filter.frequency.value = 400; // default noise
-                    }
+                    if (state.soundType === 'rain') { filter.type = 'lowpass'; filter.frequency.value = 200; } else { filter.type = 'lowpass'; filter.frequency.value = 400; }
                     noiseSourceNode.connect(filter); filter.connect(audioCtxObj.destination); noiseSourceNode.start();
                 }
-                showToast('අවධානය සඳහා නාදය ක්‍රියාත්මකයි', 'success');
+                showToast('Focus sound enabled', 'success');
             } catch(e) { console.log(e); }
         }
 
@@ -941,35 +759,22 @@
         // ADJUSTABLE POMODORO FUNCTIONS
         // ==========================================
         function updateTimerSettings(type, val) {
-            let num = parseInt(val);
-            if (isNaN(num) || num < 1) num = 1;
+            let num = parseInt(val); if (isNaN(num) || num < 1) num = 1;
             if (!state.timerSettings) state.timerSettings = { focus: 25, break: 5 };
-            state.timerSettings[type] = num;
-            saveData(true);
-            if (timerState.phase === 'idle' && type === 'focus') {
-                timerState.timeLeft = num * 60;
-                updateTimerUI();
-            }
+            state.timerSettings[type] = num; saveData(true);
+            if (timerState.phase === 'idle' && type === 'focus') { timerState.timeLeft = num * 60; updateTimerUI(); }
         }
 
         function toggleTimer() {
             initAudioCtx();
-
-            // Request Notification Permission
-            if ('Notification' in window && Notification.permission !== 'granted' && Notification.permission !== 'denied') {
-                Notification.requestPermission();
-            }
-
+            if ('Notification' in window && Notification.permission !== 'granted' && Notification.permission !== 'denied') Notification.requestPermission();
+            
             if (timerState.phase === 'running' || timerState.phase === 'break-running') { 
-                clearInterval(timerState.interval); 
-                timerState.targetEndTime = null; 
-                timerState.phase = timerState.phase === 'running' ? 'paused' : 'break-paused'; 
+                clearInterval(timerState.interval); timerState.targetEndTime = null; timerState.phase = timerState.phase === 'running' ? 'paused' : 'break-paused'; 
             } else if (timerState.phase === 'paused' || timerState.phase === 'break-paused') {
-                timerState.phase = timerState.phase === 'paused' ? 'running' : 'break-running';
-                startTimerInterval();
+                timerState.phase = timerState.phase === 'paused' ? 'running' : 'break-running'; startTimerInterval();
             } else {
-                timerState.phase = timerState.mode === 'focus' ? 'running' : 'break-running';
-                startTimerInterval();
+                timerState.phase = timerState.mode === 'focus' ? 'running' : 'break-running'; startTimerInterval();
             }
             render();
         }
@@ -977,55 +782,24 @@
         function startTimerInterval() {
             clearInterval(timerState.interval);
             timerState.targetEndTime = Date.now() + (timerState.timeLeft * 1000);
-            
             timerState.interval = setInterval(() => {
                 if (timerState.timeLeft > 0 && timerState.targetEndTime) { 
-                    const now = Date.now();
-                    timerState.timeLeft = Math.max(0, Math.round((timerState.targetEndTime - now) / 1000));
-                    updateTimerUI(); 
+                    const now = Date.now(); timerState.timeLeft = Math.max(0, Math.round((timerState.targetEndTime - now) / 1000)); updateTimerUI(); 
                 } 
-                if (timerState.timeLeft <= 0) {
-                    clearInterval(timerState.interval); 
-                    timerState.targetEndTime = null;
-                    playAlarm(); 
-                    
+                if (timerState.timeLeft <= 0 && timerState.targetEndTime !== null) {
+                    clearInterval(timerState.interval); timerState.targetEndTime = null; playAlarm(); 
                     if(timerState.mode === 'focus') { 
-                        let focusMins = state.timerSettings?.focus || 25;
-                        addXP(focusMins); state.stats.totalFocusMinutes += focusMins; 
-                        const today = getTodayStr();
-                        state.dailyFocus[today] = (state.dailyFocus[today] || 0) + focusMins;
-                        saveData(true); 
-                        timerState.phase = 'focus-ended';
-                        showToast("අවධානය යොමුකළ කාලය අවසන්!", "success"); 
-                        triggerPushNotification("අවධානය යොමුකළ කාලය අවසන්! විවේකයක් ගන්න.");
-                    } else { 
-                        showToast("විවේක කාලය අවසන්!", "info"); 
-                        triggerPushNotification("විවේක කාලය අවසන්! නැවත වැඩට යමු.");
-                        resetTimer();
-                    }
+                        let focusMins = state.timerSettings?.focus || 25; addXP(focusMins); state.stats.totalFocusMinutes += focusMins; 
+                        const today = getTodayStr(); state.dailyFocus[today] = (state.dailyFocus[today] || 0) + focusMins; saveData(true); 
+                        timerState.phase = 'focus-ended'; showToast("Focus session ended!", "success"); triggerPushNotification("Focus session ended! Take a break.");
+                    } else { showToast("Break is over!", "info"); triggerPushNotification("Break is over! Time to get back to work."); resetTimer(); }
                     render();
                 }
             }, 1000);
         }
         
-        function resetTimer() { 
-            clearInterval(timerState.interval); 
-            timerState.targetEndTime = null;
-            timerState.mode = 'focus'; 
-            timerState.phase = 'idle'; 
-            timerState.timeLeft = (state.timerSettings?.focus || 25) * 60; 
-            render(); 
-        }
-
-        function startBreakManual() {
-            timerState.mode = 'break';
-            timerState.timeLeft = (state.timerSettings?.break || 5) * 60;
-            timerState.phase = 'break-running';
-            initAudioCtx();
-            startTimerInterval();
-            render();
-        }
-
+        function resetTimer() { clearInterval(timerState.interval); timerState.targetEndTime = null; timerState.mode = 'focus'; timerState.phase = 'idle'; timerState.timeLeft = (state.timerSettings?.focus || 25) * 60; render(); }
+        function startBreakManual() { timerState.mode = 'break'; timerState.timeLeft = (state.timerSettings?.break || 5) * 60; timerState.phase = 'break-running'; initAudioCtx(); startTimerInterval(); render(); }
         function skipBreakManual() { resetTimer(); render(); }
         
         function updateTimerUI() {
@@ -1042,24 +816,28 @@
             if(ctx1) {
                 if(progressChartInstance) progressChartInstance.destroy();
                 const sortedHistory = state.history.sort((a,b) => new Date(a.date) - new Date(b.date));
-                const labels = sortedHistory.length ? sortedHistory.map(d => d.date) : ['අද'];
+                const labels = sortedHistory.length ? sortedHistory.map(d => d.date) : [t('today')];
                 const data = sortedHistory.length ? sortedHistory.map(d => d.score) : [0];
-                progressChartInstance = new Chart(ctx1, { type: 'line', data: { labels: labels, datasets: [{ label: 'ලකුණු ප්‍රතිශතය', data: data, borderColor: '#6366f1', backgroundColor: 'rgba(99, 102, 241, 0.2)', borderWidth: 3, tension: 0.4, fill: true }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { max: 100, beginAtZero: true } } } });
+                progressChartInstance = new Chart(ctx1, { type: 'line', data: { labels: labels, datasets: [{ label: t('percent'), data: data, borderColor: '#6366f1', backgroundColor: 'rgba(99, 102, 241, 0.2)', borderWidth: 3, tension: 0.4, fill: true }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { max: 100, beginAtZero: true } } } });
             }
             const ctx2 = document.getElementById('focusChart');
             if(ctx2) {
                 if(focusChartInstance) focusChartInstance.destroy();
                 const focusDates = Object.keys(state.dailyFocus).sort((a,b) => new Date(a) - new Date(b)).slice(-7); 
                 const focusData = focusDates.map(d => state.dailyFocus[d]);
-                focusChartInstance = new Chart(ctx2, { type: 'bar', data: { labels: focusDates, datasets: [{ label: 'විනාඩි', data: focusData, backgroundColor: '#10b981', borderRadius: 8 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } } });
+                focusChartInstance = new Chart(ctx2, { type: 'bar', data: { labels: focusDates, datasets: [{ label: t('minutes'), data: focusData, backgroundColor: '#10b981', borderRadius: 8 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } } });
             }
         }
 
         function generateHeatmap() {
-            let html = '<div class="flex flex-wrap gap-2 justify-center mt-6">';
-            const today = new Date();
+            let html = '<div class="flex flex-wrap gap-2 justify-center mt-6" role="img" aria-label="Activity Heatmap">';
+            
+            // Performance Fix: Instantiate Date object once outside the loop
+            const baseDate = new Date();
+            const baseTime = baseDate.getTime();
+            
             for(let i=89; i>=0; i--) { 
-                const d = new Date(); d.setDate(today.getDate() - i);
+                const d = new Date(baseTime - (i * 24 * 60 * 60 * 1000));
                 const dateStr = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
                 const focus = state.dailyFocus[dateStr] || 0;
                 let color = 'bg-slate-200 dark:bg-slate-800 opacity-50'; 
@@ -1067,60 +845,28 @@
                 if(focus > 25) color = 'bg-indigo-400 dark:bg-indigo-700';
                 if(focus > 60) color = 'bg-indigo-500 dark:bg-indigo-500';
                 if(focus > 120) color = 'bg-indigo-600 dark:bg-indigo-400';
-                html += `<div class="w-4 h-4 rounded-sm ${color} transition-all hover:scale-125 cursor-pointer" title="${dateStr}: ${focus} විනාඩි"></div>`;
+                html += `<div class="w-4 h-4 rounded-sm ${color} transition-all hover:scale-125 cursor-pointer" title="${dateStr}: ${focus} ${t('minutes')}"></div>`;
             }
-            html += '</div>';
-            return html;
+            html += '</div>'; return html;
         }
 
         function shareToWhatsApp() {
-            const todayStr = getTodayStr();
-            const completedHabits = state.habits.filter(h => h.completed); 
-            const focusTimeToday = state.dailyFocus[todayStr] || 0;
-            const focusHours = Math.floor(focusTimeToday / 60);
-            const focusMins = focusTimeToday % 60;
+            const todayStr = getTodayStr(); const completedHabits = state.habits.filter(h => h.completed); 
+            const focusTimeToday = state.dailyFocus[todayStr] || 0; const focusHours = Math.floor(focusTimeToday / 60); const focusMins = focusTimeToday % 60;
             const timeString = focusHours > 0 ? `${focusHours}h ${focusMins}m` : `${focusMins}m`;
-
-            const dateNum = new Date().getDate();
             const digitEmojis = ['0️⃣', '1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣'];
-            const dateEmoji = String(dateNum).split('').map(d => digitEmojis[d]).join('');
+            const dateEmoji = String(new Date().getDate()).split('').map(d => digitEmojis[d] || d).join('');
 
-            let text = `${dateEmoji} දිනය: ${new Date().toLocaleDateString('si-LK')}\n⏱️ අද Focus Time: ${timeString}\n\n`;
-            if (completedHabits.length > 0) {
-                text += `✅ අද නිම කළ වැඩ:\n`;
-                completedHabits.forEach(h => { text += `- ${h.text} ${h.time ? '('+h.time+')' : ''}\n`; });
-            } else {
-                text += `✅ අද නිම කළ වැඩ: තවම කිසිවක් නැත.\n`;
-            }
+            let text = `${dateEmoji} ${t('wa_date')} ${new Date().toLocaleDateString(state.language === 'en' ? 'en-US' : 'si-LK')}\n⏱️ ${t('wa_focus')} ${timeString}\n\n`;
+            if (completedHabits.length > 0) { text += `✅ ${t('wa_done')}\n`; completedHabits.forEach(h => { text += `- ${h.text} ${h.time ? '('+h.time+')' : ''}\n`; }); } 
+            else { text += `✅ ${t('wa_done')} ${t('wa_none')}\n`; }
             text += `\n🚀 (via MindsetOS)`;
-            window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
+            window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank', 'noopener,noreferrer');
         }
 
-        function clearAllData() {
-            showConfirmModal(t('clear_all') + "?", () => {
-                state.habits = []; state.history = []; state.reflections = {}; state.moods = {}; state.flashcards = []; state.pastTasks = {}; state.dailyFocus = {}; state.streak = { count: 0, lastDate: null }; state.pendingReviews = [];
-                resetTimer();
-                saveData(true); render(); showToast("ලැයිස්තු හිස් කරන ලදී.", "success");
-            });
-        }
-
-        function deleteAccount() {
-            showConfirmModal(t('del_acc') + "?", () => {
-                state.user.password = "DELETED_" + Date.now();
-                state.habits = []; state.history = [];
-                state.lastModified = Date.now() + 10000; 
-                syncUserStatsToGoogleSheet(true); 
-
-                setTimeout(() => {
-                    localStorage.removeItem(USER_DATA_KEY); 
-                    let registry = safeJSONParse(USERS_REGISTRY_KEY, {});
-                    delete registry[state.user.email];
-                    localStorage.setItem(USERS_REGISTRY_KEY, JSON.stringify(registry));
-                    location.reload();
-                }, 500);
-            });
-        }
-
+        function clearAllData() { showConfirmModal(t('clear_all') + "?", () => { state.habits = []; state.history = []; state.reflections = {}; state.moods = {}; state.flashcards = []; state.pastTasks = {}; state.dailyFocus = {}; state.streak = { count: 0, lastDate: null }; state.pendingReviews = []; resetTimer(); saveData(true); render(); showToast("Cleared successfully.", "success"); }); }
+        function deleteAccount() { showConfirmModal(t('del_acc') + "?", async () => { await setDoc(doc(db, 'artifacts', appId, 'users', auth.currentUser.uid, 'data', 'state'), {}); await auth.currentUser.delete(); logout(); }); }
+        
         function exportData() {
             const dataStr = JSON.stringify(state); const blob = new Blob([dataStr], { type: "application/json" }); const url = URL.createObjectURL(blob);
             const a = document.createElement('a'); a.href = url; a.download = `MindsetOS_Backup_${state.user.email}_${new Date().toISOString().split('T')[0]}.json`;
@@ -1139,101 +885,101 @@
             reader.readAsText(file);
         }
 
-        function updateTargetDate(val) { state.user.targetDate = val; saveData(true); render(); showToast("ඉලක්ක දිනය යාවත්කාලීන කරන ලදී.", "success"); }
-        function addCustomCategory() {
-            showPromptModal(t('add_category'), (catName) => {
-                if (catName && catName.trim()) {
-                    const id = 'Cat_' + Date.now();
-                    state.categories[id] = { name: escapeHTML(catName.trim()), color: 'bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300 border-purple-200 dark:border-purple-800' };
-                    saveData(true); render(); showToast("නව කාණ්ඩය එක් කරන ලදී.", "success");
+        function setRating(r) { state.appRating = r; render(); }
+        
+        function submitFeedback() {
+            const text = document.getElementById('feedback-text')?.value;
+            if(!text && !state.appRating) return showToast("Please provide some feedback or a rating.", "error");
+            
+            // Security Fix: Prevent URI schema crash by truncating extreme string lengths.
+            const safeText = (text || '').substring(0, 1500);
+            
+            const subject = encodeURIComponent(`MindsetOS Feedback - Rating: ${state.appRating || 0}/5`);
+            const body = encodeURIComponent(`From: ${state.user.name} (${state.user.email})\nLevel: ${state.user.level}\n\nFeedback:\n${safeText || 'No text provided.'}`);
+            
+            const mailtoLink = `mailto:${MY_ADMIN_EMAIL}?subject=${subject}&body=${body}`;
+            window.open(mailtoLink, '_blank', 'noopener,noreferrer');
+            
+            showToast("Opening Email Client...", "success");
+            state.appRating = 0;
+            if(document.getElementById('feedback-text')) document.getElementById('feedback-text').value = '';
+            render();
+        }
+
+        function updateTargetDate(val) { state.user.targetDate = val; saveData(true); render(); showToast("Target date updated.", "success"); }
+        function addCustomCategory() { showPromptModal(t('add_category'), (catName) => { if (catName && catName.trim()) { const id = 'Cat_' + Date.now(); state.categories[id] = { name: escapeHTML(catName.trim()), color: 'bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300 border-purple-200 dark:border-purple-800' }; saveData(true); render(); showToast("Category added.", "success"); } }); }
+        
+        function editName() {
+            showPromptModal(t('change_name_prompt'), (newName) => {
+                if (newName && newName.trim().length > 0) {
+                    state.user.name = newName.trim();
+                    saveData(true);
+                    updatePublicLeaderboard();
+                    render();
+                    showToast(t('name_updated'), "success");
+                    fetchLeaderboard();
                 }
             });
         }
 
-        function setRating(r) { state.appRating = r; render(); }
-        function submitFeedback() {
-            const text = document.getElementById('feedback-text')?.value;
-            if(!text && !state.appRating) return showToast("කරුණාකර ප්‍රතිපෝෂණයක් හෝ Rating එකක් ලබා දෙන්න.", "error");
-            
-            if (GOOGLE_SCRIPT_URL && !GOOGLE_SCRIPT_URL.includes("YOUR_")) {
-                const formData = new URLSearchParams();
-                formData.append('action', 'saveFeedback');
-                formData.append('name', state.user.name);
-                formData.append('email', state.user.email);
-                formData.append('rating', state.appRating || 0);
-                formData.append('message', text || '');
-
-                fetch(GOOGLE_SCRIPT_URL, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: formData.toString(), mode: 'no-cors' })
-                .then(() => {
-                    showToast("ඔබගේ ප්‍රතිපෝෂණයට බොහොම ස්තූතියි!", "success");
-                    state.appRating = 0;
-                    if(document.getElementById('feedback-text')) document.getElementById('feedback-text').value = '';
-                    render();
-                }).catch(e => showToast("ජාලයේ දෝෂයක්. කරුණාකර නැවත උත්සාහ කරන්න.", "error"));
-            } else {
-                 showToast("ඔබගේ ප්‍රතිපෝෂණයට බොහොම ස්තූතියි!", "success");
-                 state.appRating = 0;
-                 if(document.getElementById('feedback-text')) document.getElementById('feedback-text').value = '';
-                 render();
+        function setLang(lang) {
+            if (state.language !== lang) {
+                state.language = lang; 
+                saveData(true); 
+                render(); 
             }
         }
         
-        function toggleLang() { state.language = state.language === 'si' ? 'en' : 'si'; saveData(true); render(); }
         function toggleTheme() { state.user.theme = state.user.theme === 'dark' ? 'light' : 'dark'; applyTheme(); saveData(true); render(); }
         function applyTheme() { if (state.user.theme === 'dark') document.documentElement.classList.add('dark'); else document.documentElement.classList.remove('dark'); }
-        function switchTab(t) { state.activeTab = t; state.selectedArticleId = null; render(); }
+        function switchTab(t) { state.activeTab = t; state.selectedArticleId = null; render(); if(t === 'profile') fetchLeaderboard(); }
         
         function viewArticle(id) { 
-            state.selectedArticleId = id; 
-            state.activeTab = 'library'; 
-            state.lastSeenArticleId = id;
-
+            state.selectedArticleId = id; state.activeTab = 'library'; state.lastSeenArticleId = id;
             if (!state.readArticles) state.readArticles = [];
-            if (!state.readArticles.includes(id)) {
-                state.readArticles.push(id);
-                addXP(5); 
-            }
+            if (!state.readArticles.includes(id)) { state.readArticles.push(id); addXP(5); }
             render(); 
+        }
+
+        // Password එක පෙන්වීම සහ සැඟවීම සඳහා වන අලුත් function එක
+        function togglePassword() {
+            const pwd = document.getElementById('init-password');
+            const btn = document.getElementById('pwd-toggle-btn');
+            if (pwd && btn) {
+                if (pwd.type === 'password') {
+                    pwd.type = 'text';
+                    btn.innerText = '🙈';
+                } else {
+                    pwd.type = 'password';
+                    btn.innerText = '👁️';
+                }
+            }
         }
         
         function addXP(amount) { 
             if (state.user.level >= 100) return; 
-            
-            state.user.xp += amount; 
-            let leveledUp = false;
-            
-            while (state.user.xp >= state.user.level * 100 && state.user.level < 100) { 
-                state.user.xp -= state.user.level * 100; 
-                state.user.level++; 
-                leveledUp = true;
-            } 
-            
-            if (state.user.level >= 100) {
-                state.user.level = 100;
-                state.user.xp = 0; 
-            }
-            
-            if(leveledUp) {
-                const title = getLevelName(state.user.level).split(' ')[0];
-                showToast(`🎉 Level Up! Level ${state.user.level} - ${title}`, 'success'); 
-            }
+            state.user.xp += amount; let leveledUp = false;
+            while (state.user.xp >= state.user.level * 100 && state.user.level < 100) { state.user.xp -= state.user.level * 100; state.user.level++; leveledUp = true; } 
+            if (state.user.level >= 100) { state.user.level = 100; state.user.xp = 0; }
+            if(leveledUp) { const title = getLevelName(state.user.level).split(' ')[0]; showToast(`🎉 Level Up! Level ${state.user.level} - ${title}`, 'success'); }
             saveData(true); 
+            updatePublicLeaderboard();
+            fetchLeaderboard();
+            render();
         }
 
+        // Exporting functions to Global Window Object for HTML inline event listeners
         Object.assign(window, {
-            handleRegister, handleLogin, handleForgotPassword, switchAuthMode, logout, toggleLang, toggleTheme, switchTab, viewArticle,
-            addHabit, toggleHabit, deleteHabit, setMood, saveJournal, addFlashcard,
-            deleteFlashcard, flipCardDOM, toggleFocusSound, toggleTimer, resetTimer, startBreakManual,
-            skipBreakManual, shareToWhatsApp, publishAdminArticle, deleteAdminArticle,
-            exportData, importData, updateTargetDate, addCustomCategory, clearAllData, deleteAccount,
-            dismissReview, setRating, submitFeedback, updateTimerSettings, setSoundType, installApp
+            handleRegister, handleLogin, handleForgotPassword, switchAuthMode, logout, setLang, toggleTheme, switchTab, viewArticle,
+            addHabit, toggleHabit, deleteHabit, setMood, saveJournal, addFlashcard, deleteFlashcard, flipCardDOM, toggleFocusSound, 
+            toggleTimer, resetTimer, startBreakManual, skipBreakManual, shareToWhatsApp, updateTargetDate, addCustomCategory, clearAllData, 
+            deleteAccount, dismissReview, updateTimerSettings, setSoundType, installApp, publishAdminArticle, deleteAdminArticle,
+            exportData, importData, setRating, submitFeedback, editName, updateJournalTextSilent, togglePassword
         });
 
         function render() {
             const root = document.getElementById('app-root');
-
-            const activeStates = {};
-            const inputIds = ['init-name', 'init-email', 'init-password', 'habit-text', 'habit-time', 'habit-priority', 'habit-cat', 'habit-review', 'journal-text', 'fc-q', 'fc-a', 'feedback-text', 'admin-art-title', 'admin-art-intro', 'admin-art-text', 'target-date-input', 'admin-art-author', 'admin-art-cat', 'admin-art-time'];
+            const activeStates = {}; const inputIds = ['init-name', 'init-email', 'init-password', 'habit-text', 'habit-time', 'habit-priority', 'habit-cat', 'habit-review', 'journal-text', 'fc-q', 'fc-a', 'target-date-input', 'admin-art-author', 'admin-art-cat', 'admin-art-time', 'admin-art-title', 'admin-art-intro', 'admin-art-text'];
             
             let activeId = document.activeElement ? document.activeElement.id : null;
             let cursorStart = 0, cursorEnd = 0;
@@ -1241,27 +987,16 @@
             if (activeId && inputIds.includes(activeId)) {
                 const activeEl = document.getElementById(activeId);
                 if(activeEl && activeEl.setSelectionRange) {
-                    try { 
-                        const supportedTypes = ['text', 'search', 'url', 'tel', 'password'];
-                        if (supportedTypes.includes(activeEl.type)) {
-                            cursorStart = activeEl.selectionStart; cursorEnd = activeEl.selectionEnd; 
-                        }
-                    } catch(err){}
+                    try { const supportedTypes = ['text', 'search', 'url', 'tel', 'password']; if (supportedTypes.includes(activeEl.type)) { cursorStart = activeEl.selectionStart; cursorEnd = activeEl.selectionEnd; } } catch(err){}
                 }
             }
 
-            inputIds.forEach(id => {
-                const el = document.getElementById(id);
-                if (el) {
-                    if (el.type === 'checkbox') activeStates[id] = el.checked;
-                    else activeStates[id] = el.value;
-                }
-            });
+            inputIds.forEach(id => { const el = document.getElementById(id); if (el) { if (el.type === 'checkbox') activeStates[id] = el.checked; else activeStates[id] = el.value; } });
 
             checkNewDay();
 
             if (isAppLoading) {
-                root.innerHTML = `<div class="min-h-screen flex items-center justify-center"><div class="w-16 h-16 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div></div>`;
+                root.innerHTML = `<div class="min-h-screen flex items-center justify-center" aria-live="polite"><div class="w-16 h-16 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div><div class="ml-4 font-bold text-slate-500">Checking Security...</div></div>`;
                 return;
             }
             if (state.isNewUser) { root.innerHTML = renderWelcome(); return; } 
@@ -1269,46 +1004,36 @@
             let content = state.activeTab==='home' ? renderHome() : state.activeTab==='planner' ? renderPlanner() : state.activeTab==='timer' ? renderTimer() : state.activeTab==='flashcards' ? renderFlashcards() : state.activeTab==='library' ? renderLibrary() : state.activeTab==='stats' ? renderStats() : renderProfile();
             if(state.selectedArticleId) content = renderArticleView();
 
-            const uiDateString = new Date().toLocaleDateString('si-LK', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+            const uiDateString = new Date().toLocaleDateString(state.language === 'en' ? 'en-US' : 'si-LK', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
             root.innerHTML = `
             <div class="min-h-screen md:pl-24 lg:pl-72 pb-24 md:pb-0 flex flex-col print-content">
                 ${renderSidebar()}
                 <div class="fixed top-0 right-0 p-4 md:p-6 z-40 flex items-center space-x-3 md:space-x-4 print-hidden">
-                    <button onclick="window.toggleLang()" class="px-3 py-1 font-black text-xs uppercase glass-nav rounded-xl border border-slate-300 dark:border-slate-600 shadow-sm">${state.language === 'si' ? 'EN' : 'SI'}</button>
-                    <button onclick="window.toggleTheme()" class="w-10 h-10 glass-nav rounded-full flex items-center justify-center shadow-sm border border-slate-300 dark:border-slate-600"><span class="text-xl">${state.user.theme === 'dark' ? '☀️' : '🌙'}</span></button>
-                    <div class="glass-nav px-4 py-2 rounded-2xl flex items-center space-x-4 shadow-sm border border-slate-300 dark:border-slate-600 cursor-pointer" onclick="window.switchTab('profile')">
+                    <div class="glass-nav p-1 rounded-xl flex items-center space-x-1 shadow-sm border border-slate-300 dark:border-slate-600">
+                        <button onclick="window.setLang('si')" aria-label="Switch to Sinhala" class="px-3 py-1 text-xs font-black rounded-lg transition-colors ${state.language === 'si' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700'}">SI</button>
+                        <button onclick="window.setLang('en')" aria-label="Switch to English" class="px-3 py-1 text-xs font-black rounded-lg transition-colors ${state.language === 'en' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700'}">EN</button>
+                    </div>
+                    <button onclick="window.toggleTheme()" aria-label="Toggle Theme" class="w-10 h-10 glass-nav rounded-full flex items-center justify-center shadow-sm border border-slate-300 dark:border-slate-600 transition-transform hover:scale-105"><span class="text-xl">${state.user.theme === 'dark' ? '☀️' : '🌙'}</span></button>
+                    <div class="glass-nav px-4 py-2 rounded-2xl flex items-center space-x-4 shadow-sm border border-slate-300 dark:border-slate-600 cursor-pointer hover:scale-105 transition-transform" onclick="window.switchTab('profile')" aria-label="View Profile">
                         <div class="flex items-center space-x-2"><span class="text-xl">👤</span></div>
                         <div class="h-6 w-px bg-slate-300 dark:bg-slate-600"></div>
                         <div class="flex flex-col items-center w-28">
                             <span class="text-[9px] font-bold text-indigo-500 uppercase truncate w-full text-center tracking-wider">${getLevelName(state.user.level)} - LVL ${state.user.level}</span>
-                            <div class="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full mt-1 overflow-hidden"><div class="h-full bg-yellow-400" style="width:${state.user.level >= 100 ? 100 : (state.user.xp / (state.user.level * 100)) * 100}%"></div></div>
+                            <div class="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full mt-1 overflow-hidden"><div class="h-full bg-yellow-400 transition-all duration-1000" style="width:${state.user.level >= 100 ? 100 : (state.user.xp / (state.user.level * 100)) * 100}%"></div></div>
                         </div>
                     </div>
                 </div>
                 <main class="flex-1 max-w-7xl mx-auto w-full p-6 mt-16 md:mt-0 md:p-10 lg:p-12 animate-slide-up print-content">${content.replace('__DATE_PLACEHOLDER__', uiDateString)}</main>
             </div>`;
 
-            inputIds.forEach(id => {
-                const el = document.getElementById(id);
-                if (el && activeStates[id] !== undefined) {
-                    if (el.type === 'checkbox') el.checked = activeStates[id];
-                    else el.value = activeStates[id];
-                }
-            });
+            inputIds.forEach(id => { const el = document.getElementById(id); if (el && activeStates[id] !== undefined) { if (el.type === 'checkbox') el.checked = activeStates[id]; else activeStates[id] = el.value; } });
 
             if (activeId) {
                 const focusEl = document.getElementById(activeId);
                 if (focusEl) {
                     focusEl.focus();
-                    if (focusEl.setSelectionRange) {
-                        try { 
-                            const supportedTypes = ['text', 'search', 'url', 'tel', 'password'];
-                            if (supportedTypes.includes(focusEl.type)) {
-                                focusEl.setSelectionRange(cursorStart, cursorEnd); 
-                            }
-                        } catch(err){}
-                    }
+                    if (focusEl.setSelectionRange) { try { const supportedTypes = ['text', 'search', 'url', 'tel', 'password']; if (supportedTypes.includes(focusEl.type)) { focusEl.setSelectionRange(cursorStart, cursorEnd); } } catch(err){} }
                 }
             }
 
@@ -1318,13 +1043,13 @@
 
         function renderWelcome() { 
             const isLogin = window.authMode === 'login';
-            return `<div class="min-h-screen flex items-center justify-center p-6"><div class="max-w-md w-full glass-panel rounded-[3rem] p-10 text-center animate-slide-up"><div class="w-24 h-24 bg-gradient-to-tr from-indigo-500 to-purple-500 rounded-[2rem] flex items-center justify-center mx-auto mb-6 shadow-xl text-5xl">☁️</div><h1 class="text-4xl font-black mb-2">Mindset<span class="text-indigo-600 dark:text-indigo-400">OS</span></h1><p class="text-slate-500 font-bold mb-8">${isLogin ? t('login') : t('register')}</p><div class="space-y-4 mb-8 text-left mt-8">${!isLogin ? `<input type="text" id="init-name" placeholder="ඔබේ නම" class="w-full p-4 glass-btn rounded-2xl outline-none font-bold text-base focus:border-indigo-500 transition-colors"/>` : ''}<input type="email" id="init-email" placeholder="Email" class="w-full p-4 glass-btn rounded-2xl outline-none font-bold text-base focus:border-indigo-500 transition-colors"/><input type="password" id="init-password" placeholder="Password" class="w-full p-4 glass-btn rounded-2xl outline-none font-bold text-base focus:border-indigo-500 transition-colors"/></div><button onclick="${isLogin ? 'window.handleLogin()' : 'window.handleRegister()'}" class="w-full bg-indigo-600 text-white hover:bg-indigo-500 font-black py-4 rounded-2xl shadow-lg mb-4">${isLogin ? t('login') : 'ආරම්භ කරන්න'}</button><button onclick="window.switchAuthMode()" class="text-sm font-bold text-indigo-600 hover:underline mb-2">${isLogin ? t('no_account') + ' ' + t('register') : t('have_account') + ' ' + t('login')}</button>${isLogin ? `<br><button onclick="window.handleForgotPassword()" class="text-sm font-bold text-slate-500 hover:underline mt-4">${t('forgot_password')}</button>` : ''}</div></div>`; 
+            return `<div class="min-h-screen flex items-center justify-center p-6"><div class="max-w-md w-full glass-panel rounded-[3rem] p-10 text-center animate-slide-up"><div class="w-24 h-24 bg-gradient-to-tr from-indigo-500 to-purple-500 rounded-[2rem] flex items-center justify-center mx-auto mb-6 shadow-xl text-5xl">☁️</div><h1 class="text-4xl font-black mb-8">Mindset<span class="text-indigo-600 dark:text-indigo-400">OS</span></h1><div class="space-y-4 mb-8 text-left mt-8">${!isLogin ? `<input type="text" id="init-name" placeholder="Your Name" aria-label="Your Name" class="w-full p-4 glass-btn rounded-2xl outline-none font-bold text-base focus:border-indigo-500 transition-colors"/>` : ''}<input type="email" id="init-email" placeholder="Email Address" aria-label="Email Address" class="w-full p-4 glass-btn rounded-2xl outline-none font-bold text-base focus:border-indigo-500 transition-colors"/><div class="relative w-full"><input type="password" id="init-password" placeholder="Password" aria-label="Password" class="w-full p-4 pr-12 glass-btn rounded-2xl outline-none font-bold text-base focus:border-indigo-500 transition-colors"/><button type="button" id="pwd-toggle-btn" onclick="window.togglePassword()" class="absolute right-4 top-1/2 transform -translate-y-1/2 text-xl opacity-70 hover:opacity-100 focus:outline-none transition-opacity" aria-label="Toggle Password Visibility">👁️</button></div></div><button onclick="${isLogin ? 'window.handleLogin()' : 'window.handleRegister()'}" class="w-full bg-indigo-600 text-white hover:bg-indigo-500 font-black py-4 rounded-2xl shadow-lg mb-4">${isLogin ? 'Login' : 'Create Account'}</button><button onclick="window.switchAuthMode()" class="text-sm font-bold text-indigo-600 hover:underline mb-2">${isLogin ? 'Don\'t have an account? Register' : 'Already have an account? Login'}</button>${isLogin ? `<br><button onclick="window.handleForgotPassword()" class="text-sm font-bold text-slate-500 hover:underline mt-4">Forgot Password?</button>` : ''}</div></div>`; 
         }
         
         function renderSidebar() {
             const tabs = [{ id:'home', icon:'📊', l:t('home') }, { id:'planner', icon:'✅', l:t('planner') }, { id:'timer', icon:'⏱️', l:t('deep_work') }, { id:'flashcards', icon:'🗂️', l:t('flashcards') }, { id:'library', icon:'📖', l:t('library') }, { id:'stats', icon:'📈', l:t('stats') }, { id:'profile', icon:'⚙️', l:t('profile') }];
-            const installBtnHTML = pwaPrompt ? `<button onclick="window.installApp()" class="flex flex-col lg:flex-row items-center lg:space-x-4 p-2 lg:p-4 rounded-2xl transition-all w-full group relative text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 mt-auto"><div class="relative"><span class="text-xl">⬇️</span></div><span class="text-[10px] lg:text-[15px] font-bold mt-1 lg:mt-0 hidden sm:block">Install App</span></button>` : '';
-            return `<nav class="fixed bottom-0 left-0 w-full md:top-0 md:w-24 lg:w-72 md:h-full glass-nav z-50 flex md:flex-col p-3 md:p-6 lg:p-8 justify-around md:justify-start space-y-0 md:space-y-2 shadow-lg print-hidden"><div class="hidden md:flex items-center space-x-4 mb-8 cursor-pointer" onclick="window.switchTab('home')"><div class="bg-indigo-600 p-3 rounded-2xl text-2xl shadow-lg">🧠</div><div class="hidden lg:block"><h1 class="font-black text-2xl tracking-tighter text-slate-900 dark:text-white">Mindset<span class="text-indigo-600">OS</span></h1></div></div>${tabs.map(tab => `<button onclick="window.switchTab('${tab.id}')" class="flex flex-col lg:flex-row items-center lg:space-x-4 p-2 lg:p-4 rounded-2xl transition-all w-full group relative ${state.activeTab === tab.id && !state.selectedArticleId ? 'bg-indigo-600/90 text-white shadow-xl' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-200/50 dark:hover:bg-slate-800/50'}"><div class="relative"><span class="text-xl ${state.activeTab===tab.id?'scale-125 inline-block transition-transform':''}">${tab.icon}</span></div><span class="text-[10px] lg:text-[15px] font-bold mt-1 lg:mt-0 ${state.activeTab===tab.id && !state.selectedArticleId?'text-white':''} hidden sm:block">${tab.l}</span></button>`).join('')}${installBtnHTML}</nav>`;
+            const installBtnHTML = pwaPrompt ? `<button onclick="window.installApp()" aria-label="Install App" class="flex flex-col lg:flex-row items-center lg:space-x-4 p-2 lg:p-4 rounded-2xl transition-all w-full group relative text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 mt-auto"><div class="relative"><span class="text-xl">⬇️</span></div><span class="text-[10px] lg:text-[15px] font-bold mt-1 lg:mt-0 hidden sm:block">${t('install_app')}</span></button>` : '';
+            return `<nav class="fixed bottom-0 left-0 w-full md:top-0 md:w-24 lg:w-72 md:h-full glass-nav z-50 flex md:flex-col p-3 md:p-6 lg:p-8 justify-around md:justify-start space-y-0 md:space-y-2 shadow-lg print-hidden"><div class="hidden md:flex items-center space-x-4 mb-8 cursor-pointer" onclick="window.switchTab('home')" aria-label="Home"><div class="bg-indigo-600 p-3 rounded-2xl text-2xl shadow-lg">🧠</div><div class="hidden lg:block"><h1 class="font-black text-2xl tracking-tighter text-slate-900 dark:text-white">Mindset<span class="text-indigo-600">OS</span></h1></div></div>${tabs.map(tab => `<button onclick="window.switchTab('${tab.id}')" aria-label="${tab.l}" class="flex flex-col lg:flex-row items-center lg:space-x-4 p-2 lg:p-4 rounded-2xl transition-all w-full group relative ${state.activeTab === tab.id && !state.selectedArticleId ? 'bg-indigo-600/90 text-white shadow-xl' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-200/50 dark:hover:bg-slate-800/50'}"><div class="relative"><span class="text-xl inline-block transition-transform hover:scale-110 ${state.activeTab===tab.id?'scale-125':''}">${tab.icon}</span></div><span class="text-[10px] lg:text-[15px] font-bold mt-1 lg:mt-0 ${state.activeTab===tab.id && !state.selectedArticleId?'text-white':''} hidden sm:block">${tab.l}</span></button>`).join('')}${installBtnHTML}</nav>`;
         }
 
         function renderHome() {
@@ -1332,6 +1057,7 @@
             const hour = new Date().getHours();
             let greeting = t('greeting_m'); if (hour >= 12 && hour < 18) greeting = t('greeting_a'); else if (hour >= 18) greeting = t('greeting_e');
             const pendingTasks = state.habits.filter(h => !h.completed).slice(0, 3);
+            const userName = state.user.name || "User";
 
             let targetHTML = '';
             if(state.user.targetDate) {
@@ -1341,17 +1067,17 @@
                     const todayD = new Date(); todayD.setHours(0,0,0,0);
                     const diffTime = tDate - todayD;
                     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                    if(diffDays > 0) targetHTML = `<div class="glass-panel p-4 rounded-2xl shadow-sm border-l-4 border-indigo-500 font-bold mb-4">⏳ ඔබේ ඉලක්කයට තවත් දින ${diffDays} යි!</div>`;
-                    else if (diffDays === 0) targetHTML = `<div class="glass-panel p-4 rounded-2xl shadow-sm border-l-4 border-rose-500 font-bold mb-4">🎯 අදයි ඔබේ ඉලක්කගත දිනය! උපරිමයෙන් කරන්න!</div>`;
-                    else targetHTML = `<div class="glass-panel p-4 rounded-2xl shadow-sm border-l-4 border-slate-500 font-bold mb-4 opacity-70">✅ ඉලක්කගත දිනය පසු වී ඇත (දින ${Math.abs(diffDays)} කට පෙර).</div>`;
+                    if(diffDays > 0) targetHTML = `<div class="glass-panel p-4 rounded-2xl shadow-sm border-l-4 border-indigo-500 font-bold mb-4">${t('target_rem')} ${diffDays}!</div>`;
+                    else if (diffDays === 0) targetHTML = `<div class="glass-panel p-4 rounded-2xl shadow-sm border-l-4 border-rose-500 font-bold mb-4">${t('target_today')}</div>`;
+                    else targetHTML = `<div class="glass-panel p-4 rounded-2xl shadow-sm border-l-4 border-slate-500 font-bold mb-4 opacity-70">${t('target_passed')} (${Math.abs(diffDays)}).</div>`;
                 }
             }
 
             let articleNotif = '';
             if (articles.length > 0 && state.lastSeenArticleId !== articles[0].id) {
                 articleNotif = `<div class="glass-panel p-4 rounded-2xl shadow-sm border-l-4 border-yellow-500 flex justify-between items-center mb-4">
-                    <span class="font-bold text-sm">📰 නව ලිපියක් පලවිය: <strong>${articles[0].title}</strong></span>
-                    <button onclick="window.viewArticle('${articles[0].id}')" class="text-xs font-black bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-300 px-3 py-2 rounded-lg hover:scale-105 transition-transform shadow-sm">කියවන්න</button>
+                    <span class="font-bold text-sm">${t('article_new')} <strong>${articles[0].title}</strong></span>
+                    <button onclick="window.viewArticle('${articles[0].id}')" class="text-xs font-black bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-300 px-3 py-2 rounded-lg hover:scale-105 transition-transform shadow-sm">${t('article_read')}</button>
                 </div>`;
             }
 
@@ -1360,35 +1086,35 @@
             const dueReviews = (state.pendingReviews || []).filter(pr => pr.reviewTimestamp <= nowTime);
             dueReviews.forEach(pr => {
                 reviewNotifs += `<div class="glass-panel p-4 rounded-2xl shadow-sm border-l-4 border-purple-500 flex flex-col md:flex-row justify-between md:items-center gap-3 mb-4">
-                    <span class="font-bold text-sm">🔔 මතක් කිරීම: <strong>${pr.text}</strong> අද නැවත අධ්‍යයනය (Review) කරන්න!</span>
-                    <button onclick="window.dismissReview(${pr.id})" class="text-xs font-black bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300 px-3 py-2 rounded-lg hover:scale-105 transition-transform shadow-sm w-fit">මතක් කිරීම අවසන්</button>
+                    <span class="font-bold text-sm">${t('remind_title')} <strong>${pr.text}</strong> ${t('remind_desc')}</span>
+                    <button onclick="window.dismissReview(${pr.id})" aria-label="Dismiss Reminder" class="text-xs font-black bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300 px-3 py-2 rounded-lg hover:scale-105 transition-transform shadow-sm w-fit">${t('remind_dismiss')}</button>
                 </div>`;
             });
 
             let holidayBanner = '';
             if (typeof todayHolidayMessage !== 'undefined' && todayHolidayMessage) {
-                holidayBanner = `<div class="glass-panel p-4 rounded-2xl shadow-sm border-l-4 border-pink-500 flex items-center space-x-3 mb-4 animate-fade-in bg-gradient-to-r from-pink-50 to-transparent dark:from-pink-900/20 dark:to-transparent"><span class="text-2xl animate-pulse drop-shadow-md">✨</span><span class="font-bold text-sm text-pink-700 dark:text-pink-300">අද ${escapeHTML(todayHolidayMessage)} යි! ඔබට සුබ දවසක් වේවා!</span></div>`;
+                holidayBanner = `<div class="glass-panel p-4 rounded-2xl shadow-sm border-l-4 border-pink-500 flex items-center space-x-3 mb-4 animate-fade-in bg-gradient-to-r from-pink-50 to-transparent dark:from-pink-900/20 dark:to-transparent"><span class="text-2xl drop-shadow-md">✨</span><span class="font-bold text-sm text-pink-700 dark:text-pink-300">${t('holiday_msg_1')} ${escapeHTML(todayHolidayMessage)}${t('holiday_msg_2')}</span></div>`;
             }
 
             return `<div class="space-y-8 animate-fade-in pb-10">
                 <header class="flex flex-col md:flex-row md:items-end justify-between space-y-4 md:space-y-0">
                     <div>
                         <p class="text-indigo-600 dark:text-indigo-400 font-bold tracking-widest uppercase text-sm mb-2 drop-shadow-sm">__DATE_PLACEHOLDER__</p>
-                        <h2 class="text-4xl md:text-5xl font-black tracking-tight drop-shadow-sm">${greeting}, ${escapeHTML(state.user.name)}! ✨</h2>
+                        <h2 class="text-4xl md:text-5xl font-black tracking-tight drop-shadow-sm">${greeting}, ${escapeHTML(userName)}! <span class="inline-block">✨</span></h2>
                     </div>
                 </header>
                 
                 <div class="mb-6">${holidayBanner}${targetHTML}${articleNotif}${reviewNotifs}</div>
 
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <button onclick="window.switchTab('timer')" class="glass-panel p-4 rounded-2xl shadow-sm flex items-center justify-center space-x-3 hover:bg-indigo-50/50 dark:hover:bg-indigo-900/50 transition-colors group"><span class="text-xl group-hover:scale-110 transition-transform drop-shadow">▶️</span><span class="font-bold text-sm">${t('deep_work')}</span></button>
-                    <button onclick="window.switchTab('planner')" class="glass-panel p-4 rounded-2xl shadow-sm flex items-center justify-center space-x-3 hover:bg-indigo-50/50 transition-colors group"><span class="text-xl group-hover:scale-110 transition-transform drop-shadow">➕</span><span class="font-bold text-sm">${t('new_task')}</span></button>
-                    <button onclick="window.switchTab('flashcards')" class="glass-panel p-4 rounded-2xl shadow-sm flex items-center justify-center space-x-3 hover:bg-indigo-50/50 transition-colors group"><span class="text-xl group-hover:scale-110 transition-transform drop-shadow">🗂️</span><span class="font-bold text-sm">${t('flashcards')}</span></button>
-                    <button onclick="window.shareToWhatsApp()" class="glass-panel p-4 rounded-2xl shadow-sm flex items-center justify-center space-x-3 hover:bg-[#25D366]/10 transition-colors group"><span class="text-xl group-hover:scale-110 transition-transform text-[#25D366]">🔗</span><span class="font-bold text-sm text-[#25D366]">Share</span></button>
+                    <button onclick="window.switchTab('timer')" aria-label="Deep Work Timer" class="glass-panel p-4 rounded-2xl shadow-sm flex items-center justify-center space-x-3 hover:bg-indigo-50/50 dark:hover:bg-indigo-900/50 transition-colors group"><span class="text-xl group-hover:scale-110 transition-transform drop-shadow">▶️</span><span class="font-bold text-sm">${t('deep_work')}</span></button>
+                    <button onclick="window.switchTab('planner')" aria-label="New Task" class="glass-panel p-4 rounded-2xl shadow-sm flex items-center justify-center space-x-3 hover:bg-indigo-50/50 transition-colors group"><span class="text-xl group-hover:scale-110 transition-transform drop-shadow">➕</span><span class="font-bold text-sm">${t('new_task')}</span></button>
+                    <button onclick="window.switchTab('flashcards')" aria-label="Flashcards" class="glass-panel p-4 rounded-2xl shadow-sm flex items-center justify-center space-x-3 hover:bg-indigo-50/50 transition-colors group"><span class="text-xl group-hover:scale-110 transition-transform drop-shadow">🗂️</span><span class="font-bold text-sm">${t('flashcards')}</span></button>
+                    <button onclick="window.shareToWhatsApp()" aria-label="Share via WhatsApp" class="glass-panel p-4 rounded-2xl shadow-sm flex items-center justify-center space-x-3 hover:bg-[#25D366]/10 transition-colors group"><span class="text-xl group-hover:scale-110 transition-transform text-[#25D366]">🔗</span><span class="font-bold text-sm text-[#25D366]">Share</span></button>
                 </div>
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     <div class="space-y-8"><div class="glass-panel rounded-[3rem] p-10 shadow-sm relative overflow-hidden"><div class="absolute top-0 right-0 p-8 opacity-10 text-9xl">🎯</div><h4 class="font-black text-slate-500 dark:text-slate-400 uppercase text-xs tracking-widest mb-6 relative z-10">${t('daily_progress')}</h4><div class="flex items-baseline relative z-10 drop-shadow-md"><span class="text-7xl font-black">${score}</span><span class="text-3xl font-black text-slate-400">%</span></div><div class="w-full bg-slate-200/50 dark:bg-slate-800/50 h-6 rounded-full overflow-hidden p-1 mt-8 relative z-10"><div class="bg-gradient-to-r from-indigo-500 to-purple-500 h-full rounded-full transition-all duration-1000 shadow-[0_0_15px_rgba(99,102,241,0.5)]" style="width:${score}%"></div></div></div></div>
-                    <div class="lg:col-span-2 space-y-8"><div class="glass-panel rounded-[3rem] p-8 md:p-10 shadow-sm"><div class="flex justify-between items-center mb-6"><h4 class="font-black text-lg flex items-center space-x-3 drop-shadow-sm"><span class="text-2xl">🕒</span><span>${t('up_next')}</span></h4><button onclick="window.switchTab('planner')" class="text-sm font-bold text-indigo-600 dark:text-indigo-400 hover:underline">${t('view_all')}</button></div><div class="space-y-3">${pendingTasks.length === 0 ? `<div class="text-center py-8 text-slate-500 font-bold">${t('all_done')}</div>` : pendingTasks.map(h => `<div class="flex items-center justify-between p-4 glass-btn rounded-2xl cursor-pointer" onclick="window.toggleHabit(${h.id})"><div class="flex items-center space-x-4"><div class="w-8 h-8 rounded-lg border-2 border-slate-300 dark:border-slate-500"></div><div><p class="font-bold drop-shadow-sm">${h.text}</p></div></div><button onclick="event.stopPropagation(); window.switchTab('timer')" class="text-xl">▶️</button></div>`).join('')}</div></div></div>
+                    <div class="lg:col-span-2 space-y-8"><div class="glass-panel rounded-[3rem] p-8 md:p-10 shadow-sm"><div class="flex justify-between items-center mb-6"><h4 class="font-black text-lg flex items-center space-x-3 drop-shadow-sm"><span class="text-2xl">🕒</span><span>${t('up_next')}</span></h4><button onclick="window.switchTab('planner')" class="text-sm font-bold text-indigo-600 dark:text-indigo-400 hover:underline">${t('view_all')}</button></div><div class="space-y-3">${pendingTasks.length === 0 ? `<div class="text-center py-8 text-slate-500 font-bold">${t('all_done')}</div>` : pendingTasks.map(h => `<div class="flex items-center justify-between p-4 glass-btn rounded-2xl cursor-pointer hover:scale-[1.01] transition-transform" onclick="window.toggleHabit(${h.id})" role="button" aria-label="Toggle Habit"><div class="flex items-center space-x-4"><div class="w-8 h-8 rounded-lg border-2 border-slate-300 dark:border-slate-500 flex items-center justify-center">${h.completed ? '✓' : ''}</div><div><p class="font-bold drop-shadow-sm">${h.text}</p></div></div><button onclick="event.stopPropagation(); window.switchTab('timer')" aria-label="Start Timer" class="text-xl hover:scale-110 transition-transform">▶️</button></div>`).join('')}</div></div></div>
                 </div>
             </div>`;
         }
@@ -1421,15 +1147,15 @@
                 
                 <div class="glass-panel p-6 rounded-[2rem] shadow-sm space-y-4">
                     <div class="flex flex-col md:flex-row gap-3">
-                        <input type="text" id="habit-text" onkeydown="if(event.key==='Enter')window.addHabit()" placeholder="${t('add_task')}" class="flex-1 px-4 py-3 glass-btn rounded-xl outline-none font-bold"/>
-                        <input type="time" id="habit-time" class="px-4 py-3 glass-btn rounded-xl outline-none font-bold text-slate-600 dark:text-slate-300"/>
-                        <select id="habit-priority" class="px-4 py-3 glass-btn rounded-xl font-bold">${Object.keys(priorities).map(k => `<option value="${k}">${priorities[k].name}</option>`).join('')}</select>
-                        <select id="habit-cat" class="px-4 py-3 glass-btn rounded-xl font-bold">${Object.keys(state.categories).map(k => `<option value="${k}">${state.categories[k].name}</option>`).join('')}</select>
+                        <input type="text" id="habit-text" aria-label="Task Description" onkeydown="if(event.key==='Enter')window.addHabit()" placeholder="${t('add_task')}" class="flex-1 px-4 py-3 glass-btn rounded-xl outline-none font-bold"/>
+                        <input type="time" id="habit-time" aria-label="Task Time" class="px-4 py-3 glass-btn rounded-xl outline-none font-bold text-slate-600 dark:text-slate-300"/>
+                        <select id="habit-priority" aria-label="Task Priority" class="px-4 py-3 glass-btn rounded-xl font-bold">${Object.keys(priorities).map(k => `<option value="${k}">${priorities[k].name}</option>`).join('')}</select>
+                        <select id="habit-cat" aria-label="Task Category" class="px-4 py-3 glass-btn rounded-xl font-bold">${Object.keys(state.categories).map(k => `<option value="${k}">${state.categories[k].name}</option>`).join('')}</select>
                     </div>
                     <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                         <label class="flex items-center space-x-2 cursor-pointer font-bold text-sm text-slate-600 dark:text-slate-400">
-                            <input type="checkbox" id="habit-review" class="w-5 h-5 rounded text-indigo-600 accent-indigo-600"/>
-                            <span>දින 3කින් නැවත මතක් කරන්න (Review in 3 days)</span>
+                            <input type="checkbox" id="habit-review" aria-label="Review Reminder" class="w-5 h-5 rounded text-indigo-600 accent-indigo-600"/>
+                            <span>${t('review_chk')}</span>
                         </label>
                         <button onclick="window.addHabit()" class="bg-indigo-600 text-white px-8 py-3 rounded-xl font-black shadow-lg hover:bg-indigo-500 w-full md:w-auto">${t('add_btn')}</button>
                     </div>
@@ -1441,48 +1167,48 @@
                         const pri = priorities[h.priority] || priorities['Q3'];
                         return `<div class="flex items-center justify-between p-5 glass-panel rounded-[1.5rem] card-hover ${h.completed ? 'opacity-50' : ''}">
                         <div class="flex items-center space-x-4">
-                            <button onclick="window.toggleHabit(${h.id})" class="w-12 h-12 rounded-xl border-2 flex items-center justify-center text-xl font-black shrink-0 ${h.completed?'bg-indigo-600 border-indigo-600 text-white':'border-slate-400'}">${h.completed?'✓':''}</button>
+                            <button onclick="window.toggleHabit(${h.id})" aria-label="Toggle Habit Completion" class="w-12 h-12 rounded-xl border-2 flex items-center justify-center text-xl font-black shrink-0 transition-colors ${h.completed?'bg-indigo-600 border-indigo-600 text-white':'border-slate-400 hover:bg-slate-100'}">${h.completed?'✓':''}</button>
                             <div>
                                 <p class="font-black text-xl break-words w-full ${h.completed?'line-through':''}">${h.text}</p>
                                 <div class="flex flex-wrap gap-2 mt-2">
                                     ${h.time ? `<span class="bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-300 text-[10px] font-bold px-2 py-1 rounded-md shadow-sm">⏰ ${h.time}</span>` : ''}
-                                    <span class="${cat.color} text-[10px] font-bold px-2 py-1 rounded-md shadow-sm border border-current opacity-80">${cat.name.split('/')[0].trim()}</span>
-                                    <span class="${pri.class} text-[10px] font-bold px-2 py-1 rounded-md shadow-sm border border-current opacity-80">${pri.name}</span>
+                                    <span class="${escapeHTML(cat.color)} text-[10px] font-bold px-2 py-1 rounded-md shadow-sm border border-current opacity-80">${escapeHTML(cat.name.split('/')[0].trim())}</span>
+                                    <span class="${escapeHTML(pri.class)} text-[10px] font-bold px-2 py-1 rounded-md shadow-sm border border-current opacity-80">${escapeHTML(pri.name)}</span>
                                     ${h.needsReview ? `<span class="bg-purple-100 text-purple-600 dark:bg-purple-900/50 dark:text-purple-300 text-[10px] font-bold px-2 py-1 rounded-md shadow-sm">🔄 Review</span>` : ''}
                                 </div>
                             </div>
                         </div>
-                        <button onclick="window.deleteHabit(${h.id})" class="p-3 text-slate-400 hover:text-red-500 text-xl shrink-0">🗑️</button>
+                        <button onclick="window.deleteHabit(${h.id})" aria-label="Delete Task" class="p-3 text-slate-400 hover:text-red-500 text-xl shrink-0 transition-transform hover:scale-110">🗑️</button>
                     </div>`}).join('')}
                 </div>
 
-                <div class="glass-panel p-8 rounded-[2.5rem] shadow-sm space-y-6"><div><h3 class="text-2xl font-black mb-2 drop-shadow-sm">${t('journal')}</h3></div><div class="flex space-x-4 mb-4">${Object.keys(moodEmojis).map(m => `<button onclick="window.setMood('${m}')" class="text-4xl hover:scale-125 transition-transform ${state.moods[today]===m?'scale-125 glass-btn rounded-full':''} drop-shadow">${moodEmojis[m]}</button>`).join('')}</div><textarea id="journal-text" oninput="state.reflections['${today}'] = this.value; window.saveData();" placeholder="${t('journal_ph')}" class="w-full glass-btn p-6 rounded-2xl outline-none font-medium text-lg h-32 resize-none focus:border-indigo-400 shadow-inner">${escapeHTML(state.reflections[today]||'')}</textarea><button onclick="window.saveJournal()" class="w-full py-4 bg-indigo-600 text-white font-black rounded-xl shadow-lg hover:bg-indigo-500">${t('save_journal')}</button></div>${historyHTML}
+                <div class="glass-panel p-8 rounded-[2.5rem] shadow-sm space-y-6"><div><h3 class="text-2xl font-black mb-2 drop-shadow-sm">${t('journal')}</h3></div><div class="flex space-x-4 mb-4">${Object.keys(moodEmojis).map(m => `<button onclick="window.setMood('${m}')" aria-label="Set mood to ${m}" class="text-4xl hover:scale-125 transition-transform ${state.moods[today]===m?'scale-125 glass-btn rounded-full':''} drop-shadow">${moodEmojis[m]}</button>`).join('')}</div><textarea id="journal-text" aria-label="Journal Text" oninput="window.updateJournalTextSilent(this.value)" placeholder="${t('journal_ph')}" class="w-full glass-btn p-6 rounded-2xl outline-none font-medium text-lg h-32 resize-none focus:border-indigo-400 shadow-inner">${escapeHTML(state.reflections[today]||'')}</textarea><button onclick="window.saveJournal()" class="w-full py-4 bg-indigo-600 text-white font-black rounded-xl shadow-lg hover:bg-indigo-500">${t('save_journal')}</button></div>${historyHTML}
             </div>`;
         }
 
         function renderTimer() {
             let controlButtons = '';
             if (timerState.phase === 'focus-ended') {
-                controlButtons = `<div class="flex justify-center space-x-4 mt-8 animate-fade-in"><button onclick="window.startBreakManual()" class="px-8 py-4 bg-emerald-500 text-white rounded-2xl font-black shadow-lg text-lg hover:bg-emerald-400">${t('start_break').replace('5m', (state.timerSettings?.break || 5) + 'm')}</button><button onclick="window.skipBreakManual()" class="px-8 py-4 glass-btn rounded-2xl font-black text-slate-500 dark:text-slate-300 transition-colors">${t('skip_break')}</button></div>`;
+                controlButtons = `<div class="flex justify-center space-x-4 mt-8 animate-fade-in"><button onclick="window.startBreakManual()" class="px-8 py-4 bg-emerald-500 text-white rounded-2xl font-black shadow-lg text-lg hover:bg-emerald-400">${t('start_break').replace('5m', escapeHTML(state.timerSettings?.break || 5) + 'm')}</button><button onclick="window.skipBreakManual()" class="px-8 py-4 glass-btn rounded-2xl font-black text-slate-500 dark:text-slate-300 transition-colors">${t('skip_break')}</button></div>`;
             } else {
                 let icon = (timerState.phase === 'running' || timerState.phase === 'break-running') ? '⏸️' : '▶️';
-                controlButtons = `<div class="flex justify-center space-x-6 mt-8"><button onclick="window.toggleTimer()" class="w-20 h-20 rounded-full flex items-center justify-center text-white text-3xl shadow-xl transition-transform hover:scale-105 ${(timerState.phase==='running'||timerState.phase==='break-running')?'bg-rose-500':'bg-indigo-600'}"><span>${icon}</span></button><button onclick="window.resetTimer()" class="w-20 h-20 rounded-full flex items-center justify-center bg-slate-300 text-slate-700 text-3xl shadow-xl transition-transform hover:scale-105" title="${t('reset_timer')}"><span>⏹️</span></button></div>`;
+                controlButtons = `<div class="flex justify-center space-x-6 mt-8"><button onclick="window.toggleTimer()" aria-label="Toggle Timer" class="w-20 h-20 rounded-full flex items-center justify-center text-white text-3xl shadow-xl transition-transform hover:scale-105 ${(timerState.phase==='running'||timerState.phase==='break-running')?'bg-rose-500':'bg-indigo-600'}"><span>${icon}</span></button><button onclick="window.resetTimer()" aria-label="Reset Timer" class="w-20 h-20 rounded-full flex items-center justify-center bg-slate-300 text-slate-700 text-3xl shadow-xl transition-transform hover:scale-105" title="${t('reset_timer')}"><span>⏹️</span></button></div>`;
             }
 
             let settingsUI = '';
             if (timerState.phase === 'idle') {
                 settingsUI = `<div class="flex justify-center space-x-6 mb-8 animate-fade-in">
-                    <div class="flex flex-col items-center"><label class="text-[10px] font-bold text-slate-500 uppercase mb-1">Focus Time (Min)</label><input type="number" value="${state.timerSettings?.focus || 25}" onchange="window.updateTimerSettings('focus', this.value)" class="w-20 px-3 py-2 text-center glass-btn rounded-xl font-black text-lg outline-none focus:border-indigo-500" min="1" max="120"></div>
-                    <div class="flex flex-col items-center"><label class="text-[10px] font-bold text-slate-500 uppercase mb-1">Break Time (Min)</label><input type="number" value="${state.timerSettings?.break || 5}" onchange="window.updateTimerSettings('break', this.value)" class="w-20 px-3 py-2 text-center glass-btn rounded-xl font-black text-lg outline-none focus:border-indigo-500" min="1" max="30"></div>
+                    <div class="flex flex-col items-center"><label for="focus-time-input" class="text-[10px] font-bold text-slate-500 uppercase mb-1">Focus Time (Min)</label><input type="number" id="focus-time-input" value="${escapeHTML(state.timerSettings?.focus || 25)}" onchange="window.updateTimerSettings('focus', this.value)" class="w-20 px-3 py-2 text-center glass-btn rounded-xl font-black text-lg outline-none focus:border-indigo-500" min="1" max="120"></div>
+                    <div class="flex flex-col items-center"><label for="break-time-input" class="text-[10px] font-bold text-slate-500 uppercase mb-1">Break Time (Min)</label><input type="number" id="break-time-input" value="${escapeHTML(state.timerSettings?.break || 5)}" onchange="window.updateTimerSettings('break', this.value)" class="w-20 px-3 py-2 text-center glass-btn rounded-xl font-black text-lg outline-none focus:border-indigo-500" min="1" max="30"></div>
                 </div>`;
             }
 
             return `<div class="max-w-xl mx-auto space-y-10 text-center pb-20"><header><h2 class="text-4xl font-black drop-shadow-md">${t('timer_title')}</h2></header><div class="glass-panel p-12 rounded-[3rem] relative shadow-xl">
                 <div class="flex flex-col items-center justify-center space-y-2 mb-8">
                     <div class="flex space-x-2">
-                        <button onclick="window.toggleFocusSound()" class="px-4 py-2 rounded-lg text-xs font-bold border glass-btn shadow-sm hover:scale-105 transition-transform">SOUND (BETA) ${audioCtxObj ? '🔊' : '🔇'}</button>
+                        <button onclick="window.toggleFocusSound()" class="px-4 py-2 rounded-lg text-xs font-bold border glass-btn shadow-sm hover:scale-105 transition-transform">${t('sound_beta')} ${audioCtxObj ? '🔊' : '🔇'}</button>
                     </div>
-                    <select onchange="window.setSoundType(this.value)" class="bg-transparent text-xs font-bold text-slate-500 dark:text-slate-400 outline-none cursor-pointer">
+                    <select aria-label="Sound Settings" onchange="window.setSoundType(this.value)" class="bg-transparent text-xs font-bold text-slate-500 dark:text-slate-400 outline-none cursor-pointer">
                         <option value="noise" ${state.soundType==='noise'?'selected':''}>White Noise</option>
                         <option value="rain" ${state.soundType==='rain'?'selected':''}>Rain</option>
                         <option value="binaural" ${state.soundType==='binaural'?'selected':''}>Binaural Beats (Alpha)</option>
@@ -1492,13 +1218,13 @@
         }
 
         function renderFlashcards() {
-            return `<div class="max-w-4xl mx-auto space-y-10 pb-20"><header class="text-center"><h2 class="text-4xl font-black drop-shadow-md">${t('flashcards')}</h2></header><div class="glass-panel p-6 rounded-[2rem] flex flex-col md:flex-row gap-4"><input type="text" id="fc-q" placeholder="ප්‍රශ්නය (Question)..." class="flex-1 px-4 py-3 glass-btn rounded-xl outline-none font-bold"/><input type="text" id="fc-a" placeholder="පිළිතුර (Answer)..." class="flex-1 px-4 py-3 glass-btn rounded-xl outline-none font-bold"/><button onclick="window.addFlashcard()" class="bg-indigo-600 text-white px-6 py-3 rounded-xl font-black">${t('add_btn')}</button></div><div class="grid grid-cols-1 md:grid-cols-2 gap-6 perspective">${state.flashcards.length === 0 ? `<div class="col-span-full text-center py-10 text-slate-400 font-bold">ආරම්භ කිරීමට ෆ්ලෑෂ් කාඩ්පතක් එක් කරන්න.</div>` : state.flashcards.map(f => `<div class="relative h-48 w-full group cursor-pointer" onclick="window.flipCardDOM('${f.id}', this)"><div class="absolute inset-0 w-full h-full preserve-3d ${state.flippedCards[f.id] ? 'rotate-y-180' : ''}"><div class="absolute inset-0 backface-hidden glass-panel rounded-[2rem] p-6 flex flex-col justify-center items-center shadow-sm"><span class="text-xs font-bold text-indigo-500 mb-2">ප්‍රශ්නය</span><h3 class="text-xl font-black text-center break-words w-full">${f.q}</h3><button onclick="event.stopPropagation(); window.deleteFlashcard(${f.id})" class="absolute top-4 right-4 text-slate-400 hover:text-red-500 text-lg">🗑️</button></div><div class="absolute inset-0 backface-hidden rotate-y-180 bg-indigo-600/90 text-white rounded-[2rem] p-6 flex flex-col justify-center items-center shadow-md"><span class="text-xs font-bold text-indigo-200 mb-2">පිළිතුර</span><h3 class="text-2xl font-black text-center break-words w-full">${f.a}</h3></div></div></div>`).join('')}</div></div>`;
+            return `<div class="max-w-4xl mx-auto space-y-10 pb-20"><header class="text-center"><h2 class="text-4xl font-black drop-shadow-md">${t('flashcards')}</h2></header><div class="glass-panel p-6 rounded-[2rem] flex flex-col md:flex-row gap-4"><input type="text" id="fc-q" aria-label="Flashcard Question" placeholder="${t('q_ph')}" class="flex-1 px-4 py-3 glass-btn rounded-xl outline-none font-bold"/><input type="text" id="fc-a" aria-label="Flashcard Answer" placeholder="${t('a_ph')}" class="flex-1 px-4 py-3 glass-btn rounded-xl outline-none font-bold"/><button onclick="window.addFlashcard()" class="bg-indigo-600 text-white px-6 py-3 rounded-xl font-black">${t('add_btn')}</button></div><div class="grid grid-cols-1 md:grid-cols-2 gap-6 perspective">${state.flashcards.length === 0 ? `<div class="col-span-full text-center py-10 text-slate-400 font-bold">${t('no_fc')}</div>` : state.flashcards.map(f => `<div class="relative h-48 w-full group cursor-pointer" onclick="window.flipCardDOM('${f.id}', this)" role="button" aria-label="Flip Flashcard"><div class="absolute inset-0 w-full h-full preserve-3d ${state.flippedCards[f.id] ? 'rotate-y-180' : ''}"><div class="absolute inset-0 backface-hidden glass-panel rounded-[2rem] p-6 flex flex-col justify-center items-center shadow-sm"><span class="text-xs font-bold text-indigo-500 mb-2">${t('fc_q')}</span><h3 class="text-xl font-black text-center break-words w-full">${f.q}</h3><button onclick="event.stopPropagation(); window.deleteFlashcard(${f.id})" aria-label="Delete Flashcard" class="absolute top-4 right-4 text-slate-400 hover:text-red-500 text-lg hover:scale-110 transition-transform">🗑️</button></div><div class="absolute inset-0 backface-hidden rotate-y-180 bg-indigo-600/90 text-white rounded-[2rem] p-6 flex flex-col justify-center items-center shadow-md"><span class="text-xs font-bold text-indigo-200 mb-2">${t('fc_a')}</span><h3 class="text-2xl font-black text-center break-words w-full">${f.a}</h3></div></div></div>`).join('')}</div></div>`;
         }
 
         function renderLibrary() {
             return `<div class="space-y-10 pb-20"><header><h2 class="text-4xl font-black mb-2 drop-shadow-md">${t('library')}</h2></header><div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">${articles.map(a => {
                 const isRead = state.readArticles && state.readArticles.includes(a.id);
-                return `<div onclick="window.viewArticle('${a.id}')" class="glass-panel rounded-[2.5rem] p-8 shadow-sm cursor-pointer card-hover"><div><div class="w-16 h-16 glass-btn rounded-2xl flex items-center justify-center mb-6 text-3xl drop-shadow-md">${a.icon}</div><h3 class="text-2xl font-black mb-3 drop-shadow-sm">${a.title}</h3><p class="text-slate-600 dark:text-slate-400 text-sm mb-6 line-clamp-3">${a.excerpt}</p></div><button class="w-full py-3 glass-btn font-bold rounded-xl ${isRead ? 'text-slate-500 dark:text-slate-500' : 'text-indigo-600 dark:text-indigo-400'} shadow-sm">${isRead ? 'කියෙව්වා' : 'කියවන්න (+5 XP)'}</button></div>`;
+                return `<div onclick="window.viewArticle('${a.id}')" class="glass-panel rounded-[2.5rem] p-8 shadow-sm cursor-pointer card-hover" role="button" aria-label="View Article"><div><div class="w-16 h-16 glass-btn rounded-2xl flex items-center justify-center mb-6 text-3xl drop-shadow-md">${a.icon}</div><h3 class="text-2xl font-black mb-3 drop-shadow-sm">${a.title}</h3><p class="text-slate-600 dark:text-slate-400 text-sm mb-6 line-clamp-3">${a.excerpt}</p></div><button class="w-full py-3 glass-btn font-bold rounded-xl ${isRead ? 'text-slate-500 dark:text-slate-500' : 'text-indigo-600 dark:text-indigo-400 hover:scale-105 transition-transform'} shadow-sm">${isRead ? t('read_done') : t('read_btn')}</button></div>`;
             }).join('')}</div></div>`;
         }
 
@@ -1509,67 +1235,112 @@
         }
 
         function renderStats() {
-            return `<div class="space-y-10 pb-20"><header class="text-center"><h2 class="text-4xl font-black drop-shadow-md">${t('stats')}</h2></header><div class="grid grid-cols-1 md:grid-cols-2 gap-6"><div class="glass-panel p-8 rounded-[2rem] text-center shadow-sm"><h4 class="text-5xl font-black mb-2 drop-shadow-md">${Math.floor((state.stats.totalFocusMinutes || 0)/60)}<span class="text-2xl text-slate-500">h</span> ${((state.stats.totalFocusMinutes || 0)%60)}<span class="text-2xl text-slate-500">m</span></h4><p class="font-bold uppercase tracking-widest text-xs text-slate-500">${t('total_focus')}</p></div><div class="glass-panel p-8 rounded-[2rem] text-center shadow-sm"><h4 class="text-5xl font-black mb-2 drop-shadow-md text-orange-500">${state.streak.count}</h4><p class="font-bold uppercase tracking-widest text-xs text-slate-500">Current Streak (Days)</p></div></div><div class="grid grid-cols-1 lg:grid-cols-2 gap-8"><div class="glass-panel p-8 rounded-[3rem] shadow-sm"><h4 class="font-black mb-6 text-center text-slate-600 dark:text-slate-300 drop-shadow-sm">${t('progress_chart')}</h4><div class="chart-container"><canvas id="progressChart"></canvas></div></div><div class="glass-panel p-8 rounded-[3rem] shadow-sm"><h4 class="font-black mb-6 text-center text-slate-600 dark:text-slate-300 drop-shadow-sm">${t('focus_chart')}</h4><div class="chart-container"><canvas id="focusChart"></canvas></div></div>
+            return `<div class="space-y-10 pb-20"><header class="text-center"><h2 class="text-4xl font-black drop-shadow-md">${t('stats')}</h2></header><div class="grid grid-cols-1 md:grid-cols-2 gap-6"><div class="glass-panel p-8 rounded-[2rem] text-center shadow-sm"><h4 class="text-5xl font-black mb-2 drop-shadow-md"><span class="inline-block">⌛</span> ${Math.floor((state.stats.totalFocusMinutes || 0)/60)}<span class="text-2xl text-slate-500">h</span> ${((state.stats.totalFocusMinutes || 0)%60)}<span class="text-2xl text-slate-500">m</span></h4><p class="font-bold uppercase tracking-widest text-xs text-slate-500">${t('total_focus')}</p></div><div class="glass-panel p-8 rounded-[2rem] text-center shadow-sm"><h4 class="text-5xl font-black mb-2 drop-shadow-md text-orange-500"><span class="inline-block">🔥</span> ${state.streak.count}</h4><p class="font-bold uppercase tracking-widest text-xs text-slate-500">Current Streak (Days)</p></div></div><div class="grid grid-cols-1 lg:grid-cols-2 gap-8"><div class="glass-panel p-8 rounded-[3rem] shadow-sm"><h4 class="font-black mb-6 text-center text-slate-600 dark:text-slate-300 drop-shadow-sm"><span class="inline-block">📈</span> ${t('progress_chart')}</h4><div class="chart-container"><canvas id="progressChart" aria-label="Progress Chart" role="img"></canvas></div></div><div class="glass-panel p-8 rounded-[3rem] shadow-sm"><h4 class="font-black mb-6 text-center text-slate-600 dark:text-slate-300 drop-shadow-sm"><span class="inline-block">📊</span> ${t('focus_chart')}</h4><div class="chart-container"><canvas id="focusChart" aria-label="Focus Time Chart" role="img"></canvas></div></div>
             <div class="glass-panel p-8 rounded-[3rem] shadow-sm lg:col-span-2">
-                <h4 class="font-black mb-2 text-center text-slate-600 dark:text-slate-300 drop-shadow-sm">කාර්යශීලීතා සිතියම (Activity Heatmap)</h4>
-                <p class="text-xs text-center text-slate-500 mb-6">පසුගිය දින 90ක Focus කාලය</p>
+                <h4 class="font-black mb-2 text-center text-slate-600 dark:text-slate-300 drop-shadow-sm">${t('heatmap_title')}</h4>
+                <p class="text-xs text-center text-slate-500 mb-6">${t('heatmap_desc')}</p>
                 ${generateHeatmap()}
             </div>
             </div></div>`;
         }
 
         function renderProfile() {
-            const adminMode = isAdmin();
+            const trialEnds = state.user.trialEnds || (Date.now() + (200 * 24 * 60 * 60 * 1000));
+            const daysLeft = Math.max(0, Math.ceil((trialEnds - Date.now()) / (1000 * 60 * 60 * 24)));
+            const userName = state.user.name || "User";
+            
+            let trialHTML = '';
+            if (daysLeft > 0) {
+                trialHTML = `<div class="bg-indigo-50 dark:bg-indigo-900/30 p-4 rounded-2xl mb-6 shadow-inner"><p class="text-sm font-bold text-slate-600 dark:text-slate-300">${t('trial_left')} <span class="text-indigo-600 dark:text-indigo-400 font-black text-xl ml-2">${daysLeft}</span></p></div>`;
+            } else {
+                trialHTML = `<div class="bg-rose-50 dark:bg-rose-900/30 p-4 rounded-2xl mb-6 shadow-inner"><p class="text-sm font-bold text-rose-600 dark:text-rose-400 mb-3">${t('trial_exp')}</p><button class="w-full py-3 bg-gradient-to-r from-rose-500 to-orange-500 text-white font-black rounded-xl shadow-lg">${t('subscribe')}</button></div>`;
+            }
+
+            let leaderboardHTML = '';
+            if (globalLeaderboard && globalLeaderboard.length > 0) {
+                leaderboardHTML = `
+                <div class="glass-panel p-6 md:p-8 rounded-[3rem] shadow-sm mb-8 animate-slide-up">
+                    <h3 class="text-xl font-black mb-6 text-indigo-600 dark:text-indigo-400 flex items-center justify-center space-x-2 drop-shadow-sm"><span class="inline-block">🏆</span> <span>${t('leaderboard_title')}</span></h3>
+                    <div class="space-y-3">
+                        ${globalLeaderboard.map((u, i) => {
+                            const isMe = auth.currentUser && u.uid === auth.currentUser.uid;
+                            let rankIcon = `${i+1}.`;
+                            let iconClass = "text-slate-400";
+                            if(i===0) { rankIcon = '🥇'; iconClass = "text-2xl drop-shadow-md"; }
+                            else if(i===1) { rankIcon = '🥈'; iconClass = "text-2xl drop-shadow-md"; }
+                            else if(i===2) { rankIcon = '🥉'; iconClass = "text-2xl drop-shadow-md"; }
+                            
+                            const uName = u.name || "User";
+                            return `<div class="flex items-center justify-between p-3 rounded-2xl ${isMe ? 'bg-indigo-100 dark:bg-indigo-900/50 border border-indigo-300 dark:border-indigo-700 scale-105 transition-transform' : 'bg-slate-50 dark:bg-slate-800/50 hover:scale-[1.02] transition-transform'}">
+                                <div class="flex items-center space-x-3">
+                                    <span class="font-black text-lg w-6 text-center ${iconClass}">${rankIcon}</span>
+                                    <div class="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 text-white flex items-center justify-center font-bold text-xs shadow-inner">${escapeHTML(uName.charAt(0).toUpperCase())}</div>
+                                    <div><p class="font-bold text-sm ${isMe ? 'text-indigo-700 dark:text-indigo-300' : ''}">${escapeHTML(uName)} ${isMe ? '(You)' : ''}</p><p class="text-[10px] uppercase font-bold text-slate-500">Lvl ${u.level}</p></div>
+                                </div>
+                                <div class="text-right"><p class="font-black text-emerald-500">${u.xp}</p><p class="text-[9px] uppercase font-bold text-slate-400">XP</p></div>
+                            </div>`;
+                        }).join('')}
+                    </div>
+                </div>`;
+            }
+
             return `<div class="max-w-2xl mx-auto space-y-8 pb-20">
                 <header class="text-center"><h2 class="text-4xl font-black drop-shadow-md">${t('profile')}</h2></header>
                 
-                <div class="glass-panel p-8 md:p-10 rounded-[3rem] shadow-sm text-center">
-                    <div class="w-24 h-24 bg-gradient-to-tr from-indigo-500 to-purple-500 rounded-full flex items-center justify-center mx-auto mb-4 shadow-xl text-4xl text-white font-black">${escapeHTML(state.user.name).charAt(0).toUpperCase()}</div>
-                    <h3 class="text-3xl font-black mb-1">${escapeHTML(state.user.name)}</h3>
+                ${leaderboardHTML}
+
+                <div class="glass-panel p-8 md:p-10 rounded-[3rem] shadow-sm text-center relative">
+                    <div class="w-24 h-24 bg-gradient-to-tr from-indigo-500 to-purple-500 rounded-full flex items-center justify-center mx-auto mb-4 shadow-xl text-4xl text-white font-black cursor-pointer">${escapeHTML(userName).charAt(0).toUpperCase()}</div>
+                    <h3 class="text-3xl font-black mb-1 flex justify-center items-center gap-2">
+                        <span>${escapeHTML(userName)}</span>
+                        <button onclick="window.editName()" class="text-lg text-slate-400 hover:text-indigo-500 transition-colors" title="Edit Name" aria-label="Edit Name">✏️</button>
+                    </h3>
                     <p class="text-slate-500 font-bold mb-6">${escapeHTML(state.user.email)}</p>
+                    
+                    ${trialHTML}
+
                     <div class="flex justify-center space-x-8 border-t border-slate-300 dark:border-slate-700 pt-6">
                         <div><p class="text-2xl font-black text-indigo-500">${state.user.level}</p><p class="text-[10px] uppercase font-bold text-indigo-400 mt-1 break-words w-24">${getLevelName(state.user.level)}</p></div>
                         <div><p class="text-2xl font-black text-emerald-500">${state.user.xp}</p><p class="text-[10px] uppercase font-bold text-slate-500 mt-1">XP</p></div>
-                        <div><p class="text-2xl font-black text-orange-500">${state.user.joined}</p><p class="text-[10px] uppercase font-bold text-slate-500 mt-1">Joined</p></div>
+                        <div><p class="text-2xl font-black text-orange-500">${escapeHTML(state.user.joined)}</p><p class="text-[10px] uppercase font-bold text-slate-500 mt-1">Joined</p></div>
                     </div>
                 </div>
 
                 <div class="glass-panel p-8 md:p-10 rounded-[3rem] space-y-6 shadow-sm text-center">
-                    <h3 class="text-xl font-black mb-2 text-slate-700 dark:text-slate-200">⭐ යෙදුම ගැන ඔබේ අදහස (Feedback)</h3>
+                    <h3 class="text-xl font-black mb-2 text-slate-700 dark:text-slate-200">${t('feedback_title')}</h3>
                     <div class="flex justify-center space-x-2 text-3xl mb-4">
-                        ${[1,2,3,4,5].map(i => `<button onclick="window.setRating(${i})" class="${(state.appRating||0) >= i ? '' : 'grayscale opacity-30'} hover:scale-110 transition-transform drop-shadow-md">⭐</button>`).join('')}
+                        ${[1,2,3,4,5].map(i => `<button onclick="window.setRating(${i})" aria-label="Rate ${i} Stars" class="${(state.appRating||0) >= i ? '' : 'grayscale opacity-30'} hover:scale-110 transition-transform drop-shadow-md">⭐</button>`).join('')}
                     </div>
-                    <textarea id="feedback-text" placeholder="මෙහි ඔබේ අදහස් ලියන්න..." class="w-full p-4 glass-btn rounded-xl outline-none focus:border-indigo-500 font-medium h-24"></textarea>
-                    <button onclick="window.submitFeedback()" class="w-full bg-indigo-600 text-white px-6 py-3 rounded-xl font-black shadow-lg hover:bg-indigo-500 transition-colors">යවන්න</button>
+                    <textarea id="feedback-text" aria-label="Feedback Text" placeholder="${t('feedback_ph')}" class="w-full p-4 glass-btn rounded-xl outline-none focus:border-indigo-500 font-medium h-24"></textarea>
+                    <button onclick="window.submitFeedback()" class="w-full bg-indigo-600 text-white px-6 py-3 rounded-xl font-black shadow-lg hover:bg-indigo-500 transition-colors">${t('send_btn')}</button>
                 </div>
-
-                <div class="glass-panel p-8 md:p-10 rounded-[3rem] space-y-6 shadow-sm">
-                ${adminMode ? `<div class="p-6 bg-slate-900/80 backdrop-blur-md rounded-3xl border border-slate-700 mb-6 text-white shadow-2xl"><h3 class="text-2xl font-black text-indigo-400 mb-4">Admin Core</h3><p class="text-sm opacity-80 mb-6">Check Google Sheets for raw user data.</p>
+                
+                ${isAdmin() ? `<div class="p-6 bg-slate-900/80 backdrop-blur-md rounded-3xl border border-slate-700 mb-6 text-white shadow-2xl"><h3 class="text-2xl font-black text-indigo-400 mb-4">${t('admin_core')}</h3><p class="text-sm opacity-80 mb-6">Publish articles to all users instantly.</p>
                 <div class="flex gap-2 mb-3">
-                    <input type="text" id="admin-art-author" placeholder="Author" class="w-1/3 p-3 bg-slate-950 rounded-xl outline-none font-bold border border-slate-800 text-sm"/>
-                    <input type="text" id="admin-art-cat" placeholder="Category" class="w-1/3 p-3 bg-slate-950 rounded-xl outline-none font-bold border border-slate-800 text-sm"/>
-                    <input type="text" id="admin-art-time" placeholder="Read Time (e.g. 5m)" class="w-1/3 p-3 bg-slate-950 rounded-xl outline-none font-bold border border-slate-800 text-sm"/>
+                    <input type="text" id="admin-art-author" aria-label="Author" placeholder="Author" class="w-1/3 p-3 bg-slate-950 rounded-xl outline-none font-bold border border-slate-800 text-sm"/>
+                    <input type="text" id="admin-art-cat" aria-label="Category" placeholder="Category" class="w-1/3 p-3 bg-slate-950 rounded-xl outline-none font-bold border border-slate-800 text-sm"/>
+                    <input type="text" id="admin-art-time" aria-label="Read Time" placeholder="Read Time (e.g. 5m)" class="w-1/3 p-3 bg-slate-950 rounded-xl outline-none font-bold border border-slate-800 text-sm"/>
                 </div>
-                <input type="text" id="admin-art-title" placeholder="Title" class="w-full p-4 bg-slate-950 rounded-xl outline-none mb-3 font-bold border border-slate-800"/><textarea id="admin-art-intro" placeholder="Intro..." class="w-full p-4 bg-slate-950 rounded-xl outline-none mb-3 h-20 border border-slate-800"></textarea><textarea id="admin-art-text" placeholder="Content..." class="w-full p-4 bg-slate-950 rounded-xl outline-none mb-4 h-32 border border-slate-800"></textarea><button id="publish-btn" onclick="window.publishAdminArticle()" class="w-full bg-indigo-600 hover:bg-indigo-500 py-4 rounded-xl font-black shadow-lg">Publish Global Article</button></div>` : ''}
-                
-                <div class="flex flex-col sm:flex-row gap-3 mt-4">
-                    <button onclick="window.exportData()" class="flex-1 py-3 bg-indigo-600 text-white font-black rounded-xl hover:bg-indigo-700 flex items-center justify-center space-x-2"><span class="text-lg">⬇️</span><span>${t('backup_data')}</span></button>
-                    <label class="flex-1 py-3 glass-btn font-black rounded-xl hover:bg-slate-200 dark:hover:bg-slate-800 flex items-center justify-center space-x-2 cursor-pointer"><span class="text-lg">⬆️</span><span>${t('restore_data')}</span><input type="file" accept=".json" class="hidden" onchange="window.importData(event)" /></label>
-                </div>
-                
+                <input type="text" id="admin-art-title" aria-label="Article Title" placeholder="Title" class="w-full p-4 bg-slate-950 rounded-xl outline-none mb-3 font-bold border border-slate-800"/><textarea id="admin-art-intro" aria-label="Article Intro" placeholder="Intro..." class="w-full p-4 bg-slate-950 rounded-xl outline-none mb-3 h-20 border border-slate-800"></textarea><textarea id="admin-art-text" aria-label="Article Content" placeholder="Content..." class="w-full p-4 bg-slate-950 rounded-xl outline-none mb-4 h-32 border border-slate-800"></textarea><button id="publish-btn" onclick="window.publishAdminArticle()" class="w-full bg-indigo-600 hover:bg-indigo-500 py-4 rounded-xl font-black shadow-lg">Publish Global Article</button></div>` : ''}
+
                 <div class="mt-4">
-                    <label class="font-black text-sm block mb-2 mt-4 text-slate-700 dark:text-slate-300">${t('target_date')}</label>
-                    <input type="date" id="target-date-input" value="${state.user.targetDate}" onchange="window.updateTargetDate(this.value)" class="w-full px-4 py-3 glass-btn rounded-xl outline-none mb-4 font-bold text-slate-700 dark:text-slate-200" />
+                    <label for="target-date-input" class="font-black text-sm block mb-2 mt-4 text-slate-700 dark:text-slate-300">${t('target_date')}</label>
+                    <input type="date" id="target-date-input" value="${escapeHTML(state.user.targetDate)}" onchange="window.updateTargetDate(this.value)" class="w-full px-4 py-3 glass-btn rounded-xl outline-none mb-4 font-bold text-slate-700 dark:text-slate-200" />
                 </div>
                 <div>
-                    <button onclick="window.addCustomCategory()" class="w-full py-4 border-2 border-indigo-200 dark:border-indigo-900 text-indigo-600 dark:text-indigo-400 font-black rounded-2xl hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-colors">${t('add_category')}</button>
+                    <button onclick="window.addCustomCategory()" class="w-full py-4 border-2 border-indigo-200 dark:border-indigo-900 text-indigo-600 dark:text-indigo-400 font-black rounded-2xl hover:bg-indigo-50 dark:hover:bg-indigo-900/30 hover:scale-[1.02] transition-transform">${t('add_category')}</button>
                 </div>
 
                 <div class="pt-6 space-y-4 border-t border-slate-300 dark:border-slate-700">
-                    <button onclick="window.clearAllData()" class="w-full py-4 glass-btn font-black rounded-2xl shadow-sm text-slate-600 dark:text-slate-300 hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-colors">${t('clear_all')}</button>
-                    <button onclick="window.logout()" class="w-full py-4 glass-btn font-black rounded-2xl shadow-sm text-rose-500 transition-colors">${t('logout')}</button>
-                    <button onclick="window.deleteAccount()" class="w-full py-4 border-2 border-red-200 text-red-500 font-black rounded-2xl hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">${t('del_acc')}</button>
+                    <button onclick="window.clearAllData()" class="w-full py-4 glass-btn font-black rounded-2xl shadow-sm text-slate-600 dark:text-slate-300 hover:bg-slate-200/50 dark:hover:bg-slate-800/50 hover:scale-[1.02] transition-transform">${t('clear_all')}</button>
+                    <button onclick="window.logout()" class="w-full py-4 glass-btn font-black rounded-2xl shadow-sm text-rose-500 hover:scale-[1.02] transition-transform">${t('logout')}</button>
+                    <button onclick="window.deleteAccount()" class="w-full py-4 border-2 border-red-200 text-red-500 font-black rounded-2xl hover:bg-red-50 dark:hover:bg-red-900/20 hover:scale-[1.02] transition-transform">${t('del_acc')}</button>
                 </div></div></div>`;
+        }
+
+        function initApp() {
+            fetchTodayHoliday();
+            setInterval(checkNewDay, 60000);
         }
 
         initApp();
