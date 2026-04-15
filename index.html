@@ -77,10 +77,10 @@
         // FIREBASE INITIALIZATION & IMPORTS
         // ==========================================
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendEmailVerification, onAuthStateChanged, signOut, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc, onSnapshot, collection, query, limit, getDocs, deleteDoc, orderBy } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendEmailVerification, onAuthStateChanged, signOut, sendPasswordResetEmail, signInWithCustomToken, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc, onSnapshot, collection, query, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-        // 🔴 Firebase Config 🔴
+        // 🔴 Firebase Config (Dynamic Support for environments) 🔴
         let firebaseConfig = {
             apiKey: "AIza" + "SyA1dRdTsK2MbkS3JRRiG" + "-w2aZzBeV5vEwU",
             authDomain: "mindsetos-a9546.firebaseapp.com",
@@ -92,11 +92,28 @@
             measurementId: "G-MDFBZ7JFGK"
         };
         
+        try {
+            if (typeof __firebase_config !== 'undefined') {
+                firebaseConfig = JSON.parse(__firebase_config);
+            }
+        } catch(e) { console.warn("Using default Firebase Config"); }
+
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
-        const appId = 'mindsetos-global';
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'mindsetos-global';
         const MY_ADMIN_EMAIL = "sdatrex3@gmail.com"; 
+
+        // Initial Auth Hook for seamless environments
+        const initAuth = async () => {
+            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                try { await signInWithCustomToken(auth, __initial_auth_token); } catch(e) { console.error(e); }
+            } else if (typeof __firebase_config !== 'undefined') {
+                // If running in a seamless canvas environment but no token, fallback to anonymous
+                try { await signInAnonymously(auth); } catch(e) { console.error(e); }
+            }
+        };
+        initAuth();
 
         // ==========================================
         // DYNAMIC PWA MANIFEST
@@ -313,24 +330,24 @@
 
         const initAudioCtx = () => {
             try {
-                if (!globalAudioCtx) { const AC = window.AudioContext || window.webkitAudioContext; if (AC) globalAudioCtx = new AC(); }
-                if (globalAudioCtx && globalAudioCtx.state === 'suspended') globalAudioCtx.resume().catch(e=>e);
+                if (!audioCtxObj) { const AC = window.AudioContext || window.webkitAudioContext; if (AC) audioCtxObj = new AC(); }
+                if (audioCtxObj && audioCtxObj.state === 'suspended') audioCtxObj.resume().catch(e=>e);
             } catch(err) {}
         };
 
         function playAlarm() {
             initAudioCtx();
             try {
-                if (!globalAudioCtx) return;
+                if (!audioCtxObj) return;
                 const playTone = (freq, startTime, duration) => {
-                    const osc = globalAudioCtx.createOscillator(); const gain = globalAudioCtx.createGain();
-                    osc.connect(gain); gain.connect(globalAudioCtx.destination);
+                    const osc = audioCtxObj.createOscillator(); const gain = audioCtxObj.createGain();
+                    osc.connect(gain); gain.connect(audioCtxObj.destination);
                     osc.type = 'sine'; osc.frequency.setValueAtTime(freq, startTime);
                     gain.gain.setValueAtTime(1, startTime); gain.gain.exponentialRampToValueAtTime(0.01, startTime + duration);
                     osc.start(startTime); 
                     try { osc.stop(startTime + duration); } catch (e) {}
                 };
-                const now = globalAudioCtx.currentTime;
+                const now = audioCtxObj.currentTime;
                 playTone(880, now, 0.2); playTone(1046, now + 0.3, 0.4); 
             } catch(e) {}
         }
@@ -363,9 +380,8 @@
             if(!auth.currentUser) return;
             try {
                 const lbRef = collection(db, 'artifacts', appId, 'public', 'data', 'leaderboard');
-                const q = query(lbRef, orderBy("xp", "desc"), limit(15));
-                
-                const querySnapshot = await getDocs(q);
+                // Client-side sorting to avoid requiring composite indexes
+                const querySnapshot = await getDocs(lbRef);
                 let usersList = [];
                 querySnapshot.forEach((doc) => {
                     const d = doc.data();
@@ -373,7 +389,8 @@
                         usersList.push(d);
                     }
                 });
-                globalLeaderboard = usersList.slice(0, 10); 
+                usersList.sort((a, b) => b.xp - a.xp); // Sort descending by XP
+                globalLeaderboard = usersList.slice(0, 10); // Limit to top 10
                 if (state.activeTab === 'profile') render();
             } catch(e) { console.error("Leaderboard fetch error:", e); }
         }
@@ -385,7 +402,8 @@
 
         onAuthStateChanged(auth, async (user) => {
             if (user) {
-                if (!user.emailVerified && !window.isRegisteringUser) {
+                // Prevent unverified manual signups from entering, but allow Anonymous canvas users
+                if (!user.isAnonymous && user.email && !user.emailVerified && !window.isRegisteringUser) {
                     showToast("Please verify your email address before logging in.", "error");
                     await signOut(auth);
                     state.isNewUser = true;
@@ -394,7 +412,7 @@
                     return;
                 }
 
-                if (!user.emailVerified && window.isRegisteringUser) {
+                if (!user.isAnonymous && user.email && !user.emailVerified && window.isRegisteringUser) {
                     return; 
                 }
 
@@ -413,7 +431,7 @@
                             localStorage.removeItem(USER_DATA_KEY); 
                             showToast("Old data successfully migrated to Cloud!", "success");
                         } else {
-                            state = { ...defaultState, isNewUser: false, user: { ...defaultState.user, name: user.displayName || "User", email: user.email, joined: getTodayStr(), trialEnds: Date.now() + (200 * 24 * 60 * 60 * 1000) } };
+                            state = { ...defaultState, isNewUser: false, user: { ...defaultState.user, name: user.displayName || "User", email: user.email || "anonymous", joined: getTodayStr(), trialEnds: Date.now() + (200 * 24 * 60 * 60 * 1000) } };
                             await setDoc(docRef, state);
                         }
                     }
@@ -435,7 +453,7 @@
                     }, (error) => { console.error("Firestore Listen Error:", error); });
 
                     if (articlesUnsubscribe) articlesUnsubscribe();
-                    articlesUnsubscribe = onSnapshot(collection(db, 'artifacts', appId, 'public_articles'), (snapshot) => {
+                    articlesUnsubscribe = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'articles'), (snapshot) => {
                         let fetchedArticles = [];
                         snapshot.forEach((doc) => {
                             let unsafeDoc = doc.data();
@@ -627,7 +645,7 @@
             };
 
             try {
-                const articleRef = doc(db, 'artifacts', appId, 'public_articles', newArtID);
+                const articleRef = doc(db, 'artifacts', appId, 'public', 'data', 'articles', newArtID);
                 await setDoc(articleRef, newArticle);
                 showToast("ලිපිය සාර්ථකව ප්‍රකාශයට පත් කළා!", "success");
                 
@@ -646,7 +664,7 @@
 
             showConfirmModal("මෙම ලිපිය සම්පූර්ණයෙන්ම ඉවත් කිරීමට ඔබට අවශ්‍යද?", async () => {
                 try {
-                    const articleRef = doc(db, 'artifacts', appId, 'public_articles', articleId);
+                    const articleRef = doc(db, 'artifacts', appId, 'public', 'data', 'articles', articleId);
                     await deleteDoc(articleRef);
                     showToast("ලිපිය සාර්ථකව ඉවත් කරන ලදී.", "success");
                 } catch(e) {
