@@ -31,14 +31,17 @@
         }
 
         /* Glassmorphism Styles */
-        .glass-panel { background: rgba(255, 255, 255, 0.45); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); border: 1px solid rgba(255, 255, 255, 0.6); box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.05); }
+        .glass-panel { background: rgba(255, 255, 255, 0.45); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); border: 1px solid rgba(255, 255, 255, 0.6); box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.05); transition: all 0.3s ease; }
         .dark .glass-panel { background: rgba(15, 23, 42, 0.55); border: 1px solid rgba(255, 255, 255, 0.08); box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3); }
-        .glass-nav { background: rgba(255, 255, 255, 0.6); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
+        .glass-nav { background: rgba(255, 255, 255, 0.6); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); transition: all 0.3s ease; }
         .dark .glass-nav { background: rgba(30, 41, 59, 0.65); border-right: 1px solid rgba(51, 65, 85, 0.3); border-bottom: 1px solid rgba(51, 65, 85, 0.3); }
-        .glass-btn { background: rgba(255, 255, 255, 0.5); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.6); transition: all 0.2s ease; }
+        .glass-btn { background: rgba(255, 255, 255, 0.5); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.6); transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
         .dark .glass-btn { background: rgba(30, 41, 59, 0.5); border: 1px solid rgba(255, 255, 255, 0.1); }
-        .glass-btn:hover { background: rgba(255, 255, 255, 0.8); }
+        .glass-btn:hover { background: rgba(255, 255, 255, 0.8); transform: translateY(-2px); }
         .dark .glass-btn:hover { background: rgba(51, 65, 85, 0.8); }
+
+        button { transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.2s ease, opacity 0.2s ease; }
+        button:active { transform: scale(0.96) !important; }
 
         .animate-fade-in { animation: fadeIn 0.5s ease-out forwards; }
         .animate-slide-up { animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
@@ -277,7 +280,7 @@
             lastModified: 0, language: 'si', activeTab: 'home', selectedArticleId: null, flippedCards: {}, isNewUser: true,
             user: { name: '', email: '', joined: '', targetDate: '', theme: 'light', xp: 0, level: 1, trialEnds: 0 },
             habits: [], history: [], reflections: {}, moods: {}, flashcards: [], pastTasks: {}, dailyFocus: {}, 
-            stats: { totalFocusMinutes: 0 }, streak: { count: 0, lastDate: null },
+            stats: { totalFocusMinutes: 0 }, streak: { count: 0, lastDate: null }, lastLoginDate: null,
             categories: {
                 'Study': { name: 'අධ්‍යාපනය / Study', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300 border-blue-200 dark:border-blue-800' },
                 'Health': { name: 'සෞඛ්‍යය / Health', color: 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300 border-green-200 dark:border-green-800' },
@@ -594,23 +597,47 @@
             render(); 
         }
 
+        function updateStreakAction() {
+            const today = getTodayStr();
+            if (state.streak.lastDate === today) return;
+
+            const yest = new Date(); yest.setDate(yest.getDate() - 1);
+            const yestStr = yest.getFullYear() + '-' + String(yest.getMonth() + 1).padStart(2, '0') + '-' + String(yest.getDate()).padStart(2, '0');
+
+            if (state.streak.lastDate === yestStr) {
+                state.streak.count += 1;
+            } else {
+                state.streak.count = 1;
+            }
+            state.streak.lastDate = today;
+            saveData(true);
+        }
+
         function checkNewDay() {
             if (state.isNewUser) return;
             const today = getTodayStr(); 
             let stateMutated = false;
 
-            if (!state.streak.lastDate) { 
-                state.streak.lastDate = today; state.streak.count = 1; updateHistory(); stateMutated = true;
-            } else if (state.streak.lastDate !== today) {
-                const yest = new Date(); yest.setDate(yest.getDate() - 1);
-                const yestStr = yest.getFullYear() + '-' + String(yest.getMonth() + 1).padStart(2, '0') + '-' + String(yest.getDate()).padStart(2, '0');
-                if (state.streak.lastDate === yestStr) state.streak.count += 1; else state.streak.count = 1; 
-                
-                const completedYesterday = state.habits.filter(h => h.completed);
-                if(completedYesterday.length > 0) state.pastTasks[state.streak.lastDate] = completedYesterday;
+            const yest = new Date(); yest.setDate(yest.getDate() - 1);
+            const yestStr = yest.getFullYear() + '-' + String(yest.getMonth() + 1).padStart(2, '0') + '-' + String(yest.getDate()).padStart(2, '0');
+
+            if (state.streak.lastDate && state.streak.lastDate !== today && state.streak.lastDate !== yestStr) {
+                if (state.streak.count !== 0) {
+                    state.streak.count = 0;
+                    stateMutated = true;
+                }
+            }
+
+            if (!state.lastLoginDate) state.lastLoginDate = state.streak.lastDate || today;
+
+            if (state.lastLoginDate !== today) {
+                const completedPast = state.habits.filter(h => h.completed);
+                if(completedPast.length > 0) state.pastTasks[state.lastLoginDate] = completedPast;
                 
                 state.habits = state.habits.filter(h => !h.completed).map(h => ({ ...h, completed: false }));
-                state.streak.lastDate = today; updateHistory(); saveData();
+                state.lastLoginDate = today;
+                updateHistory();
+                saveData();
                 stateMutated = true;
             }
 
@@ -694,6 +721,7 @@
             state.habits = state.habits.map(h => { 
                 if(h.id === id) { 
                     if(!h.completed) {
+                        updateStreakAction();
                         if (!h.xpAwarded) { newlyCompleted = true; h.xpAwarded = true; }
                         if(h.needsReview) {
                             if(!state.pendingReviews) state.pendingReviews = [];
@@ -823,6 +851,7 @@
                 if (timerState.timeLeft <= 0 && timerState.targetEndTime !== null) {
                     clearInterval(timerState.interval); timerState.targetEndTime = null; playAlarm(); 
                     if(timerState.mode === 'focus') { 
+                        updateStreakAction();
                         let focusMins = state.timerSettings?.focus || 25; addXP(focusMins); state.stats.totalFocusMinutes += focusMins; 
                         const today = getTodayStr(); state.dailyFocus[today] = (state.dailyFocus[today] || 0) + focusMins; saveData(true); 
                         timerState.phase = 'focus-ended'; showToast("Focus session ended!", "success"); triggerPushNotification("Focus session ended! Take a break.");
@@ -891,7 +920,11 @@
             const focusMins = focusTimeToday % 60;
             const timeString = focusHours > 0 ? `${focusHours}h ${focusMins}m` : `${focusMins}m`;
 
-            let text = `📅 *${t('wa_date')}* ${new Date().toLocaleDateString(state.language === 'en' ? 'en-US' : 'si-LK')}\n`;
+            const dateStr = new Date().toLocaleDateString(state.language === 'en' ? 'en-US' : 'si-LK');
+            const emojiNumbers = {'0':'0️⃣','1':'1️⃣','2':'2️⃣','3':'3️⃣','4':'4️⃣','5':'5️⃣','6':'6️⃣','7':'7️⃣','8':'8️⃣','9':'9️⃣', '/':' / ', '-':' - '};
+            const emojiDate = dateStr.split('').map(c => emojiNumbers[c] || c).join('');
+
+            let text = `*${t('wa_date')}* ${emojiDate}\n`;
             text += `⏱️ *${t('wa_focus')}* ${timeString}\n\n`;
             
             if (completedHabits.length > 0) { 
