@@ -278,9 +278,10 @@
         // ==========================================
         const defaultState = {
             lastModified: 0, language: 'si', activeTab: 'home', selectedArticleId: null, flippedCards: {}, isNewUser: true,
-            user: { name: '', email: '', joined: '', targetDate: '', theme: 'light', xp: 0, level: 1, trialEnds: 0 },
+            user: { name: '', email: '', joined: '', targetDate: '', theme: 'light', xp: 0, level: 1, trialEnds: 0, avatar: '👤' },
             habits: [], history: [], reflections: {}, moods: {}, flashcards: [], pastTasks: {}, dailyFocus: {}, 
             stats: { totalFocusMinutes: 0 }, streak: { count: 0, lastDate: null }, lastLoginDate: null,
+            badges: [],
             categories: {
                 'Study': { name: 'අධ්‍යාපනය / Study', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300 border-blue-200 dark:border-blue-800' },
                 'Health': { name: 'සෞඛ්‍යය / Health', color: 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300 border-green-200 dark:border-green-800' },
@@ -293,6 +294,8 @@
         
         const priorities = { 'Q1': { name: 'හදිසි/වැදගත්', class: 'bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400' }, 'Q2': { name: 'වැදගත් පමණි', class: 'bg-indigo-50 text-indigo-600 dark:bg-indigo-900/20 dark:text-indigo-400' }, 'Q3': { name: 'සාමාන්‍ය', class: 'bg-slate-50 text-slate-600 dark:bg-slate-800 dark:text-slate-400' } };
         const moodEmojis = { 'great': '🤩', 'good': '😊', 'neutral': '😐', 'bad': '😫' };
+        const badgeDict = { 'early_bird': { i:'🌅', n:'Early Bird', d:'පාන්දර 6ට පෙර වැඩ ආරම්භ කිරීම' }, 'streak_7': { i:'🔥', n:'Unstoppable', d:'දින 7ක Streak එකක් තබා ගැනීම' }, 'focus_10h': { i:'⏳', n:'Focus Master', d:'පැය 10ක Focus කාලයක් ලබා ගැනීම' }, 'flash_pro': { i:'🧠', n:'Flash Pro', d:'Flashcards 10ක් සෑදීම' } };
+        const availableAvatars = ['👤', '👨‍🚀', '🐱‍👤', '🦸‍♂️', '🧙‍♂️', '🧛‍♂️', '🤖', '👑'];
         
         const defaultArticles = [{ id: "default-1", title: "මනස සන්සුන් කරගැනීමේ විද්‍යාව", author: "MindsetOS Team", category: "Health", icon: "🧘‍♂️", color: "text-blue-500", readTime: "විනාඩි 3", excerpt: "මානසික ආතතිය අවම කරගැනීමට හා අවධානය වැඩි කරගැනීමට...", intro: "ඔබේ මනස සන්සුන් කිරීම යනු හුදු විවේකයක් පමණක් නොව, මොළයේ ක්‍රියාකාරීත්වය වර්ධනය කරන විද්‍යාත්මක ක්‍රියාවලියකි.", sections: [{title: "හුස්ම ගැනීමේ වැදගත්කම", text: "ගැඹුරු හුස්ම ගැනීම් මගින් රුධිර පීඩනය පාලනය කර ස්නායු පද්ධතිය සන්සුන් කරයි."}], science: "Deep breathing activates the parasympathetic nervous system, lowering cortisol levels." }];
         let articles = [...defaultArticles];
@@ -597,6 +600,87 @@
             render(); 
         }
 
+        // ==========================================
+        // NEW FEATURES LOGIC (AI, Badges, Avatar)
+        // ==========================================
+        async function callGemini(prompt) {
+            const apiKey = "";
+            try {
+                showToast("AI කෘතිම බුද්ධිය ක්‍රියාත්මක වෙමින් පවතී...", "info");
+                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
+                    method: 'POST', headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+                });
+                const data = await res.json();
+                return data.candidates?.[0]?.content?.parts?.[0]?.text;
+            } catch (e) { showToast("AI Error: කරුණාකර අන්තර්ජාල සබඳතාව පරීක්ෂා කරන්න.", "error"); return null; }
+        }
+
+        async function breakdownTaskAI(id) {
+            const h = state.habits.find(x => x.id === id);
+            if(!h) return;
+            const prompt = `Break down this task into 3 small actionable sub-tasks: "${h.text}". Language: Sinhala. Return ONLY a valid JSON array of strings like ["task 1", "task 2"]. No other markdown or text.`;
+            const aiText = await callGemini(prompt);
+            if(aiText) {
+                try {
+                    const parsed = JSON.parse(aiText.replace(/```json/g, '').replace(/```/g, '').trim());
+                    parsed.reverse().forEach(sub => {
+                        state.habits.unshift({ id: Date.now() + Math.random(), text: "↳ " + escapeHTML(sub), time: '', needsReview: false, category: h.category, priority: h.priority, completed: false, date: getTodayStr(), isRecurring: false });
+                    });
+                    saveData(true); render(); showToast("AI මගින් Task එක බෙදා වෙන් කළා!", "success");
+                } catch(e) { showToast("AI දත්ත කියවීමේ දෝෂයක්.", "error"); }
+            }
+        }
+
+        async function generateAIFlashcards() {
+            showPromptModal("Flashcards සෑදීමට අවශ්‍ය පාඩම් කොටස හෝ මාතෘකාව ඇතුළත් කරන්න:", async (text) => {
+                if(!text) return;
+                const prompt = `Create 3 flashcards for the topic: "${text}". Language: Sinhala. Format strictly as JSON array of objects with 'q' and 'a' keys. No other text.`;
+                const aiText = await callGemini(prompt);
+                if(aiText) {
+                    try {
+                        const parsed = JSON.parse(aiText.replace(/```json/g, '').replace(/```/g, '').trim());
+                        parsed.forEach(item => state.flashcards.unshift({ id: Date.now() + Math.random(), q: escapeHTML(item.q), a: escapeHTML(item.a), dueDate: 0, interval: 1, ease: 2.5 }));
+                        checkBadges(); saveData(true); render(); showToast("AI මගින් Flashcards සෑදුවා!", "success");
+                    } catch(e) { showToast("AI දත්ත කියවීමේ දෝෂයක්.", "error"); }
+                }
+            });
+        }
+
+        function checkBadges() {
+            if(!state.badges) state.badges = [];
+            const newBadges = [];
+            if(!state.badges.includes('early_bird') && new Date().getHours() < 6 && state.dailyFocus[getTodayStr()] > 0) newBadges.push('early_bird');
+            if(!state.badges.includes('streak_7') && state.streak.count >= 7) newBadges.push('streak_7');
+            if(!state.badges.includes('focus_10h') && state.stats.totalFocusMinutes >= 600) newBadges.push('focus_10h');
+            if(!state.badges.includes('flash_pro') && state.flashcards.length >= 10) newBadges.push('flash_pro');
+            
+            if(newBadges.length > 0) {
+                state.badges.push(...newBadges);
+                newBadges.forEach(b => showToast(`🏆 නව පදක්කමක්: ${badgeDict[b].n}!`, 'success'));
+                saveData(true);
+            }
+        }
+
+        function changeAvatar() {
+            const currentIdx = availableAvatars.indexOf(state.user.avatar || '👤');
+            const maxAvatars = Math.min(availableAvatars.length, Math.floor(state.user.level / 5) + 1);
+            if (maxAvatars <= 1) return showToast("Level 5 න් පසු නව Avatars ලබාගත හැක!", "info");
+            state.user.avatar = availableAvatars[(currentIdx + 1) % maxAvatars];
+            saveData(true); render(); showToast("Avatar එක වෙනස් කළා!", "success");
+        }
+
+        function rateFlashcard(id, quality) {
+            const card = state.flashcards.find(f => f.id === id);
+            if(!card) return;
+            if (quality === 0) { card.interval = 1; card.ease = Math.max(1.3, (card.ease || 2.5) - 0.2); }
+            else if (quality === 1) { card.interval = (card.interval || 1) * 2; }
+            else { card.interval = (card.interval || 1) * 3; card.ease = (card.ease || 2.5) + 0.15; }
+            card.dueDate = Date.now() + (card.interval * 24 * 60 * 60 * 1000);
+            state.flippedCards[id] = false;
+            saveData(true); render(); showToast("මතකය යාවත්කාලීන කළා!", "success");
+        }
+
         function updateStreakAction() {
             const today = getTodayStr();
             if (state.streak.lastDate === today) return;
@@ -634,7 +718,16 @@
                 const completedPast = state.habits.filter(h => h.completed);
                 if(completedPast.length > 0) state.pastTasks[state.lastLoginDate] = completedPast;
                 
+                const recurringTasks = state.habits.filter(h => h.isRecurring);
+                
                 state.habits = state.habits.filter(h => !h.completed).map(h => ({ ...h, completed: false }));
+                
+                recurringTasks.forEach(h => {
+                    if(!state.habits.some(existing => existing.text === h.text && existing.date === today)) {
+                        state.habits.unshift({...h, id: Date.now()+Math.random(), completed: false, xpAwarded: false, date: today});
+                    }
+                });
+
                 state.lastLoginDate = today;
                 updateHistory();
                 saveData();
@@ -706,12 +799,13 @@
         // ==========================================
         function addHabit() {
             const inputEl = document.getElementById('habit-text'); const timeEl = document.getElementById('habit-time'); const reviewEl = document.getElementById('habit-review');
-            const text = inputEl?.value.trim(); const time = timeEl?.value; const needsReview = reviewEl?.checked;
+            const recEl = document.getElementById('habit-recurring');
+            const text = inputEl?.value.trim(); const time = timeEl?.value; const needsReview = reviewEl?.checked; const isRec = recEl?.checked;
             const cat = document.getElementById('habit-cat')?.value; const pri = document.getElementById('habit-priority')?.value;
             
             if (text) { 
-                state.habits.unshift({ id: Date.now(), text: escapeHTML(text), time: time, needsReview: needsReview, category: cat, priority: pri, completed: false, date: getTodayStr() }); 
-                updateHistory(); if(inputEl) inputEl.value = ''; if(timeEl) timeEl.value = ''; if(reviewEl) reviewEl.checked = false;
+                state.habits.unshift({ id: Date.now(), text: escapeHTML(text), time: time, needsReview: needsReview, isRecurring: isRec, category: cat, priority: pri, completed: false, date: getTodayStr() }); 
+                updateHistory(); if(inputEl) inputEl.value = ''; if(timeEl) timeEl.value = ''; if(reviewEl) reviewEl.checked = false; if(recEl) recEl.checked = false;
                 render(); setTimeout(() => document.getElementById('habit-text')?.focus(), 50); showToast("Added successfully!", "success");
             } else { showToast("Please enter a task", "error"); }
         }
@@ -871,45 +965,6 @@
             const circle = document.getElementById('timer-circle-bg');
             const totalSecs = timerState.mode === 'focus' ? (state.timerSettings?.focus || 25) * 60 : (state.timerSettings?.break || 5) * 60;
             if(circle) circle.style.background = `conic-gradient(${timerState.mode === 'focus' ? (state.user.theme === 'dark' ? '#6366f1' : '#4f46e5') : '#10b981'} ${((totalSecs - timerState.timeLeft) / totalSecs) * 100}%, transparent 0deg)`;
-        }
-
-        function initCharts() {
-            if (typeof Chart === 'undefined') return;
-            const ctx1 = document.getElementById('progressChart');
-            if(ctx1) {
-                if(progressChartInstance) progressChartInstance.destroy();
-                const sortedHistory = state.history.sort((a,b) => new Date(a.date) - new Date(b.date));
-                const labels = sortedHistory.length ? sortedHistory.map(d => d.date) : [t('today')];
-                const data = sortedHistory.length ? sortedHistory.map(d => d.score) : [0];
-                progressChartInstance = new Chart(ctx1, { type: 'line', data: { labels: labels, datasets: [{ label: t('percent'), data: data, borderColor: '#6366f1', backgroundColor: 'rgba(99, 102, 241, 0.2)', borderWidth: 3, tension: 0.4, fill: true }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { max: 100, beginAtZero: true } } } });
-            }
-            const ctx2 = document.getElementById('focusChart');
-            if(ctx2) {
-                if(focusChartInstance) focusChartInstance.destroy();
-                const focusDates = Object.keys(state.dailyFocus).sort((a,b) => new Date(a) - new Date(b)).slice(-7); 
-                const focusData = focusDates.map(d => state.dailyFocus[d]);
-                focusChartInstance = new Chart(ctx2, { type: 'bar', data: { labels: focusDates, datasets: [{ label: t('minutes'), data: focusData, backgroundColor: '#10b981', borderRadius: 8 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } } });
-            }
-        }
-
-        function generateHeatmap() {
-            let html = '<div class="flex flex-wrap gap-2 justify-center mt-6" role="img" aria-label="Activity Heatmap">';
-            
-            const baseDate = new Date();
-            const baseTime = baseDate.getTime();
-            
-            for(let i=89; i>=0; i--) { 
-                const d = new Date(baseTime - (i * 24 * 60 * 60 * 1000));
-                const dateStr = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
-                const focus = state.dailyFocus[dateStr] || 0;
-                let color = 'bg-slate-200 dark:bg-slate-800 opacity-50'; 
-                if(focus > 0) color = 'bg-indigo-300 dark:bg-indigo-900';
-                if(focus > 25) color = 'bg-indigo-400 dark:bg-indigo-700';
-                if(focus > 60) color = 'bg-indigo-500 dark:bg-indigo-500';
-                if(focus > 120) color = 'bg-indigo-600 dark:bg-indigo-400';
-                html += `<div class="w-4 h-4 rounded-sm ${color} transition-all hover:scale-125 cursor-pointer" title="${dateStr}: ${focus} ${t('minutes')}"></div>`;
-            }
-            html += '</div>'; return html;
         }
 
         function shareToWhatsApp() {
@@ -1085,17 +1140,63 @@
                 }
             }
         }
+
+        function generateHeatmap() {
+            let html = '<div class="flex flex-wrap gap-2 justify-center mt-6" role="img" aria-label="Activity Heatmap">';
+            
+            const baseDate = new Date();
+            const baseTime = baseDate.getTime();
+            
+            for(let i=89; i>=0; i--) { 
+                const d = new Date(baseTime - (i * 24 * 60 * 60 * 1000));
+                const dateStr = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+                const focus = state.dailyFocus[dateStr] || 0;
+                let color = 'bg-slate-200 dark:bg-slate-800 opacity-50'; 
+                if(focus > 0) color = 'bg-indigo-300 dark:bg-indigo-900';
+                if(focus > 25) color = 'bg-indigo-400 dark:bg-indigo-700';
+                if(focus > 60) color = 'bg-indigo-500 dark:bg-indigo-500';
+                if(focus > 120) color = 'bg-indigo-600 dark:bg-indigo-400';
+                html += `<div class="w-4 h-4 rounded-sm ${color} transition-all hover:scale-125 cursor-pointer" title="${dateStr}: ${focus} ${t('minutes')}"></div>`;
+            }
+            html += '</div>'; return html;
+        }
         
         function addXP(amount) { 
             if (state.user.level >= 100) return; 
             state.user.xp += amount; let leveledUp = false;
             while (state.user.xp >= state.user.level * 100 && state.user.level < 100) { state.user.xp -= state.user.level * 100; state.user.level++; leveledUp = true; } 
             if (state.user.level >= 100) { state.user.level = 100; state.user.xp = 0; }
-            if(leveledUp) { const title = getLevelName(state.user.level).split(' ')[0]; showToast(`🎉 Level Up! Level ${state.user.level} - ${title}`, 'success'); }
+            if(leveledUp) { const title = getLevelName(state.user.level).split(' ')[0]; showToast(`🎉 Level Up! Level ${state.user.level} - ${title}`, 'success'); checkBadges(); }
             saveData(true); 
             updatePublicLeaderboard();
             fetchLeaderboard();
             render();
+        }
+
+        function initCharts() {
+            if (typeof Chart === 'undefined') return;
+            const ctx1 = document.getElementById('progressChart');
+            if(ctx1) {
+                if(progressChartInstance) progressChartInstance.destroy();
+                const sortedHistory = state.history.sort((a,b) => new Date(a.date) - new Date(b.date));
+                const labels = sortedHistory.length ? sortedHistory.map(d => d.date) : [t('today')];
+                const data = sortedHistory.length ? sortedHistory.map(d => d.score) : [0];
+                progressChartInstance = new Chart(ctx1, { type: 'line', data: { labels: labels, datasets: [{ label: t('percent'), data: data, borderColor: '#6366f1', backgroundColor: 'rgba(99, 102, 241, 0.2)', borderWidth: 3, tension: 0.4, fill: true }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { max: 100, beginAtZero: true } } } });
+            }
+            const ctx2 = document.getElementById('focusChart');
+            if(ctx2) {
+                if(focusChartInstance) focusChartInstance.destroy();
+                const focusDates = Object.keys(state.dailyFocus).sort((a,b) => new Date(a) - new Date(b)).slice(-7); 
+                const focusData = focusDates.map(d => state.dailyFocus[d]);
+                focusChartInstance = new Chart(ctx2, { type: 'bar', data: { labels: focusDates, datasets: [{ label: t('minutes'), data: focusData, backgroundColor: '#10b981', borderRadius: 8 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } } });
+            }
+            const ctx3 = document.getElementById('moodFocusChart');
+            if(ctx3) {
+                const moodGroups = { 'great': [], 'good': [], 'neutral': [], 'bad': [] };
+                Object.keys(state.moods).forEach(d => { if(state.dailyFocus[d]) moodGroups[state.moods[d]].push(state.dailyFocus[d]); });
+                const moodAverages = Object.keys(moodGroups).map(m => moodGroups[m].length ? moodGroups[m].reduce((a,b)=>a+b,0)/moodGroups[m].length : 0);
+                new Chart(ctx3, { type: 'bar', data: { labels: ['🤩 Great', '😊 Good', '😐 Neutral', '😫 Bad'], datasets: [{ label: 'Avg Focus (Mins)', data: moodAverages, backgroundColor: ['#8b5cf6', '#10b981', '#f59e0b', '#ef4444'], borderRadius: 8 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } } });
+            }
         }
 
         // Exporting functions to Global Window Object for HTML inline event listeners
@@ -1104,7 +1205,8 @@
             addHabit, toggleHabit, deleteHabit, setMood, saveJournal, addFlashcard, deleteFlashcard, flipCardDOM, toggleFocusSound, 
             toggleTimer, resetTimer, startBreakManual, skipBreakManual, shareToWhatsApp, updateTargetDate, addCustomCategory, clearAllData, 
             deleteAccount, dismissReview, updateTimerSettings, setSoundType, installApp, publishAdminArticle, deleteAdminArticle,
-            exportData, exportDataPDF, importData, setRating, submitFeedback, editName, updateJournalTextSilent, togglePassword
+            exportData, exportDataPDF, importData, setRating, submitFeedback, editName, updateJournalTextSilent, togglePassword,
+            breakdownTaskAI, generateAIFlashcards, rateFlashcard, changeAvatar
         });
 
         function render() {
@@ -1283,10 +1385,16 @@
                         <select id="habit-cat" aria-label="Task Category" class="px-4 py-3 glass-btn rounded-xl font-bold">${Object.keys(state.categories).map(k => `<option value="${escapeHTML(k)}">${escapeHTML(state.categories[k].name)}</option>`).join('')}</select>
                     </div>
                     <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-                        <label class="flex items-center space-x-2 cursor-pointer font-bold text-sm text-slate-600 dark:text-slate-400">
-                            <input type="checkbox" id="habit-review" aria-label="Review Reminder" class="w-5 h-5 rounded text-indigo-600 accent-indigo-600"/>
-                            <span>${t('review_chk')}</span>
-                        </label>
+                        <div class="flex items-center space-x-4">
+                            <label class="flex items-center space-x-2 cursor-pointer font-bold text-sm text-slate-600 dark:text-slate-400">
+                                <input type="checkbox" id="habit-review" aria-label="Review Reminder" class="w-5 h-5 rounded text-indigo-600 accent-indigo-600"/>
+                                <span>${t('review_chk')}</span>
+                            </label>
+                            <label class="flex items-center space-x-2 cursor-pointer font-bold text-sm text-slate-600 dark:text-slate-400">
+                                <input type="checkbox" id="habit-recurring" aria-label="Recurring Habit" class="w-5 h-5 rounded text-emerald-600 accent-emerald-600"/>
+                                <span>Daily / දිනපතා</span>
+                            </label>
+                        </div>
                         <button onclick="window.addHabit()" class="bg-indigo-600 text-white px-8 py-3 rounded-xl font-black shadow-lg hover:bg-indigo-500 w-full md:w-auto">${t('add_btn')}</button>
                     </div>
                 </div>
@@ -1305,6 +1413,8 @@
                                     <span class="${escapeHTML(cat.color)} text-[10px] font-bold px-2 py-1 rounded-md shadow-sm border border-current opacity-80">${escapeHTML(cat.name.split('/')[0].trim())}</span>
                                     <span class="${escapeHTML(pri.class)} text-[10px] font-bold px-2 py-1 rounded-md shadow-sm border border-current opacity-80">${escapeHTML(pri.name)}</span>
                                     ${h.needsReview ? `<span class="bg-purple-100 text-purple-600 dark:bg-purple-900/50 dark:text-purple-300 text-[10px] font-bold px-2 py-1 rounded-md shadow-sm">🔄 Review</span>` : ''}
+                                    ${h.isRecurring ? `<span class="bg-emerald-100 text-emerald-600 dark:bg-emerald-900/50 dark:text-emerald-300 text-[10px] font-bold px-2 py-1 rounded-md shadow-sm">🔁 Daily</span>` : ''}
+                                    ${!h.completed ? `<button onclick="window.breakdownTaskAI(${h.id})" class="text-[10px] font-bold text-indigo-500 hover:underline">✨ AI Breakdown</button>` : ''}
                                 </div>
                             </div>
                         </div>
@@ -1348,7 +1458,31 @@
         }
 
         function renderFlashcards() {
-            return `<div class="max-w-4xl mx-auto space-y-10 pb-20"><header class="text-center"><h2 class="text-4xl font-black drop-shadow-md">${t('flashcards')}</h2></header><div class="glass-panel p-6 rounded-[2rem] flex flex-col md:flex-row gap-4"><input type="text" id="fc-q" aria-label="Flashcard Question" placeholder="${t('q_ph')}" class="flex-1 px-4 py-3 glass-btn rounded-xl outline-none font-bold"/><input type="text" id="fc-a" aria-label="Flashcard Answer" placeholder="${t('a_ph')}" class="flex-1 px-4 py-3 glass-btn rounded-xl outline-none font-bold"/><button onclick="window.addFlashcard()" class="bg-indigo-600 text-white px-6 py-3 rounded-xl font-black">${t('add_btn')}</button></div><div class="grid grid-cols-1 md:grid-cols-2 gap-6 perspective">${state.flashcards.length === 0 ? `<div class="col-span-full text-center py-10 text-slate-400 font-bold">${t('no_fc')}</div>` : state.flashcards.map(f => `<div class="relative h-48 w-full group cursor-pointer" onclick="window.flipCardDOM('${f.id}', this)" role="button" aria-label="Flip Flashcard"><div class="absolute inset-0 w-full h-full preserve-3d ${state.flippedCards[f.id] ? 'rotate-y-180' : ''}"><div class="absolute inset-0 backface-hidden glass-panel rounded-[2rem] p-6 flex flex-col justify-center items-center shadow-sm"><span class="text-xs font-bold text-indigo-500 mb-2">${t('fc_q')}</span><h3 class="text-xl font-black text-center break-words w-full">${escapeHTML(f.q)}</h3><button onclick="event.stopPropagation(); window.deleteFlashcard(${f.id})" aria-label="Delete Flashcard" class="absolute top-4 right-4 text-slate-400 hover:text-red-500 text-lg hover:scale-110 transition-transform">🗑️</button></div><div class="absolute inset-0 backface-hidden rotate-y-180 bg-indigo-600/90 text-white rounded-[2rem] p-6 flex flex-col justify-center items-center shadow-md"><span class="text-xs font-bold text-indigo-200 mb-2">${t('fc_a')}</span><h3 class="text-2xl font-black text-center break-words w-full">${escapeHTML(f.a)}</h3></div></div></div>`).join('')}</div></div>`;
+            const dueCards = state.flashcards.filter(f => !f.dueDate || f.dueDate <= Date.now());
+            const futureCards = state.flashcards.length - dueCards.length;
+
+            return `<div class="max-w-4xl mx-auto space-y-10 pb-20"><header class="text-center"><h2 class="text-4xl font-black drop-shadow-md">${t('flashcards')}</h2></header>
+            <div class="glass-panel p-6 rounded-[2rem] flex flex-col space-y-4">
+                <div class="flex flex-col md:flex-row gap-4">
+                    <input type="text" id="fc-q" aria-label="Flashcard Question" placeholder="${t('q_ph')}" class="flex-1 px-4 py-3 glass-btn rounded-xl outline-none font-bold"/>
+                    <input type="text" id="fc-a" aria-label="Flashcard Answer" placeholder="${t('a_ph')}" class="flex-1 px-4 py-3 glass-btn rounded-xl outline-none font-bold"/>
+                    <button onclick="window.addFlashcard()" class="bg-indigo-600 text-white px-6 py-3 rounded-xl font-black">${t('add_btn')}</button>
+                </div>
+                <button onclick="window.generateAIFlashcards()" class="w-full py-3 border-2 border-indigo-200 dark:border-indigo-800 text-indigo-600 dark:text-indigo-400 font-bold rounded-xl hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-colors flex justify-center items-center gap-2">✨ AI මගින් Flashcards සෑදීම</button>
+            </div>
+            
+            ${futureCards > 0 ? `<div class="text-center font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 p-3 rounded-xl border border-emerald-200 dark:border-emerald-800">🎉 Flashcards ${futureCards} ක් සාර්ථකව මතක තබාගෙන ඇත (Reviewed). අදට නියමිත ඒවා පහතින්:</div>` : ''}
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 perspective">${dueCards.length === 0 ? `<div class="col-span-full text-center py-10 text-slate-400 font-bold">${state.flashcards.length > 0 ? 'අද දිනට නියමිත Flashcards අවසන්!' : t('no_fc')}</div>` : dueCards.map(f => `<div class="relative h-56 w-full group cursor-pointer" onclick="window.flipCardDOM('${f.id}', this)" role="button" aria-label="Flip Flashcard"><div class="absolute inset-0 w-full h-full preserve-3d ${state.flippedCards[f.id] ? 'rotate-y-180' : ''}"><div class="absolute inset-0 backface-hidden glass-panel rounded-[2rem] p-6 flex flex-col justify-center items-center shadow-sm"><span class="text-xs font-bold text-indigo-500 mb-2">${t('fc_q')}</span><h3 class="text-xl font-black text-center break-words w-full">${escapeHTML(f.q)}</h3><button onclick="event.stopPropagation(); window.deleteFlashcard(${f.id})" aria-label="Delete Flashcard" class="absolute top-4 right-4 text-slate-400 hover:text-red-500 text-lg hover:scale-110 transition-transform">🗑️</button></div>
+            <div class="absolute inset-0 backface-hidden rotate-y-180 bg-indigo-600/90 text-white rounded-[2rem] p-4 flex flex-col justify-between items-center shadow-md">
+                <span class="text-xs font-bold text-indigo-200">${t('fc_a')}</span>
+                <h3 class="text-2xl font-black text-center break-words w-full overflow-y-auto custom-scrollbar max-h-24">${escapeHTML(f.a)}</h3>
+                <div class="flex gap-2 w-full mt-2">
+                    <button onclick="event.stopPropagation(); window.rateFlashcard(${f.id}, 0)" class="flex-1 py-2 bg-red-500 hover:bg-red-400 text-white text-[10px] font-black rounded-lg shadow-sm">Hard</button>
+                    <button onclick="event.stopPropagation(); window.rateFlashcard(${f.id}, 1)" class="flex-1 py-2 bg-yellow-500 hover:bg-yellow-400 text-white text-[10px] font-black rounded-lg shadow-sm">Good</button>
+                    <button onclick="event.stopPropagation(); window.rateFlashcard(${f.id}, 2)" class="flex-1 py-2 bg-emerald-500 hover:bg-emerald-400 text-white text-[10px] font-black rounded-lg shadow-sm">Easy</button>
+                </div>
+            </div></div></div>`).join('')}</div></div>`;
         }
 
         function renderLibrary() {
@@ -1370,6 +1504,10 @@
 
         function renderStats() {
             return `<div class="space-y-10 pb-20"><header class="text-center"><h2 class="text-4xl font-black drop-shadow-md">${t('stats')}</h2></header><div class="grid grid-cols-1 md:grid-cols-2 gap-6"><div class="glass-panel p-8 rounded-[2rem] text-center shadow-sm"><h4 class="text-5xl font-black mb-2 drop-shadow-md"><span class="inline-block">⌛</span> ${Math.floor((state.stats.totalFocusMinutes || 0)/60)}<span class="text-2xl text-slate-500">h</span> ${((state.stats.totalFocusMinutes || 0)%60)}<span class="text-2xl text-slate-500">m</span></h4><p class="font-bold uppercase tracking-widest text-xs text-slate-500">${t('total_focus')}</p></div><div class="glass-panel p-8 rounded-[2rem] text-center shadow-sm"><h4 class="text-5xl font-black mb-2 drop-shadow-md text-orange-500"><span class="inline-block">🔥</span> ${state.streak.count}</h4><p class="font-bold uppercase tracking-widest text-xs text-slate-500">Current Streak (Days)</p></div></div><div class="grid grid-cols-1 lg:grid-cols-2 gap-8"><div class="glass-panel p-8 rounded-[3rem] shadow-sm"><h4 class="font-black mb-6 text-center text-slate-600 dark:text-slate-300 drop-shadow-sm"><span class="inline-block">📈</span> ${t('progress_chart')}</h4><div class="chart-container"><canvas id="progressChart" aria-label="Progress Chart" role="img"></canvas></div></div><div class="glass-panel p-8 rounded-[3rem] shadow-sm"><h4 class="font-black mb-6 text-center text-slate-600 dark:text-slate-300 drop-shadow-sm"><span class="inline-block">📊</span> ${t('focus_chart')}</h4><div class="chart-container"><canvas id="focusChart" aria-label="Focus Time Chart" role="img"></canvas></div></div>
+            <div class="glass-panel p-8 rounded-[3rem] shadow-sm lg:col-span-2">
+                <h4 class="font-black mb-6 text-center text-slate-600 dark:text-slate-300 drop-shadow-sm"><span class="inline-block">🎭</span> Mood vs Focus Analytics</h4>
+                <div class="chart-container"><canvas id="moodFocusChart" aria-label="Mood vs Focus Chart" role="img"></canvas></div>
+            </div>
             <div class="glass-panel p-8 rounded-[3rem] shadow-sm lg:col-span-2">
                 <h4 class="font-black mb-2 text-center text-slate-600 dark:text-slate-300 drop-shadow-sm">${t('heatmap_title')}</h4>
                 <p class="text-xs text-center text-slate-500 mb-6">${t('heatmap_desc')}</p>
@@ -1418,13 +1556,18 @@
                 </div>`;
             }
 
+            let badgesHTML = '';
+            if (state.badges && state.badges.length > 0) {
+                badgesHTML = `<div class="glass-panel p-6 rounded-[2rem] shadow-sm mt-6 text-left"><h4 class="font-black text-indigo-600 dark:text-indigo-400 mb-4">🏆 මගේ පදක්කම්</h4><div class="flex flex-wrap gap-4 justify-center">${state.badges.map(b => `<div class="flex flex-col items-center bg-slate-100 dark:bg-slate-800 p-3 rounded-2xl w-24 text-center border border-slate-200 dark:border-slate-700 shadow-sm" title="${badgeDict[b]?.d || ''}"><span class="text-3xl mb-2 drop-shadow-sm">${badgeDict[b]?.i || '🎖️'}</span><span class="text-[10px] font-black text-slate-700 dark:text-slate-300 tracking-tight leading-tight">${badgeDict[b]?.n || 'Badge'}</span></div>`).join('')}</div></div>`;
+            }
+
             return `<div class="max-w-2xl mx-auto space-y-8 pb-20">
                 <header class="text-center"><h2 class="text-4xl font-black drop-shadow-md">${t('profile')}</h2></header>
                 
                 ${leaderboardHTML}
 
                 <div class="glass-panel p-8 md:p-10 rounded-[3rem] shadow-sm text-center relative">
-                    <div class="w-24 h-24 bg-gradient-to-tr from-indigo-500 to-purple-500 rounded-full flex items-center justify-center mx-auto mb-4 shadow-xl text-4xl text-white font-black cursor-pointer">${escapeHTML(userName).charAt(0).toUpperCase()}</div>
+                    <div onclick="window.changeAvatar()" class="w-28 h-28 bg-gradient-to-tr from-indigo-500 to-purple-500 rounded-full flex items-center justify-center mx-auto mb-4 shadow-xl text-5xl text-white font-black cursor-pointer hover:scale-110 transition-transform" title="Click to change Avatar" aria-label="Change Avatar">${escapeHTML(state.user.avatar || '👤')}</div>
                     <h3 class="text-3xl font-black mb-1 flex justify-center items-center gap-2">
                         <span>${escapeHTML(userName)}</span>
                         <button onclick="window.editName()" class="text-lg text-slate-400 hover:text-indigo-500 transition-colors" title="Edit Name" aria-label="Edit Name">✏️</button>
@@ -1438,6 +1581,8 @@
                         <div><p class="text-2xl font-black text-emerald-500">${state.user.xp}</p><p class="text-[10px] uppercase font-bold text-slate-500 mt-1">XP</p></div>
                         <div><p class="text-2xl font-black text-orange-500">${escapeHTML(state.user.joined)}</p><p class="text-[10px] uppercase font-bold text-slate-500 mt-1">Joined</p></div>
                     </div>
+
+                    ${badgesHTML}
                 </div>
 
                 <div class="glass-panel p-8 md:p-10 rounded-[3rem] space-y-6 shadow-sm text-center">
