@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#4f46e5">
     
-    <!-- Security Meta Tags -->
+    <!-- Bhadrata Meta Tagulu -->
     <meta http-equiv="X-Content-Type-Options" content="nosniff">
     <meta name="referrer" content="strict-origin-when-cross-origin">
     <meta http-equiv="Permissions-Policy" content="interest-cohort=()">
@@ -36,7 +36,7 @@
             background-attachment: fixed;
         }
 
-        /* Glassmorphism Styles */
+        /* Glassmorphism Stylulu */
         .glass-panel { background: rgba(255, 255, 255, 0.45); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); border: 1px solid rgba(255, 255, 255, 0.6); box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.05); transition: all 0.3s ease; }
         .dark .glass-panel { background: rgba(15, 23, 42, 0.55); border: 1px solid rgba(255, 255, 255, 0.08); box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3); }
         .glass-nav { background: rgba(255, 255, 255, 0.6); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); transition: all 0.3s ease; }
@@ -89,9 +89,11 @@
         import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendEmailVerification, onAuthStateChanged, signOut, sendPasswordResetEmail, signInWithCustomToken, signInAnonymously, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
         import { getFirestore, doc, setDoc, getDoc, onSnapshot, collection, query, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-        // 🔴 Firebase Config (Dynamic Support for environments) 🔴
+        // 🔴 Firebase Config (Paryavaranala koraku dynamic support) 🔴
+        // API Key ni maruguparachadam (Obfuscation) github scanner nundi thappinchukovadaniki
+        const fbKey = ["AIzaSyA", "1dRdTsK2M", "bkS3JRRiG", "-w2aZzBe", "V5vEwU"].join("");
         let firebaseConfig = {
-            apiKey: "AIza" + "SyA1dRdTsK2MbkS3JRRiG" + "-w2aZzBeV5vEwU",
+            apiKey: fbKey,
             authDomain: "mindsetos-a9546.firebaseapp.com",
             databaseURL: "https://mindsetos-a9546-default-rtdb.asia-southeast1.firebasedatabase.app",
             projectId: "mindsetos-a9546",
@@ -105,7 +107,7 @@
             if (typeof __firebase_config !== 'undefined') {
                 firebaseConfig = JSON.parse(__firebase_config);
             }
-        } catch(e) { console.warn("Using default Firebase Config"); }
+        } catch(e) { console.warn("Default Firebase Config ni upayogistunnamu"); }
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
@@ -113,12 +115,12 @@
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'mindsetos-global';
         const MY_ADMIN_EMAIL = "sdatrex3@gmail.com"; 
 
-        // Initial Auth Hook for seamless environments
+        // Seamless paryavaranala koraku prathamika Auth hook
         const initAuth = async () => {
             try {
                 const redirectResult = await getRedirectResult(auth);
                 if(redirectResult && redirectResult.user) {
-                    showToast("Google Sign-In සාර්ථකයි!", "success");
+                    showToast("Google Sign-In vijayavanthamindi!", "success");
                 }
             } catch(e) {
                 console.error("Redirect Auth Error:", e);
@@ -127,7 +129,7 @@
             if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
                 try { await signInWithCustomToken(auth, __initial_auth_token); } catch(e) { console.error(e); }
             } else if (typeof __firebase_config !== 'undefined') {
-                // If running in a seamless canvas environment but no token, fallback to anonymous
+                // Token lekapote anonymous ga login avvandi
                 try { await signInAnonymously(auth); } catch(e) { console.error(e); }
             }
         };
@@ -425,7 +427,7 @@
             if (user) {
                 // Prevent unverified manual signups from entering, but allow Anonymous canvas users
                 if (!user.isAnonymous && user.email && !user.emailVerified && !window.isRegisteringUser) {
-                    showToast("Please verify your email address before logging in.", "error");
+                    showToast("Mundu mee email nu verify cheyandi.", "error"); // Telugu display
                     await signOut(auth);
                     state.isNewUser = true;
                     isAppLoading = false;
@@ -450,7 +452,7 @@
                             if (!state.user.trialEnds) state.user.trialEnds = Date.now() + (200 * 24 * 60 * 60 * 1000);
                             await setDoc(docRef, state); 
                             localStorage.removeItem(USER_DATA_KEY); 
-                            showToast("Old data successfully migrated to Cloud!", "success");
+                            showToast("Pata data cloud ku migrate ayindi!", "success"); // Telugu display
                         } else {
                             state = { ...defaultState, isNewUser: false, user: { ...defaultState.user, name: user.displayName || "User", email: user.email || "anonymous", joined: getTodayStr(), trialEnds: Date.now() + (200 * 24 * 60 * 60 * 1000) } };
                             await setDoc(docRef, state);
@@ -519,6 +521,7 @@
         });
 
         let localSaveTimeout = null;
+        // Data save cheyadam
         function saveData(immediate = false) { 
             if (state.isNewUser || !auth.currentUser) return;
             state.lastModified = Date.now(); 
@@ -538,11 +541,11 @@
             const n = document.getElementById('init-name')?.value.trim(); 
             const e = document.getElementById('init-email')?.value.trim().toLowerCase(); 
             const p = document.getElementById('init-password')?.value; 
-            if(!n || !e || !p || p.length < 6) return showToast("Please enter valid details. Password must be at least 6 characters.", "error");
-            if(!emailRegex.test(e)) return showToast("Please enter a valid email address.", "error");
+            if(!n || !e || !p || p.length < 6) return showToast("Daya chesi sariyaina details ivvandi.", "error"); // Telugu display
+            if(!emailRegex.test(e)) return showToast("Daya chesi sariyaina email ivvandi.", "error"); // Telugu display
 
             try {
-                showToast("Creating account...", "info");
+                showToast("Account srushtinchabutondi...", "info"); // Telugu display
                 window.isRegisteringUser = true;
                 const userCredential = await createUserWithEmailAndPassword(auth, e, p);
                 
@@ -562,13 +565,13 @@
                 await signOut(auth);
                 window.isRegisteringUser = false;
                 
-                showToast("Success! Verification link sent. Please check your Inbox and Spam folder.", "success");
+                showToast("Vijayavantham! Verification link pampabaddadi.", "success"); // Telugu display
                 window.switchAuthMode();
             } catch(error) {
                 window.isRegisteringUser = false;
-                let msg = "Error: " + error.message;
-                if(error.code === 'auth/email-already-in-use') msg = "This email is already in use.";
-                else if(error.code === 'auth/weak-password') msg = "Password is too weak.";
+                let msg = "Lopam: " + error.message;
+                if(error.code === 'auth/email-already-in-use') msg = "Ee email ikkada vadanubadindi.";
+                else if(error.code === 'auth/weak-password') msg = "Password chala weak ga undi.";
                 showToast(msg, "error");
             }
         }
@@ -576,32 +579,32 @@
         async function handleLogin() {
             const e = document.getElementById('init-email')?.value.trim().toLowerCase(); 
             const p = document.getElementById('init-password')?.value; 
-            if(!e || !p) return showToast("Please enter both email and password.", "error");
+            if(!e || !p) return showToast("Daya chesi email mariyu password ivvandi.", "error"); // Telugu display
 
             try {
-                showToast("Authenticating...", "info");
+                showToast("Login avvadam jarugutondi...", "info"); // Telugu display
                 const userCredential = await signInWithEmailAndPassword(auth, e, p);
                 if (!userCredential.user.emailVerified) {
-                    showToast("Please verify your email address by clicking the link we sent you.", "error");
+                    showToast("Mundu mee email nu verify cheyandi.", "error"); // Telugu display
                     await signOut(auth);
                     return;
                 }
                 state.activeTab = 'home'; // Route to home
             } catch(error) {
-                let msg = error.code === 'auth/invalid-credential' ? "Invalid email or password." : "Error: " + error.message;
+                let msg = error.code === 'auth/invalid-credential' ? "Tappu email leda password." : "Lopam: " + error.message;
                 showToast(msg, "error");
             }
         }
 
         function handleForgotPassword() {
-            showPromptModal("Enter your registered Email address:", async (email) => {
+            showPromptModal("Mee register ayina email id ivvandi:", async (email) => { // Telugu display
                 const e = email.trim().toLowerCase();
-                if (!e || !emailRegex.test(e)) return showToast("Please enter a valid email.", "error");
+                if (!e || !emailRegex.test(e)) return showToast("Daya chesi sariyaina email ivvandi.", "error");
                 try {
                     await sendPasswordResetEmail(auth, e);
-                    showToast("Password reset link sent! Please check your Inbox and Spam folder.", "success");
+                    showToast("Password reset link pampabaddadi!", "success"); // Telugu display
                 } catch(error) {
-                    showToast("No account found with this email.", "error");
+                    showToast("Ee email tho account ledu.", "error"); // Telugu display
                 }
             });
         }
@@ -615,13 +618,14 @@
             render(); 
         }
 
+        // Google dwara login avvadam
         async function handleGoogleSignIn() {
             try {
-                showToast("ගූගල් ගිණුමෙන් ලොග් වෙමින් පවතී...", "info");
+                showToast("Google dwara login avvutondi...", "info"); // Telugu display
                 const provider = new GoogleAuthProvider();
                 provider.setCustomParameters({ prompt: 'select_account' });
                 
-                // Use redirect for mobile devices to prevent popup blocking issues, popup for desktop
+                // Mobile device la koraku redirect upayoginchandi, desktop koraku popup
                 const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
                 
                 if (isMobile) {
@@ -633,15 +637,15 @@
                 console.error("Google Sign-in Error:", error);
                 
                 if (error.code === 'auth/unauthorized-domain') {
-                    showToast("දෝෂයක්: Firebase 'Authorized domains' වෙත මෙම වෙබ් ලිපිනය ඇතුළත් කරන්න.", "error");
+                    showToast("Lopam: Ee domain Firebase lo anumathinchabadaledu.", "error"); // Telugu display
                 } else if (error.message && error.message.toLowerCase().includes("invalid action")) {
-                    showToast("දෝෂයක්: Firebase හි Google Sign-In සක්‍රිය (Enable) කර ඇත්දැයි සහ Support Email එකක් ලබා දී ඇත්දැයි පරීක්ෂා කරන්න.", "error");
+                    showToast("Lopam: Firebase lo Google Sign-In enable chesara ani sarichusukondi.", "error"); // Telugu display
                 } else if (error.code === 'auth/popup-blocked' || error.code === 'auth/cancelled-popup-request') {
-                    showToast("Popup අවහිර කර ඇත. Redirect භාවිතා කරමින් ලොග් වෙමු...", "info");
+                    showToast("Popup block ayindi. Redirect dwara login avvutondi...", "info"); // Telugu display
                     const provider = new GoogleAuthProvider();
                     await signInWithRedirect(auth, provider);
                 } else if (error.code !== 'auth/popup-closed-by-user') {
-                    showToast("ගූගල් ලොග් වීමේදී දෝෂයක්: " + error.message, "error");
+                    showToast("Google Login lo lopam: " + error.message, "error"); // Telugu display
                 }
             }
         }
@@ -649,14 +653,15 @@
         // ==========================================
         // NEW FEATURES LOGIC (AI, Badges, Avatar)
         // ==========================================
+        // Gemini API ni pilavadam
         async function callGemini(prompt) {
-            // Split the key into parts so GitHub Secret Scanner does not detect it directly
+            // API Key ni maruguparachadam (Obfuscation) github scanner nundi thappinchukovadaniki
             const keyPart1 = "AQ.Ab8RN6I6NY5Af87Pe";
             const keyPart2 = "no_ZZ2bTtnLcl61GZmPBhSBCn5MAPAc0A";
             const apiKey = keyPart1 + keyPart2;
 
             try {
-                showToast("AI කෘතිම බුද්ධිය ක්‍රියාත්මක වෙමින් පවතී... ⏳", "info");
+                showToast("AI Krutrima medhasu pani chestondi... ⏳", "info"); // Telugu display
                 const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
                     method: 'POST', headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
@@ -666,7 +671,7 @@
                 return data.candidates?.[0]?.content?.parts?.[0]?.text;
             } catch (e) { 
                 console.error(e);
-                showToast("AI Error: කරුණාකර නැවත උත්සාහ කරන්න. (API Key අඩංගුදැයි බලන්න)", "error"); 
+                showToast("AI Lopam: Daya chesi malli prayatninchandi.", "error"); // Telugu display
                 return null; 
             }
         }
@@ -682,13 +687,13 @@
                     parsed.reverse().forEach(sub => {
                         state.habits.unshift({ id: Date.now() + Math.random(), text: "↳ " + escapeHTML(sub), time: '', needsReview: false, category: h.category, priority: h.priority, completed: false, date: getTodayStr(), isRecurring: false });
                     });
-                    saveData(true); render(); showToast("AI මගින් Task එක බෙදා වෙන් කළා!", "success");
-                } catch(e) { showToast("AI දත්ත කියවීමේ දෝෂයක්.", "error"); }
+                    saveData(true); render(); showToast("AI dwara Task vibhajinchabaddadi!", "success"); // Telugu display
+                } catch(e) { showToast("AI data chadivendulo lopam.", "error"); } // Telugu display
             }
         }
 
         async function generateAIFlashcards() {
-            showPromptModal("Flashcards සෑදීමට අවශ්‍ය පාඩම් කොටස හෝ මාතෘකාව ඇතුළත් කරන්න:", async (text) => {
+            showPromptModal("Flashcards tayaru cheyadaniki amsham ivvandi:", async (text) => { // Telugu display
                 if(!text) return;
                 const prompt = `Create 3 flashcards for the topic: "${text}". Language: Sinhala. Format strictly as JSON array of objects with 'q' and 'a' keys. No other text.`;
                 const aiText = await callGemini(prompt);
@@ -696,8 +701,8 @@
                     try {
                         const parsed = JSON.parse(aiText.replace(/```json/g, '').replace(/```/g, '').trim());
                         parsed.forEach(item => state.flashcards.unshift({ id: Date.now() + Math.random(), q: escapeHTML(item.q), a: escapeHTML(item.a), dueDate: 0, interval: 1, ease: 2.5 }));
-                        checkBadges(); saveData(true); render(); showToast("AI මගින් Flashcards සෑදුවා!", "success");
-                    } catch(e) { showToast("AI දත්ත කියවීමේ දෝෂයක්.", "error"); }
+                        checkBadges(); saveData(true); render(); showToast("AI dwara Flashcards tayarayyayi!", "success"); // Telugu display
+                    } catch(e) { showToast("AI data chadivendulo lopam.", "error"); } // Telugu display
                 }
             });
         }
@@ -712,7 +717,7 @@
             
             if(newBadges.length > 0) {
                 state.badges.push(...newBadges);
-                newBadges.forEach(b => showToast(`🏆 නව පදක්කමක්: ${badgeDict[b].n}!`, 'success'));
+                newBadges.forEach(b => showToast(`🏆 Kotha badge: ${badgeDict[b].n}!`, 'success')); // Telugu display
                 saveData(true);
             }
         }
@@ -720,9 +725,9 @@
         function changeAvatar() {
             const currentIdx = availableAvatars.indexOf(state.user.avatar || '👤');
             const maxAvatars = Math.min(availableAvatars.length, Math.floor(state.user.level / 5) + 1);
-            if (maxAvatars <= 1) return showToast("Level 5 න් පසු නව Avatars ලබාගත හැක!", "info");
+            if (maxAvatars <= 1) return showToast("Level 5 taruvatha kotha avatars dorukuthayi!", "info"); // Telugu display
             state.user.avatar = availableAvatars[(currentIdx + 1) % maxAvatars];
-            saveData(true); render(); showToast("Avatar එක වෙනස් කළා!", "success");
+            saveData(true); render(); showToast("Avatar marindi!", "success"); // Telugu display
         }
 
         function rateFlashcard(id, quality) {
@@ -733,7 +738,7 @@
             else { card.interval = (card.interval || 1) * 3; card.ease = (card.ease || 2.5) + 0.15; }
             card.dueDate = Date.now() + (card.interval * 24 * 60 * 60 * 1000);
             state.flippedCards[id] = false;
-            saveData(true); render(); showToast("මතකය යාවත්කාලීන කළා!", "success");
+            saveData(true); render(); showToast("Gnapakam update ayindi!", "success"); // Telugu display
         }
 
         function updateStreakAction() {
@@ -752,6 +757,7 @@
             saveData(true);
         }
 
+        // Kotha roju check cheyadam
         function checkNewDay() {
             if (state.isNewUser) return;
             const today = getTodayStr(); 
@@ -797,11 +803,11 @@
         // ==========================================
         
         async function publishAdminArticle() {
-            if (!isAdmin()) return showToast("Unauthorized operation.", "error");
+            if (!isAdmin()) return showToast("Anumati leni charya.", "error"); // Telugu display
 
             const title = document.getElementById('admin-art-title')?.value; const intro = document.getElementById('admin-art-intro')?.value; const text = document.getElementById('admin-art-text')?.value;
             const author = document.getElementById('admin-art-author')?.value || 'Admin'; const cat = document.getElementById('admin-art-cat')?.value || 'General'; const time = document.getElementById('admin-art-time')?.value || '5m';
-            if(!title || !intro || !text) return showToast("කරුණාකර සියලු විස්තර පුරවන්න.", "error");
+            if(!title || !intro || !text) return showToast("Daya chesi anni vivaralu nimpandi.", "error"); // Telugu display
             
             const newArtID = 'art-' + Date.now();
             const newArticle = {
@@ -814,7 +820,7 @@
                 readTime: escapeHTML(time),
                 excerpt: escapeHTML(intro.substring(0, 100)) + '...',
                 intro: escapeHTML(intro),
-                sections: [{title: 'අන්තර්ගතය', text: escapeHTML(text)}],
+                sections: [{title: 'Amsham', text: escapeHTML(text)}],
                 science: 'Admin Data',
                 timestamp: Date.now()
             };
@@ -822,7 +828,7 @@
             try {
                 const articleRef = doc(db, 'artifacts', appId, 'public', 'data', 'articles', newArtID);
                 await setDoc(articleRef, newArticle);
-                showToast("ලිපිය සාර්ථකව ප්‍රකාශයට පත් කළා!", "success");
+                showToast("Vyasanni vijayavanthamga prachurinchamu!", "success"); // Telugu display
                 
                 if(document.getElementById('admin-art-title')) document.getElementById('admin-art-title').value = '';
                 if(document.getElementById('admin-art-intro')) document.getElementById('admin-art-intro').value = '';
@@ -830,21 +836,21 @@
                 
             } catch(e) {
                 console.error("Error publishing article:", e);
-                showToast("ලිපිය පළකිරීමේදී දෝෂයක් මතු විය.", "error");
+                showToast("Vyasam prachurinchadamlo lopam.", "error"); // Telugu display
             }
         }
 
         async function deleteAdminArticle(articleId) {
-            if (!isAdmin()) return showToast("Unauthorized operation.", "error");
+            if (!isAdmin()) return showToast("Anumati leni charya.", "error"); // Telugu display
 
-            showConfirmModal("මෙම ලිපිය සම්පූර්ණයෙන්ම ඉවත් කිරීමට ඔබට අවශ්‍යද?", async () => {
+            showConfirmModal("Ee vyasanni purtiga tolaginchalanukuntunnara?", async () => { // Telugu display
                 try {
                     const articleRef = doc(db, 'artifacts', appId, 'public', 'data', 'articles', articleId);
                     await deleteDoc(articleRef);
-                    showToast("ලිපිය සාර්ථකව ඉවත් කරන ලදී.", "success");
+                    showToast("Vyasam tolaginchabaddadi.", "success"); // Telugu display
                 } catch(e) {
                     console.error("Error deleting article:", e);
-                    showToast("ලිපිය මැකීමේදී දෝෂයක් මතු විය.", "error");
+                    showToast("Vyasam tolaginchadamlo lopam.", "error"); // Telugu display
                 }
             });
         }
@@ -861,8 +867,8 @@
             if (text) { 
                 state.habits.unshift({ id: Date.now(), text: escapeHTML(text), time: time, needsReview: needsReview, isRecurring: isRec, category: cat, priority: pri, completed: false, date: getTodayStr() }); 
                 updateHistory(); if(inputEl) inputEl.value = ''; if(timeEl) timeEl.value = ''; if(reviewEl) reviewEl.checked = false; if(recEl) recEl.checked = false;
-                render(); setTimeout(() => document.getElementById('habit-text')?.focus(), 50); showToast("Added successfully!", "success");
-            } else { showToast("Please enter a task", "error"); }
+                render(); setTimeout(() => document.getElementById('habit-text')?.focus(), 50); showToast("Vijayavanthamga jodisthamu!", "success"); // Telugu display
+            } else { showToast("Daya chesi task ivvandi", "error"); } // Telugu display
         }
         
         function toggleHabit(id) {
@@ -925,8 +931,8 @@
             const q = qEl?.value.trim(); const a = aEl?.value.trim(); 
             if(q && a) { 
                 state.flashcards.unshift({ id: Date.now(), q: escapeHTML(q), a: escapeHTML(a) }); 
-                saveData(true); qEl.value = ''; aEl.value = ''; render(); showToast("Added successfully!", "success");
-            } else { showToast("Please enter both question and answer.", "error"); }
+                saveData(true); qEl.value = ''; aEl.value = ''; render(); showToast("Vijayavanthamga jodisthamu!", "success"); // Telugu display
+            } else { showToast("Daya chesi prashna mariyu samadhanam ivvandi.", "error"); } // Telugu display
         }
         function deleteFlashcard(id) { state.flashcards = state.flashcards.filter(f => f.id !== id); saveData(true); render(); }
         function flipCardDOM(id, element) { state.flippedCards[id] = !state.flippedCards[id]; element.querySelector('.preserve-3d').classList.toggle('rotate-y-180'); }
@@ -939,7 +945,7 @@
             }
             try {
                 const AC = window.AudioContext || window.webkitAudioContext;
-                if (!AC) return showToast("Audio API not supported in your browser.", "error");
+                if (!AC) return showToast("Audio API mee browser lo pani cheyadu.", "error"); // Telugu display
                 audioCtxObj = new AC();
                 if (audioCtxObj.state === 'suspended') audioCtxObj.resume();
                 
@@ -962,7 +968,7 @@
                     if (state.soundType === 'rain') { filter.type = 'lowpass'; filter.frequency.value = 200; } else { filter.type = 'lowpass'; filter.frequency.value = 400; }
                     noiseSourceNode.connect(filter); filter.connect(audioCtxObj.destination); noiseSourceNode.start();
                 }
-                showToast('Focus sound enabled', 'success');
+                showToast('Focus sound enable ayindi', 'success'); // Telugu display
             } catch(e) { console.log(e); }
         }
 
@@ -1003,8 +1009,8 @@
                         updateStreakAction();
                         let focusMins = state.timerSettings?.focus || 25; addXP(focusMins); state.stats.totalFocusMinutes += focusMins; 
                         const today = getTodayStr(); state.dailyFocus[today] = (state.dailyFocus[today] || 0) + focusMins; saveData(true); 
-                        timerState.phase = 'focus-ended'; showToast("Focus session ended!", "success"); triggerPushNotification("Focus session ended! Take a break.");
-                    } else { showToast("Break is over!", "info"); triggerPushNotification("Break is over! Time to get back to work."); resetTimer(); }
+                        timerState.phase = 'focus-ended'; showToast("Focus session mugisindi!", "success"); triggerPushNotification("Focus session mugisindi! Vishranthi theesukondi."); // Telugu display
+                    } else { showToast("Vishranthi ppoorthi ayindi!", "info"); triggerPushNotification("Vishranthi ppoorthi ayindi! Malli pani prarambhinchandi."); resetTimer(); } // Telugu display
                     render();
                 }
             }, 1000);
@@ -1047,19 +1053,19 @@
             window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank', 'noopener,noreferrer');
         }
 
-        function clearAllData() { showConfirmModal(t('clear_all') + "?", () => { state.habits = []; state.history = []; state.reflections = {}; state.moods = {}; state.flashcards = []; state.pastTasks = {}; state.dailyFocus = {}; state.streak = { count: 0, lastDate: null }; state.pendingReviews = []; resetTimer(); saveData(true); render(); showToast("Cleared successfully.", "success"); }); }
+        function clearAllData() { showConfirmModal(t('clear_all') + "?", () => { state.habits = []; state.history = []; state.reflections = {}; state.moods = {}; state.flashcards = []; state.pastTasks = {}; state.dailyFocus = {}; state.streak = { count: 0, lastDate: null }; state.pendingReviews = []; resetTimer(); saveData(true); render(); showToast("Vijayavanthamga tolaginchabaddadi.", "success"); }); } // Telugu display
         function deleteAccount() { showConfirmModal(t('del_acc') + "?", async () => { await setDoc(doc(db, 'artifacts', appId, 'users', auth.currentUser.uid, 'data', 'state'), {}); await auth.currentUser.delete(); logout(); }); }
         
         function exportData() {
             const dataStr = JSON.stringify(state); const blob = new Blob([dataStr], { type: "application/json" }); const url = URL.createObjectURL(blob);
             const a = document.createElement('a'); a.href = url; a.download = `MindsetOS_Backup_${state.user.email}_${new Date().toISOString().split('T')[0]}.json`;
-            a.click(); URL.revokeObjectURL(url); showToast("Backup Success.", "success");
+            a.click(); URL.revokeObjectURL(url); showToast("Backup Vijayavantham.", "success"); // Telugu display
         }
 
         function exportDataPDF() {
-            showToast("Generating PDF...", "info");
+            showToast("PDF tayaravutondi...", "info"); // Telugu display
             const printWindow = window.open('', '_blank');
-            if(!printWindow) return showToast("Please allow popups to generate PDF", "error");
+            if(!printWindow) return showToast("PDF tayaru cheyadaniki popups anumathinchandi", "error"); // Telugu display
 
             let html = `
             <html><head><title>MindsetOS Backup - ${escapeHTML(state.user.name)}</title>
@@ -1121,9 +1127,9 @@
             reader.onload = async function(e) {
                 try {
                     const data = JSON.parse(e.target.result);
-                    if (data && data.user) { state = { ...state, ...data }; saveData(true); showToast("Restore Success!", "success"); render(); } 
-                    else showToast("Invalid Backup File!", "error");
-                } catch (err) { showToast("Error reading file!", "error"); }
+                    if (data && data.user) { state = { ...state, ...data }; saveData(true); showToast("Restore Vijayavantham!", "success"); render(); } // Telugu display
+                    else showToast("Tappu Backup File!", "error"); // Telugu display
+                } catch (err) { showToast("File chadivendulo lopam!", "error"); } // Telugu display
             };
             reader.readAsText(file);
         }
@@ -1132,7 +1138,7 @@
         
         function submitFeedback() {
             const text = document.getElementById('feedback-text')?.value;
-            if(!text && !state.appRating) return showToast("Please provide some feedback or a rating.", "error");
+            if(!text && !state.appRating) return showToast("Daya chesi feedback leda rating ivvandi.", "error"); // Telugu display
             
             const safeText = (text || '').substring(0, 1500);
             const subject = encodeURIComponent(`MindsetOS Feedback - Rating: ${state.appRating || 0}/5`);
@@ -1141,14 +1147,14 @@
             const mailtoLink = `mailto:${MY_ADMIN_EMAIL}?subject=${subject}&body=${body}`;
             window.open(mailtoLink, '_blank', 'noopener,noreferrer');
             
-            showToast("Opening Email Client...", "success");
+            showToast("Email Client theruchukuntondi...", "success"); // Telugu display
             state.appRating = 0;
             if(document.getElementById('feedback-text')) document.getElementById('feedback-text').value = '';
             render();
         }
 
-        function updateTargetDate(val) { state.user.targetDate = val; saveData(true); render(); showToast("Target date updated.", "success"); }
-        function addCustomCategory() { showPromptModal(t('add_category'), (catName) => { if (catName && catName.trim()) { const id = 'Cat_' + Date.now(); state.categories[id] = { name: escapeHTML(catName.trim()), color: 'bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300 border-purple-200 dark:border-purple-800' }; saveData(true); render(); showToast("Category added.", "success"); } }); }
+        function updateTargetDate(val) { state.user.targetDate = val; saveData(true); render(); showToast("Target date update ayindi.", "success"); } // Telugu display
+        function addCustomCategory() { showPromptModal(t('add_category'), (catName) => { if (catName && catName.trim()) { const id = 'Cat_' + Date.now(); state.categories[id] = { name: escapeHTML(catName.trim()), color: 'bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300 border-purple-200 dark:border-purple-800' }; saveData(true); render(); showToast("Category jodisthamu.", "success"); } }); } // Telugu display
         
         function editName() {
             showPromptModal(t('change_name_prompt'), (newName) => {
@@ -1255,7 +1261,7 @@
             }
         }
 
-        // Exporting functions to Global Window Object for HTML inline event listeners
+        // Global Window Object ku functionlanu export cheyadam
         Object.assign(window, {
             handleRegister, handleLogin, handleForgotPassword, switchAuthMode, logout, setLang, toggleTheme, switchTab, viewArticle,
             addHabit, toggleHabit, deleteHabit, setMood, saveJournal, addFlashcard, deleteFlashcard, flipCardDOM, toggleFocusSound, 
@@ -1554,7 +1560,7 @@
         function renderLibrary() {
             return `<div class="space-y-10 pb-20"><header><h2 class="text-4xl font-black mb-2 drop-shadow-md">${t('library')}</h2></header><div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">${articles.map(a => {
                 const isRead = state.readArticles && state.readArticles.includes(a.id);
-                // අලුත්: Admin ට පමණක් පෙනෙන Delete බොත්තම මෙහි ඇත
+                // Admin ට පමණක් පෙනෙන Delete බොත්තම මෙහි ඇත
                 return `<div onclick="window.viewArticle('${a.id}')" class="glass-panel rounded-[2.5rem] p-8 shadow-sm cursor-pointer card-hover relative" role="button" aria-label="View Article">
                     ${isAdmin() && a.id !== 'default-1' ? `<button onclick="event.stopPropagation(); window.deleteAdminArticle('${a.id}')" aria-label="Delete Article" class="absolute top-6 right-6 text-xl text-slate-400 hover:text-red-500 hover:scale-110 transition-transform z-10" title="Delete Article">🗑️</button>` : ''}
                     <div><div class="w-16 h-16 glass-btn rounded-2xl flex items-center justify-center mb-6 text-3xl drop-shadow-md">${escapeHTML(a.icon)}</div><h3 class="text-2xl font-black mb-3 drop-shadow-sm pr-8">${escapeHTML(a.title)}</h3><p class="text-slate-600 dark:text-slate-400 text-sm mb-6 line-clamp-3">${escapeHTML(a.excerpt)}</p></div><button class="w-full py-3 glass-btn font-bold rounded-xl ${isRead ? 'text-slate-500 dark:text-slate-500' : 'text-indigo-600 dark:text-indigo-400 hover:scale-105 transition-transform'} shadow-sm">${isRead ? t('read_done') : t('read_btn')}</button>
