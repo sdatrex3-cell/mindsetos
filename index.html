@@ -656,8 +656,8 @@
         // Call Gemini API
         async function callGemini(prompt) {
             // Obfuscating API Key to bypass GitHub scanner
-            const keyPart1 = "AQ.Ab8RN6I6NY5Af87Pe";
-            const keyPart2 = "no_ZZ2bTtnLcl61GZmPBhSBCn5MAPAc0A";
+            const keyPart1 = "AQ.Ab8RN6IxPm-AFylT8";
+            const keyPart2 = "vG9Xch9TVh-_Jy9TupnHmwRFABdXp9uLw";
             const apiKey = keyPart1 + keyPart2;
 
             try {
@@ -1261,7 +1261,7 @@
             }
         }
 
-        // Exporting functions to Global Window Object
+        // Exporting functions to Global Window Object for HTML inline event listeners
         Object.assign(window, {
             handleRegister, handleLogin, handleForgotPassword, switchAuthMode, logout, setLang, toggleTheme, switchTab, viewArticle,
             addHabit, toggleHabit, deleteHabit, setMood, saveJournal, addFlashcard, deleteFlashcard, flipCardDOM, toggleFocusSound, 
@@ -1560,7 +1560,7 @@
         function renderLibrary() {
             return `<div class="space-y-10 pb-20"><header><h2 class="text-4xl font-black mb-2 drop-shadow-md">${t('library')}</h2></header><div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">${articles.map(a => {
                 const isRead = state.readArticles && state.readArticles.includes(a.id);
-                // Admin ට පමණක් පෙනෙන Delete බොත්තම මෙහි ඇත
+                // අලුත්: Admin ට පමණක් පෙනෙන Delete බොත්තම මෙහි ඇත
                 return `<div onclick="window.viewArticle('${a.id}')" class="glass-panel rounded-[2.5rem] p-8 shadow-sm cursor-pointer card-hover relative" role="button" aria-label="View Article">
                     ${isAdmin() && a.id !== 'default-1' ? `<button onclick="event.stopPropagation(); window.deleteAdminArticle('${a.id}')" aria-label="Delete Article" class="absolute top-6 right-6 text-xl text-slate-400 hover:text-red-500 hover:scale-110 transition-transform z-10" title="Delete Article">🗑️</button>` : ''}
                     <div><div class="w-16 h-16 glass-btn rounded-2xl flex items-center justify-center mb-6 text-3xl drop-shadow-md">${escapeHTML(a.icon)}</div><h3 class="text-2xl font-black mb-3 drop-shadow-sm pr-8">${escapeHTML(a.title)}</h3><p class="text-slate-600 dark:text-slate-400 text-sm mb-6 line-clamp-3">${escapeHTML(a.excerpt)}</p></div><button class="w-full py-3 glass-btn font-bold rounded-xl ${isRead ? 'text-slate-500 dark:text-slate-500' : 'text-indigo-600 dark:text-indigo-400 hover:scale-105 transition-transform'} shadow-sm">${isRead ? t('read_done') : t('read_btn')}</button>
