@@ -4,6 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#4f46e5">
+    
+    <!-- Security Meta Tags -->
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <meta name="referrer" content="strict-origin-when-cross-origin">
+    <meta http-equiv="Permissions-Policy" content="interest-cohort=()">
+    
     <title>MindsetOS - Global Edition</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -80,7 +86,7 @@
         // FIREBASE INITIALIZATION & IMPORTS
         // ==========================================
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendEmailVerification, onAuthStateChanged, signOut, sendPasswordResetEmail, signInWithCustomToken, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendEmailVerification, onAuthStateChanged, signOut, sendPasswordResetEmail, signInWithCustomToken, signInAnonymously, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
         import { getFirestore, doc, setDoc, getDoc, onSnapshot, collection, query, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
         // 🔴 Firebase Config (Dynamic Support for environments) 🔴
@@ -154,7 +160,7 @@
         let noiseSourceNode = null; 
         let activeOscillators = [];
         let timerState = { mode: 'focus', phase: 'idle', timeLeft: 25 * 60, targetEndTime: null, interval: null };
-        let progressChartInstance = null, focusChartInstance = null;
+        let progressChartInstance = null, focusChartInstance = null, moodChartInstance = null;
 
         function getTodayStr() {
             const d = new Date();
@@ -600,20 +606,43 @@
             render(); 
         }
 
+        async function handleGoogleSignIn() {
+            try {
+                showToast("ගූගල් ගිණුමෙන් ලොග් වෙමින් පවතී...", "info");
+                const provider = new GoogleAuthProvider();
+                await signInWithPopup(auth, provider);
+                // onAuthStateChanged will automatically handle user creation/migration and redirect to home
+            } catch(error) {
+                if (error.code === 'auth/unauthorized-domain') {
+                    // Suppress raw console error for expected domain mismatch in preview environments
+                    console.warn("Preview domain is not authorized in Firebase. This is expected.");
+                    showToast("මෙම තාවකාලික Preview තිරය තුළ Google Sign-in ක්‍රියා නොකරයි. කරුණාකර ඔබගේ Vercel වෙබ් අඩවිය (mindsetos.site) හරහා ලොග් වන්න.", "error");
+                } else if (error.code !== 'auth/popup-closed-by-user') {
+                    console.error("Google Sign-in Error:", error);
+                    showToast("ගූගල් ලොග් වීමේදී දෝෂයක්: " + error.message, "error");
+                }
+            }
+        }
+
         // ==========================================
         // NEW FEATURES LOGIC (AI, Badges, Avatar)
         // ==========================================
         async function callGemini(prompt) {
-            const apiKey = "";
+            const apiKey = ""; // Canvas පරිසරයේදී මෙය හිස්ව තැබිය යුතුය
             try {
-                showToast("AI කෘතිම බුද්ධිය ක්‍රියාත්මක වෙමින් පවතී...", "info");
+                showToast("AI කෘතිම බුද්ධිය ක්‍රියාත්මක වෙමින් පවතී... ⏳", "info");
                 const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
                     method: 'POST', headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
                 });
+                if (!res.ok) throw new Error(`API Error: ${res.status}`);
                 const data = await res.json();
                 return data.candidates?.[0]?.content?.parts?.[0]?.text;
-            } catch (e) { showToast("AI Error: කරුණාකර අන්තර්ජාල සබඳතාව පරීක්ෂා කරන්න.", "error"); return null; }
+            } catch (e) { 
+                console.error(e);
+                showToast("AI Error: කරුණාකර නැවත උත්සාහ කරන්න.", "error"); 
+                return null; 
+            }
         }
 
         async function breakdownTaskAI(id) {
@@ -1192,10 +1221,11 @@
             }
             const ctx3 = document.getElementById('moodFocusChart');
             if(ctx3) {
+                if(moodChartInstance) moodChartInstance.destroy();
                 const moodGroups = { 'great': [], 'good': [], 'neutral': [], 'bad': [] };
                 Object.keys(state.moods).forEach(d => { if(state.dailyFocus[d]) moodGroups[state.moods[d]].push(state.dailyFocus[d]); });
                 const moodAverages = Object.keys(moodGroups).map(m => moodGroups[m].length ? moodGroups[m].reduce((a,b)=>a+b,0)/moodGroups[m].length : 0);
-                new Chart(ctx3, { type: 'bar', data: { labels: ['🤩 Great', '😊 Good', '😐 Neutral', '😫 Bad'], datasets: [{ label: 'Avg Focus (Mins)', data: moodAverages, backgroundColor: ['#8b5cf6', '#10b981', '#f59e0b', '#ef4444'], borderRadius: 8 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } } });
+                moodChartInstance = new Chart(ctx3, { type: 'bar', data: { labels: ['🤩 Great', '😊 Good', '😐 Neutral', '😫 Bad'], datasets: [{ label: 'Avg Focus (Mins)', data: moodAverages, backgroundColor: ['#8b5cf6', '#10b981', '#f59e0b', '#ef4444'], borderRadius: 8 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } } });
             }
         }
 
@@ -1206,7 +1236,7 @@
             toggleTimer, resetTimer, startBreakManual, skipBreakManual, shareToWhatsApp, updateTargetDate, addCustomCategory, clearAllData, 
             deleteAccount, dismissReview, updateTimerSettings, setSoundType, installApp, publishAdminArticle, deleteAdminArticle,
             exportData, exportDataPDF, importData, setRating, submitFeedback, editName, updateJournalTextSilent, togglePassword,
-            breakdownTaskAI, generateAIFlashcards, rateFlashcard, changeAvatar
+            breakdownTaskAI, generateAIFlashcards, rateFlashcard, changeAvatar, handleGoogleSignIn
         });
 
         function render() {
@@ -1275,7 +1305,17 @@
 
         function renderWelcome() { 
             const isLogin = window.authMode === 'login';
-            return `<div class="min-h-screen flex items-center justify-center p-6"><div class="max-w-md w-full glass-panel rounded-[3rem] p-10 text-center animate-slide-up"><div class="w-24 h-24 bg-gradient-to-tr from-indigo-500 to-purple-500 rounded-[2rem] flex items-center justify-center mx-auto mb-6 shadow-xl text-5xl">☁️</div><h1 class="text-4xl font-black mb-8">Mindset<span class="text-indigo-600 dark:text-indigo-400">OS</span></h1><div class="space-y-4 mb-8 text-left mt-8">${!isLogin ? `<input type="text" id="init-name" placeholder="Your Name" aria-label="Your Name" class="w-full p-4 glass-btn rounded-2xl outline-none font-bold text-base focus:border-indigo-500 transition-colors"/>` : ''}<input type="email" id="init-email" placeholder="Email Address" aria-label="Email Address" class="w-full p-4 glass-btn rounded-2xl outline-none font-bold text-base focus:border-indigo-500 transition-colors"/><div class="relative w-full"><input type="password" id="init-password" placeholder="Password" aria-label="Password" class="w-full p-4 pr-12 glass-btn rounded-2xl outline-none font-bold text-base focus:border-indigo-500 transition-colors"/><button type="button" id="pwd-toggle-btn" onclick="window.togglePassword()" class="absolute right-4 top-1/2 transform -translate-y-1/2 text-xl opacity-70 hover:opacity-100 focus:outline-none transition-opacity" aria-label="Toggle Password Visibility">👁️</button></div></div><button onclick="${isLogin ? 'window.handleLogin()' : 'window.handleRegister()'}" class="w-full bg-indigo-600 text-white hover:bg-indigo-500 font-black py-4 rounded-2xl shadow-lg mb-4">${isLogin ? 'Login' : 'Create Account'}</button><button onclick="window.switchAuthMode()" class="text-sm font-bold text-indigo-600 hover:underline mb-2">${isLogin ? 'Don\'t have an account? Register' : 'Already have an account? Login'}</button>${isLogin ? `<br><button onclick="window.handleForgotPassword()" class="text-sm font-bold text-slate-500 hover:underline mt-4">Forgot Password?</button>` : ''}</div></div>`; 
+            return `<div class="min-h-screen flex items-center justify-center p-6"><div class="max-w-md w-full glass-panel rounded-[3rem] p-10 text-center animate-slide-up"><div class="w-24 h-24 bg-gradient-to-tr from-indigo-500 to-purple-500 rounded-[2rem] flex items-center justify-center mx-auto mb-6 shadow-xl text-5xl">☁️</div><h1 class="text-4xl font-black mb-8">Mindset<span class="text-indigo-600 dark:text-indigo-400">OS</span></h1><div class="space-y-4 mb-8 text-left mt-8">${!isLogin ? `<input type="text" id="init-name" placeholder="Your Name" aria-label="Your Name" class="w-full p-4 glass-btn rounded-2xl outline-none font-bold text-base focus:border-indigo-500 transition-colors"/>` : ''}<input type="email" id="init-email" placeholder="Email Address" aria-label="Email Address" class="w-full p-4 glass-btn rounded-2xl outline-none font-bold text-base focus:border-indigo-500 transition-colors"/><div class="relative w-full"><input type="password" id="init-password" placeholder="Password" aria-label="Password" class="w-full p-4 pr-12 glass-btn rounded-2xl outline-none font-bold text-base focus:border-indigo-500 transition-colors"/><button type="button" id="pwd-toggle-btn" onclick="window.togglePassword()" class="absolute right-4 top-1/2 transform -translate-y-1/2 text-xl opacity-70 hover:opacity-100 focus:outline-none transition-opacity" aria-label="Toggle Password Visibility">👁️</button></div></div><button onclick="${isLogin ? 'window.handleLogin()' : 'window.handleRegister()'}" class="w-full bg-indigo-600 text-white hover:bg-indigo-500 font-black py-4 rounded-2xl shadow-lg mb-4">${isLogin ? 'Login' : 'Create Account'}</button>
+            <div class="relative flex py-4 items-center">
+                <div class="flex-grow border-t border-slate-300 dark:border-slate-600"></div>
+                <span class="flex-shrink-0 mx-4 text-slate-400 font-bold text-xs uppercase tracking-widest">OR</span>
+                <div class="flex-grow border-t border-slate-300 dark:border-slate-600"></div>
+            </div>
+            <button onclick="window.handleGoogleSignIn()" class="w-full glass-btn flex items-center justify-center space-x-3 py-4 rounded-2xl font-bold shadow-sm hover:scale-[1.02] transition-transform text-slate-700 dark:text-slate-200 mb-6">
+                <svg class="w-5 h-5" viewBox="0 0 24 24"><path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+                <span>Continue with Google</span>
+            </button>
+            <button onclick="window.switchAuthMode()" class="text-sm font-bold text-indigo-600 hover:underline mb-2">${isLogin ? 'Don\'t have an account? Register' : 'Already have an account? Login'}</button>${isLogin ? `<br><button onclick="window.handleForgotPassword()" class="text-sm font-bold text-slate-500 hover:underline mt-4">Forgot Password?</button>` : ''}</div></div>`; 
         }
         
         function renderSidebar() {
@@ -1610,11 +1650,16 @@
                     <button onclick="window.addCustomCategory()" class="w-full py-4 border-2 border-indigo-200 dark:border-indigo-900 text-indigo-600 dark:text-indigo-400 font-black rounded-2xl hover:bg-indigo-50 dark:hover:bg-indigo-900/30 hover:scale-[1.02] transition-transform">${t('add_category')}</button>
                 </div>
 
-                <div class="pt-6 space-y-4 border-t border-slate-300 dark:border-slate-700">
-                    <button onclick="window.exportDataPDF()" class="w-full py-4 glass-btn font-black rounded-2xl shadow-sm text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 hover:scale-[1.02] transition-transform">${t('export_pdf')}</button>
-                    <button onclick="window.clearAllData()" class="w-full py-4 glass-btn font-black rounded-2xl shadow-sm text-slate-600 dark:text-slate-300 hover:bg-slate-200/50 dark:hover:bg-slate-800/50 hover:scale-[1.02] transition-transform">${t('clear_all')}</button>
-                    <button onclick="window.logout()" class="w-full py-4 glass-btn font-black rounded-2xl shadow-sm text-rose-500 hover:scale-[1.02] transition-transform">${t('logout')}</button>
-                    <button onclick="window.deleteAccount()" class="w-full py-4 border-2 border-red-200 text-red-500 font-black rounded-2xl hover:bg-red-50 dark:hover:bg-red-900/20 hover:scale-[1.02] transition-transform">${t('del_acc')}</button>
+                <div class="pt-6 space-y-4 border-t border-slate-300 dark:border-slate-700 grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <button onclick="window.exportData()" class="w-full py-4 glass-btn font-black rounded-2xl shadow-sm text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 hover:scale-[1.02] transition-transform flex items-center justify-center gap-2">💾 ${t('backup_data')}</button>
+                    <label class="w-full py-4 glass-btn font-black rounded-2xl shadow-sm text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:scale-[1.02] transition-transform cursor-pointer flex items-center justify-center gap-2">
+                        📂 ${t('restore_data')}
+                        <input type="file" class="hidden" accept=".json" onchange="window.importData(event)"/>
+                    </label>
+                    <button onclick="window.exportDataPDF()" class="w-full py-4 glass-btn font-black rounded-2xl shadow-sm text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 hover:scale-[1.02] transition-transform flex items-center justify-center gap-2 md:col-span-2">📄 ${t('export_pdf')}</button>
+                    <button onclick="window.clearAllData()" class="w-full py-4 glass-btn font-black rounded-2xl shadow-sm text-slate-600 dark:text-slate-300 hover:bg-slate-200/50 dark:hover:bg-slate-800/50 hover:scale-[1.02] transition-transform flex items-center justify-center gap-2 md:col-span-2">🧹 ${t('clear_all')}</button>
+                    <button onclick="window.logout()" class="w-full py-4 glass-btn font-black rounded-2xl shadow-sm text-rose-500 hover:scale-[1.02] transition-transform flex items-center justify-center gap-2 md:col-span-2">🚪 ${t('logout')}</button>
+                    <button onclick="window.deleteAccount()" class="w-full py-4 border-2 border-red-200 text-red-500 font-black rounded-2xl hover:bg-red-50 dark:hover:bg-red-900/20 hover:scale-[1.02] transition-transform flex items-center justify-center gap-2 md:col-span-2">⚠️ ${t('del_acc')}</button>
                 </div></div></div>`;
         }
 
