@@ -86,7 +86,7 @@
         // FIREBASE INITIALIZATION & IMPORTS
         // ==========================================
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendEmailVerification, onAuthStateChanged, signOut, sendPasswordResetEmail, signInWithCustomToken, signInAnonymously, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendEmailVerification, onAuthStateChanged, signOut, sendPasswordResetEmail, signInWithCustomToken, signInAnonymously, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
         import { getFirestore, doc, setDoc, getDoc, onSnapshot, collection, query, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
         // 🔴 Firebase Config (Dynamic Support for environments) 🔴
@@ -115,6 +115,15 @@
 
         // Initial Auth Hook for seamless environments
         const initAuth = async () => {
+            try {
+                const redirectResult = await getRedirectResult(auth);
+                if(redirectResult && redirectResult.user) {
+                    showToast("Google Sign-In සාර්ථකයි!", "success");
+                }
+            } catch(e) {
+                console.error("Redirect Auth Error:", e);
+            }
+
             if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
                 try { await signInWithCustomToken(auth, __initial_auth_token); } catch(e) { console.error(e); }
             } else if (typeof __firebase_config !== 'undefined') {
@@ -610,15 +619,21 @@
             try {
                 showToast("ගූගල් ගිණුමෙන් ලොග් වෙමින් පවතී...", "info");
                 const provider = new GoogleAuthProvider();
+                provider.setCustomParameters({ prompt: 'select_account' });
+                
+                // Use popup first
                 await signInWithPopup(auth, provider);
-                // onAuthStateChanged will automatically handle user creation/migration and redirect to home
             } catch(error) {
+                console.error("Google Sign-in Error:", error);
+                
                 if (error.code === 'auth/unauthorized-domain') {
-                    // Suppress raw console error for expected domain mismatch in preview environments
                     console.warn("Preview domain is not authorized in Firebase. This is expected.");
-                    showToast("මෙම තාවකාලික Preview තිරය තුළ Google Sign-in ක්‍රියා නොකරයි. කරුණාකර ඔබගේ Vercel වෙබ් අඩවිය (mindsetos.site) හරහා ලොග් වන්න.", "error");
+                    showToast("මෙම තාවකාලික Preview තිරය තුළ Google Sign-in ක්‍රියා නොකරයි. කරුණාකර ඔබගේ Vercel වෙබ් අඩවිය හරහා ලොග් වන්න.", "error");
+                } else if (error.message && error.message.toLowerCase().includes("invalid action")) {
+                    showToast("දෝෂයක්: Firebase හි Google Sign-In සක්‍රිය (Enable) කර ඇත්දැයි සහ Support Email එකක් ලබා දී ඇත්දැයි පරීක්ෂා කරන්න.", "error");
+                } else if (error.code === 'auth/popup-blocked' || error.code === 'auth/cancelled-popup-request') {
+                    showToast("බ්‍රවුසරය මගින් Popup අවහිර කර ඇත. කරුණාකර Popups සඳහා අවසර දෙන්න.", "error");
                 } else if (error.code !== 'auth/popup-closed-by-user') {
-                    console.error("Google Sign-in Error:", error);
                     showToast("ගූගල් ලොග් වීමේදී දෝෂයක්: " + error.message, "error");
                 }
             }
@@ -639,8 +654,8 @@
                 const data = await res.json();
                 return data.candidates?.[0]?.content?.parts?.[0]?.text;
             } catch (e) { 
-                console.error(e);
-                showToast("AI Error: කරුණාකර නැවත උත්සාහ කරන්න.", "error"); 
+                console.error("AI API Error:", e);
+                showToast("AI Error: කරුණාකර නැවත උත්සාහ කරන්න. මෙම Preview තිරයට AI පහසුකම සහාය නොදක්වයි.", "error"); 
                 return null; 
             }
         }
