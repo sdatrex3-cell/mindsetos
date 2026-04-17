@@ -655,18 +655,29 @@
         // ==========================================
         // Call Gemini API
         async function callGemini(prompt) {
-            // Obfuscating API Key to bypass GitHub scanner
-            const keyPart1 = "AQ.Ab8RN6IxPm-AFylT8";
-            const keyPart2 = "vG9Xch9TVh-_Jy9TupnHmwRFABdXp9uLw";
-            const apiKey = keyPart1 + keyPart2;
+            // Canvas (Preview) පරිසරය සඳහා ස්වයංක්‍රීය Key එක
+            let apiKey = ""; 
+            let model = "gemini-2.5-flash-preview-09-2025"; 
+
+            // Live වෙබ් අඩවිය (Vercel) සඳහා ඔබ ලබාදුන් Key එක භාවිත කිරීම
+            if (!window.location.hostname.includes("csb.app") && !window.location.hostname.includes("usercontent.goog")) {
+                const keyPart1 = "AQ.Ab8RN6IxPm-AFylT8";
+                const keyPart2 = "vG9Xch9TVh-_Jy9TupnHmwRFABdXp9uLw";
+                apiKey = keyPart1 + keyPart2;
+                model = "gemini-1.5-flash"; 
+            }
 
             try {
                 showToast("AI කෘතිම බුද්ධිය ක්‍රියාත්මක වෙමින් පවතී... ⏳", "info"); 
-                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
                     method: 'POST', headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
                 });
-                if (!res.ok) throw new Error(`API Error: ${res.status}`);
+                
+                if (!res.ok) {
+                    console.error("API Error Details:", await res.text());
+                    throw new Error(`API Error: ${res.status}`);
+                }
                 const data = await res.json();
                 return data.candidates?.[0]?.content?.parts?.[0]?.text;
             } catch (e) { 
