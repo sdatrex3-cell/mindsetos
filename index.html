@@ -81,6 +81,20 @@
     <div id="toast-container" class="fixed top-24 right-6 flex flex-col space-y-2 pointer-events-none z-[120]" aria-live="polite"></div>
     <div id="modal-container" class="fixed inset-0 z-[100] hidden items-center justify-center bg-slate-900/60 backdrop-blur-md transition-opacity" role="dialog" aria-modal="true"></div>
 
+    <!-- NEW: Floating SOS Button & Breathing Modal -->
+    <button onclick="window.startBreathingSOS()" class="fixed bottom-24 right-6 md:bottom-8 md:right-8 z-[90] w-16 h-16 bg-gradient-to-tr from-rose-500 to-orange-500 text-white rounded-full flex items-center justify-center text-3xl shadow-[0_0_30px_rgba(244,63,94,0.6)] hover:scale-110 transition-transform animate-bounce" aria-label="Emergency SOS" title="නරක පුරුද්දක් කිරීමට සිතෙන විට වහාම ඔබන්න">🆘</button>
+    
+    <div id="sos-breathing-modal" class="fixed inset-0 z-[200] hidden items-center justify-center bg-slate-900/95 backdrop-blur-2xl transition-opacity">
+        <div class="text-center text-white flex flex-col items-center">
+            <h2 class="text-4xl font-black mb-4 text-rose-400 drop-shadow-md">Craving SOS 🛑</h2>
+            <p id="breathe-text" class="text-2xl font-bold mb-16 text-slate-300 transition-opacity">සන්සුන් වන්න...</p>
+            <div class="relative w-64 h-64 flex items-center justify-center mb-16">
+                <div id="breathe-circle" class="absolute w-20 h-20 bg-gradient-to-tr from-emerald-400 to-indigo-500 rounded-full shadow-[0_0_60px_rgba(52,211,153,0.5)] transition-all ease-in-out"></div>
+            </div>
+            <button onclick="window.stopBreathingSOS()" class="px-10 py-4 bg-white/10 hover:bg-white/20 rounded-2xl font-bold text-lg border border-white/20 transition-colors shadow-lg">අවසන් කරන්න</button>
+        </div>
+    </div>
+
     <script type="module">
         // ==========================================
         // FIREBASE INITIALIZATION & IMPORTS
@@ -215,6 +229,12 @@
             'library': { si: 'පුස්තකාලය', en: 'Library' },
             'stats': { si: 'ප්‍රගතිය', en: 'Analytics' },
             'profile': { si: 'ප්‍රොෆයිලය', en: 'Profile' },
+            'detox_tab': { si: 'Detox (නරක පුරුදු)', en: 'Habit Detox' },
+            'detox_title': { si: 'නරක පුරුදු අත්හැරීමේ (Detox) අභියෝගය', en: 'Bad Habit Detox Challenge' },
+            'detox_desc': { si: 'මනෝවිද්‍යාත්මක "Urge Surfing" සහ "Habit Substitution" ක්‍රම භාවිතයෙන් සතියක් ඇතුළත නරක පුරුදු වලින් මිදෙමු.', en: 'Break bad habits within a week using psychological Urge Surfing and Substitution methods.' },
+            'bad_habit_ph': { si: 'අත්හැරීමට අවශ්‍ය නරක පුරුද්ද (උදා: දුම්පානය, ෆෝන් එක බැලීම)...', en: 'Bad habit to quit...' },
+            'substitute_ph': { si: 'ඒ වෙනුවට කරන හොඳ දෙය (උදා: වතුර වීදුරුවක් බීම)...', en: 'Alternative action...' },
+            'sos_btn': { si: 'විශේෂ ආධාරය (Craving SOS)', en: 'Craving SOS' },
             'deep_work': { si: 'Deep Work', en: 'Deep Work' },
             'new_task': { si: 'නව කාර්යයක්', en: 'New Task' },
             'daily_progress': { si: 'අද දෛනික ප්‍රගතිය', en: 'Daily Progress' },
@@ -304,10 +324,12 @@
                 'Health': { name: 'සෞඛ්‍යය / Health', color: 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300 border-green-200 dark:border-green-800' },
                 'Work': { name: 'ව්‍යාපාර / Work', color: 'bg-orange-100 text-orange-700 dark:bg-orange-900/50 dark:text-orange-300 border-orange-200 dark:border-orange-800' }
             },
-            readArticles: [], timerSettings: { focus: 25, break: 5 }, soundType: 'noise', pendingReviews: []
+            readArticles: [], timerSettings: { focus: 25, break: 5 }, soundType: 'noise', pendingReviews: [],
+            detoxHabits: [] // New state for Bad Habit Detox
         };
 
         let state = JSON.parse(JSON.stringify(defaultState));
+        if(!state.detoxHabits) state.detoxHabits = [];
         
         const priorities = { 'Q1': { name: 'හදිසි/වැදගත්', class: 'bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400' }, 'Q2': { name: 'වැදගත් පමණි', class: 'bg-indigo-50 text-indigo-600 dark:bg-indigo-900/20 dark:text-indigo-400' }, 'Q3': { name: 'සාමාන්‍ය', class: 'bg-slate-50 text-slate-600 dark:bg-slate-800 dark:text-slate-400' } };
         const moodEmojis = { 'great': '🤩', 'good': '😊', 'neutral': '😐', 'bad': '😫' };
@@ -445,10 +467,12 @@
                     
                     if (docSnap.exists()) {
                         state = { ...defaultState, ...docSnap.data(), isNewUser: false };
+                        if(!state.detoxHabits) state.detoxHabits = []; // Migration for new users
                     } else {
                         const localData = safeJSONParse(USER_DATA_KEY, null);
                         if (localData && localData.user && localData.user.email === user.email) {
                             state = { ...defaultState, ...localData, isNewUser: false };
+                            if(!state.detoxHabits) state.detoxHabits = [];
                             if (!state.user.trialEnds) state.user.trialEnds = Date.now() + (200 * 24 * 60 * 60 * 1000);
                             await setDoc(docRef, state); 
                             localStorage.removeItem(USER_DATA_KEY); 
@@ -470,6 +494,7 @@
                             const remoteState = snapshot.data();
                             if (remoteState.lastModified > (state.lastModified || 0)) {
                                 state = { ...state, ...remoteState };
+                                if(!state.detoxHabits) state.detoxHabits = [];
                                 render();
                             }
                         }
@@ -625,7 +650,6 @@
                 const provider = new GoogleAuthProvider();
                 provider.setCustomParameters({ prompt: 'select_account' });
                 
-                // ජංගම දුරකථන සහ පරිගණක දෙකටම වඩාත් සාර්ථක Popup ක්‍රමය භාවිතා කිරීම
                 await signInWithPopup(auth, provider);
             } catch(error) {
                 console.error("Google Sign-in Error:", error);
@@ -717,6 +741,95 @@
                     } catch(e) { showToast("AI දත්ත කියවීමේ දෝෂයක්.", "error"); } 
                 }
             });
+        }
+
+        // ==========================================
+        // BAD HABIT DETOX LOGIC
+        // ==========================================
+        function addDetoxHabit() {
+            const hEl = document.getElementById('detox-habit');
+            const sEl = document.getElementById('detox-sub');
+            const h = hEl?.value.trim(); const s = sEl?.value.trim();
+            if(h) {
+                if(!state.detoxHabits) state.detoxHabits = [];
+                state.detoxHabits.unshift({ id: Date.now(), habit: escapeHTML(h), substitute: escapeHTML(s), streak: 0, lastCheckIn: null });
+                saveData(true); if(hEl) hEl.value = ''; if(sEl) sEl.value = '';
+                render(); showToast("අභියෝගය ආරම්භ විය! ඔබට ජය!", "success");
+            } else { showToast("කරුණාකර නරක පුරුද්ද ඇතුළත් කරන්න.", "error"); }
+        }
+
+        function checkInDetox(id) {
+            const today = getTodayStr();
+            state.detoxHabits = state.detoxHabits.map(dh => {
+                if(dh.id === id) {
+                    if(dh.lastCheckIn !== today) {
+                        dh.streak += 1;
+                        dh.lastCheckIn = today;
+                        addXP(15); // Reward for avoiding bad habit
+                        showToast(`නියමයි! දින ${dh.streak} ක් සාර්ථකයි!`, "success");
+                    }
+                }
+                return dh;
+            });
+            saveData(true); render();
+        }
+
+        function resetDetox(id) {
+            showConfirmModal("ඔබට අද දින මෙම පුරුද්ද පාලනය කරගැනීමට නොහැකි වුණාද? කම්පා වෙන්න එපා, අපි නැවත මුල සිට අරඹමු!", () => {
+                state.detoxHabits = state.detoxHabits.map(dh => {
+                    if(dh.id === id) { dh.streak = 0; dh.lastCheckIn = null; }
+                    return dh;
+                });
+                saveData(true); render(); showToast("අභියෝගය නැවතත් මුල සිට ආරම්භ විය.", "info");
+            });
+        }
+
+        function deleteDetox(id) {
+            state.detoxHabits = state.detoxHabits.filter(dh => dh.id !== id);
+            saveData(true); render();
+        }
+
+        let breatheInterval;
+        function startBreathingSOS() {
+            const modal = document.getElementById('sos-breathing-modal');
+            const textEl = document.getElementById('breathe-text');
+            const circleEl = document.getElementById('breathe-circle');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+
+            const breatheCycle = () => {
+                textEl.innerText = "ගැඹුරින් හුස්ම ගන්න... (Inhale)";
+                circleEl.style.transitionDuration = '4s';
+                circleEl.style.transform = 'scale(3)';
+                circleEl.classList.replace('from-emerald-400', 'from-blue-400');
+                
+                setTimeout(() => {
+                    textEl.innerText = "හුස්ම රඳවාගන්න... (Hold)";
+                    circleEl.style.transitionDuration = '7s';
+                    
+                    setTimeout(() => {
+                        textEl.innerText = "සෙමෙන් හුස්ම පිට කරන්න... (Exhale)";
+                        circleEl.style.transitionDuration = '8s';
+                        circleEl.style.transform = 'scale(1)';
+                        circleEl.classList.replace('from-blue-400', 'from-emerald-400');
+                    }, 7000);
+                }, 4000);
+            };
+
+            breatheCycle();
+            breatheInterval = setInterval(breatheCycle, 19000); 
+        }
+
+        function stopBreathingSOS() {
+            const modal = document.getElementById('sos-breathing-modal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            clearInterval(breatheInterval);
+            showToast("නියමයි! ඔබ ඒ ආශාව සාර්ථකව පාලනය කරගත්තා. ජය!", "success");
+        }
+
+        function startSOS() {
+            startBreathingSOS();
         }
 
         function checkBadges() {
@@ -1065,7 +1178,7 @@
             window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank', 'noopener,noreferrer');
         }
 
-        function clearAllData() { showConfirmModal(t('clear_all') + "?", () => { state.habits = []; state.history = []; state.reflections = {}; state.moods = {}; state.flashcards = []; state.pastTasks = {}; state.dailyFocus = {}; state.streak = { count: 0, lastDate: null }; state.pendingReviews = []; resetTimer(); saveData(true); render(); showToast("සාර්ථකව හිස් කරන ලදී.", "success"); }); } 
+        function clearAllData() { showConfirmModal(t('clear_all') + "?", () => { state.habits = []; state.history = []; state.reflections = {}; state.moods = {}; state.flashcards = []; state.pastTasks = {}; state.dailyFocus = {}; state.streak = { count: 0, lastDate: null }; state.pendingReviews = []; state.detoxHabits = []; resetTimer(); saveData(true); render(); showToast("සාර්ථකව හිස් කරන ලදී.", "success"); }); } 
         function deleteAccount() { showConfirmModal(t('del_acc') + "?", async () => { await setDoc(doc(db, 'artifacts', appId, 'users', auth.currentUser.uid, 'data', 'state'), {}); await auth.currentUser.delete(); logout(); }); }
         
         function exportData() {
@@ -1280,12 +1393,13 @@
             toggleTimer, resetTimer, startBreakManual, skipBreakManual, shareToWhatsApp, updateTargetDate, addCustomCategory, clearAllData, 
             deleteAccount, dismissReview, updateTimerSettings, setSoundType, installApp, publishAdminArticle, deleteAdminArticle,
             exportData, exportDataPDF, importData, setRating, submitFeedback, editName, updateJournalTextSilent, togglePassword,
-            breakdownTaskAI, generateAIFlashcards, rateFlashcard, changeAvatar, handleGoogleSignIn
+            breakdownTaskAI, generateAIFlashcards, rateFlashcard, changeAvatar, handleGoogleSignIn,
+            addDetoxHabit, checkInDetox, resetDetox, deleteDetox, startSOS, startBreathingSOS, stopBreathingSOS // New functions added
         });
 
         function render() {
             const root = document.getElementById('app-root');
-            const activeStates = {}; const inputIds = ['init-name', 'init-email', 'init-password', 'habit-text', 'habit-time', 'habit-priority', 'habit-cat', 'habit-review', 'journal-text', 'fc-q', 'fc-a', 'target-date-input', 'admin-art-author', 'admin-art-cat', 'admin-art-time', 'admin-art-title', 'admin-art-intro', 'admin-art-text'];
+            const activeStates = {}; const inputIds = ['init-name', 'init-email', 'init-password', 'habit-text', 'habit-time', 'habit-priority', 'habit-cat', 'habit-review', 'journal-text', 'fc-q', 'fc-a', 'target-date-input', 'admin-art-author', 'admin-art-cat', 'admin-art-time', 'admin-art-title', 'admin-art-intro', 'admin-art-text', 'detox-habit', 'detox-sub'];
             
             let activeId = document.activeElement ? document.activeElement.id : null;
             let cursorStart = 0, cursorEnd = 0;
@@ -1307,7 +1421,7 @@
             }
             if (state.isNewUser) { root.innerHTML = renderWelcome(); return; } 
             
-            let content = state.activeTab==='home' ? renderHome() : state.activeTab==='planner' ? renderPlanner() : state.activeTab==='timer' ? renderTimer() : state.activeTab==='flashcards' ? renderFlashcards() : state.activeTab==='library' ? renderLibrary() : state.activeTab==='stats' ? renderStats() : renderProfile();
+            let content = state.activeTab==='home' ? renderHome() : state.activeTab==='planner' ? renderPlanner() : state.activeTab==='timer' ? renderTimer() : state.activeTab==='flashcards' ? renderFlashcards() : state.activeTab==='library' ? renderLibrary() : state.activeTab==='stats' ? renderStats() : state.activeTab==='detox' ? renderDetox() : renderProfile();
             if(state.selectedArticleId) content = renderArticleView();
 
             const uiDateString = new Date().toLocaleDateString(state.language === 'en' ? 'en-US' : 'si-LK', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
@@ -1363,7 +1477,7 @@
         }
         
         function renderSidebar() {
-            const tabs = [{ id:'home', icon:'📊', l:t('home') }, { id:'planner', icon:'✅', l:t('planner') }, { id:'timer', icon:'⏱️', l:t('deep_work') }, { id:'flashcards', icon:'🗂️', l:t('flashcards') }, { id:'library', icon:'📖', l:t('library') }, { id:'stats', icon:'📈', l:t('stats') }, { id:'profile', icon:'⚙️', l:t('profile') }];
+            const tabs = [{ id:'home', icon:'📊', l:t('home') }, { id:'planner', icon:'✅', l:t('planner') }, { id:'timer', icon:'⏱️', l:t('deep_work') }, { id:'flashcards', icon:'🗂️', l:t('flashcards') }, { id:'library', icon:'📖', l:t('library') }, { id:'stats', icon:'📈', l:t('stats') }, { id:'detox', icon:'🛑', l:t('detox_tab') }, { id:'profile', icon:'⚙️', l:t('profile') }];
             const installBtnHTML = pwaPrompt ? `<button onclick="window.installApp()" aria-label="Install App" class="flex flex-col lg:flex-row items-center lg:space-x-4 p-2 lg:p-4 rounded-2xl transition-all w-full group relative text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 mt-auto"><div class="relative"><span class="text-xl">⬇️</span></div><span class="text-[10px] lg:text-[15px] font-bold mt-1 lg:mt-0 hidden sm:block">${t('install_app')}</span></button>` : '';
             return `<nav class="fixed bottom-0 left-0 w-full md:top-0 md:w-24 lg:w-72 md:h-full glass-nav z-50 flex md:flex-col p-3 md:p-6 lg:p-8 justify-around md:justify-start space-y-0 md:space-y-2 shadow-lg print-hidden"><div class="hidden md:flex items-center space-x-4 mb-8 cursor-pointer" onclick="window.switchTab('home')" aria-label="Home"><div class="bg-indigo-600 p-3 rounded-2xl text-2xl shadow-lg">🧠</div><div class="hidden lg:block"><h1 class="font-black text-2xl tracking-tighter text-slate-900 dark:text-white">Mindset<span class="text-indigo-600">OS</span></h1></div></div>${tabs.map(tab => `<button onclick="window.switchTab('${tab.id}')" aria-label="${tab.l}" class="flex flex-col lg:flex-row items-center lg:space-x-4 p-2 lg:p-4 rounded-2xl transition-all w-full group relative ${state.activeTab === tab.id && !state.selectedArticleId ? 'bg-indigo-600/90 text-white shadow-xl' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-200/50 dark:hover:bg-slate-800/50'}"><div class="relative"><span class="text-xl inline-block transition-transform hover:scale-110 ${state.activeTab===tab.id?'scale-125':''}">${tab.icon}</span></div><span class="text-[10px] lg:text-[15px] font-bold mt-1 lg:mt-0 ${state.activeTab===tab.id && !state.selectedArticleId?'text-white':''} hidden sm:block">${tab.l}</span></button>`).join('')}${installBtnHTML}</nav>`;
         }
@@ -1425,7 +1539,7 @@
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <button onclick="window.switchTab('timer')" aria-label="Deep Work Timer" class="glass-panel p-4 rounded-2xl shadow-sm flex items-center justify-center space-x-3 hover:bg-indigo-50/50 dark:hover:bg-indigo-900/50 transition-colors group"><span class="text-xl group-hover:scale-110 transition-transform drop-shadow">▶️</span><span class="font-bold text-sm">${t('deep_work')}</span></button>
                     <button onclick="window.switchTab('planner')" aria-label="New Task" class="glass-panel p-4 rounded-2xl shadow-sm flex items-center justify-center space-x-3 hover:bg-indigo-50/50 transition-colors group"><span class="text-xl group-hover:scale-110 transition-transform drop-shadow">➕</span><span class="font-bold text-sm">${t('new_task')}</span></button>
-                    <button onclick="window.switchTab('flashcards')" aria-label="Flashcards" class="glass-panel p-4 rounded-2xl shadow-sm flex items-center justify-center space-x-3 hover:bg-indigo-50/50 transition-colors group"><span class="text-xl group-hover:scale-110 transition-transform drop-shadow">🗂️</span><span class="font-bold text-sm">${t('flashcards')}</span></button>
+                    <button onclick="window.switchTab('detox')" aria-label="Habit Detox" class="glass-panel p-4 rounded-2xl shadow-sm flex items-center justify-center space-x-3 hover:bg-rose-50/50 dark:hover:bg-rose-900/30 transition-colors group border border-rose-200 dark:border-rose-900/50"><span class="text-xl group-hover:scale-110 transition-transform drop-shadow">🛑</span><span class="font-bold text-sm text-rose-600 dark:text-rose-400">Detox</span></button>
                     <button onclick="window.shareToWhatsApp()" aria-label="Share via WhatsApp" class="glass-panel p-4 rounded-2xl shadow-sm flex items-center justify-center space-x-3 hover:bg-[#25D366]/10 transition-colors group"><span class="text-xl group-hover:scale-110 transition-transform text-[#25D366]">🔗</span><span class="font-bold text-sm text-[#25D366]">Share</span></button>
                 </div>
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -1539,6 +1653,56 @@
                     </select>
                 </div>
                 ${settingsUI}<div class="relative w-72 h-72 mx-auto mb-10 flex items-center justify-center"><div class="absolute inset-0 bg-slate-200/50 dark:bg-slate-700/50 rounded-full shadow-inner"></div><div id="timer-circle-bg" class="absolute inset-0 timer-circle transition-all duration-500"></div><div class="absolute inset-4 glass-panel rounded-full flex flex-col items-center justify-center"><span class="text-sm font-bold text-slate-500 uppercase tracking-widest mb-1">${escapeHTML(timerState.mode)} MODE</span><span id="timer-display" class="text-7xl font-black drop-shadow-md">${String(Math.floor(timerState.timeLeft / 60)).padStart(2, '0')}:${String(timerState.timeLeft % 60).padStart(2, '0')}</span></div></div>${controlButtons}</div></div>`;
+        }
+
+        // --- NEW FEATURE: Habit Detox View ---
+        function renderDetox() {
+            const today = getTodayStr();
+            return `<div class="max-w-4xl mx-auto space-y-8 pb-10">
+                <header class="text-center"><h2 class="text-4xl font-black tracking-tight drop-shadow-md">${t('detox_title')}</h2>
+                <p class="text-slate-500 mt-3 font-medium max-w-2xl mx-auto">${t('detox_desc')}</p></header>
+
+                <div class="glass-panel p-8 rounded-[2.5rem] shadow-xl text-center bg-gradient-to-br from-rose-50 to-orange-50 dark:from-rose-900/20 dark:to-orange-900/20 border-rose-200 dark:border-rose-800 relative overflow-hidden">
+                    <div class="absolute -right-10 -top-10 text-9xl opacity-10">🌊</div>
+                    <h3 class="text-2xl font-black text-rose-600 dark:text-rose-400 mb-4">🔥 තදබල ආශාවක් (Craving) ආවද?</h3>
+                    <p class="text-slate-600 dark:text-slate-300 font-medium mb-6">මනෝවිද්‍යාවට අනුව ඕනෑම නරක පුරුද්දක් කිරීමේ තදබල ආශාවක් මොළයේ පවතින්නේ විනාඩි 3කට ආසන්න කාලයක් පමණි. එම කාලය තුළ එයට යටත් නොවී "Urge Surfing" (ආශාව දෙස උපේක්ෂාවෙන් බලා සිටීම) කිරීමෙන් ඔබට එය පහසුවෙන්ම පාලනය කරගත හැක.</p>
+                    <button onclick="window.startSOS()" class="bg-rose-500 hover:bg-rose-400 text-white px-8 py-4 rounded-2xl font-black shadow-lg hover:scale-105 transition-transform text-lg flex items-center justify-center mx-auto space-x-3"><span>🚨</span><span>${t('sos_btn')}</span></button>
+                </div>
+
+                <div class="glass-panel p-6 rounded-[2rem] shadow-sm space-y-4">
+                    <div class="flex flex-col md:flex-row gap-4">
+                        <input type="text" id="detox-habit" aria-label="Bad Habit" placeholder="${t('bad_habit_ph')}" class="flex-1 px-4 py-3 glass-btn rounded-xl outline-none font-bold"/>
+                        <input type="text" id="detox-sub" aria-label="Substitute Habit" placeholder="${t('substitute_ph')}" class="flex-1 px-4 py-3 glass-btn rounded-xl outline-none font-bold"/>
+                        <button onclick="window.addDetoxHabit()" class="bg-indigo-600 text-white px-8 py-3 rounded-xl font-black shadow-lg hover:bg-indigo-500 w-full md:w-auto">${t('add_btn')}</button>
+                    </div>
+                </div>
+
+                <div class="space-y-4">
+                    ${(state.detoxHabits || []).length === 0 ? `<div class="text-center py-10 text-slate-400 font-bold">ආරම්භ කිරීමට නරක පුරුද්දක් ඇතුළත් කරන්න.</div>` : (state.detoxHabits || []).map(dh => {
+                        const isCheckedToday = dh.lastCheckIn === today;
+                        const progressPercent = Math.min(100, (dh.streak / 7) * 100);
+                        return `<div class="glass-panel p-6 rounded-[2rem] shadow-sm relative overflow-hidden">
+                            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4 relative z-10">
+                                <div>
+                                    <h3 class="text-2xl font-black text-slate-800 dark:text-white line-through decoration-rose-500 decoration-4">${escapeHTML(dh.habit)}</h3>
+                                    ${dh.substitute ? `<p class="text-emerald-600 dark:text-emerald-400 font-bold text-sm mt-1">🔄 ඒ වෙනුවට කරන දේ: ${escapeHTML(dh.substitute)}</p>` : ''}
+                                </div>
+                                <div class="flex flex-wrap items-center gap-3">
+                                    ${!isCheckedToday ? `<button onclick="window.checkInDetox(${dh.id})" class="bg-emerald-500 hover:bg-emerald-400 text-white px-4 py-2 rounded-xl font-black shadow-sm text-sm transition-transform hover:scale-105">✅ අද දින සාර්ථකයි</button>` : `<span class="bg-emerald-100 text-emerald-700 px-4 py-2 rounded-xl font-black text-sm">✅ අද දින සාර්ථකයි</span>`}
+                                    <button onclick="window.resetDetox(${dh.id})" class="bg-orange-100 hover:bg-orange-200 text-orange-700 px-4 py-2 rounded-xl font-black shadow-sm text-sm transition-transform hover:scale-105" title="වැරදීමකින් පුරුද්ද කළා නම් මුල සිට අරඹන්න">🔄 Reset</button>
+                                    <button onclick="window.deleteDetox(${dh.id})" class="p-2 text-slate-400 hover:text-red-500 transition-transform hover:scale-110">🗑️</button>
+                                </div>
+                            </div>
+                            <div class="relative z-10 mt-2">
+                                <div class="flex justify-between text-xs font-bold text-slate-500 mb-1 uppercase tracking-widest"><span>Streak: ${dh.streak} Days</span><span>Target: 7 Days</span></div>
+                                <div class="w-full bg-slate-200 dark:bg-slate-700 h-3 rounded-full overflow-hidden shadow-inner">
+                                    <div class="bg-gradient-to-r from-rose-500 to-emerald-500 h-full rounded-full transition-all duration-1000" style="width: ${progressPercent}%"></div>
+                                </div>
+                            </div>
+                        </div>`;
+                    }).join('')}
+                </div>
+            </div>`;
         }
 
         function renderFlashcards() {
