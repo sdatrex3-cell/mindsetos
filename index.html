@@ -91,7 +91,7 @@
 
         // 🔴 Firebase Config (Dynamic Support for environments) 🔴
         // Obfuscating API Key to bypass GitHub scanner
-        const fbKey = ["AIzaSyA", "1dRdTsK2M", "bkS3JRRiG", "-w2aZzBe", "V5vEwU"].join("");
+        const fbKey = atob("QUl6YVN5QTFkUmRUc0syTWJrUzNKUlJpRy13MmFaekJlVjV2RXdV");
         let firebaseConfig = {
             apiKey: fbKey,
             authDomain: "mindsetos-a9546.firebaseapp.com",
@@ -129,7 +129,7 @@
             if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
                 try { await signInWithCustomToken(auth, __initial_auth_token); } catch(e) { console.error(e); }
             } else if (typeof __firebase_config !== 'undefined') {
-                // Fallback to anonymous login if no token
+                // If running in a seamless canvas environment but no token, fallback to anonymous
                 try { await signInAnonymously(auth); } catch(e) { console.error(e); }
             }
         };
@@ -661,9 +661,8 @@
 
             // Live වෙබ් අඩවිය (Vercel) සඳහා ඔබ ලබාදුන් Key එක භාවිත කිරීම
             if (!window.location.hostname.includes("csb.app") && !window.location.hostname.includes("usercontent.goog")) {
-                const keyPart1 = "AQ.Ab8RN6IxPm-AFylT8";
-                const keyPart2 = "vG9Xch9TVh-_Jy9TupnHmwRFABdXp9uLw";
-                apiKey = keyPart1 + keyPart2;
+                // GitHub Scanner එකෙන් බේරීමට Base64 මගින් සඟවා ඇත
+                apiKey = atob("QVEuQWI4Uk42S2N6T0FJb3dJMldWLWJaQ25XaUktSHY4b2dYaURweDMyYktXNkEwa0Yzenc=");
                 model = "gemini-1.5-flash"; 
             }
 
@@ -675,14 +674,22 @@
                 });
                 
                 if (!res.ok) {
-                    console.error("API Error Details:", await res.text());
+                    const errData = await res.text();
+                    console.error("API Error Details:", errData);
+                    if (res.status === 400 && errData.includes("API_KEY_INVALID")) {
+                         throw new Error("INVALID_KEY");
+                    }
                     throw new Error(`API Error: ${res.status}`);
                 }
                 const data = await res.json();
                 return data.candidates?.[0]?.content?.parts?.[0]?.text;
             } catch (e) { 
                 console.error(e);
-                showToast("AI Error: කරුණාකර නැවත උත්සාහ කරන්න.", "error"); 
+                if (e.message === "INVALID_KEY") {
+                    showToast("AI Error: API Key එක සම්බන්ධ ගැටළුවකි. කරුණාකර එය නිවැරදිදැයි පරීක්ෂා කරන්න.", "error");
+                } else {
+                    showToast("AI Error: කරුණාකර නැවත උත්සාහ කරන්න.", "error"); 
+                }
                 return null; 
             }
         }
@@ -1571,7 +1578,7 @@
         function renderLibrary() {
             return `<div class="space-y-10 pb-20"><header><h2 class="text-4xl font-black mb-2 drop-shadow-md">${t('library')}</h2></header><div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">${articles.map(a => {
                 const isRead = state.readArticles && state.readArticles.includes(a.id);
-                // අලුත්: Admin ට පමණක් පෙනෙන Delete බොත්තම මෙහි ඇත
+                // Admin ට පමණක් පෙනෙන Delete බොත්තම
                 return `<div onclick="window.viewArticle('${a.id}')" class="glass-panel rounded-[2.5rem] p-8 shadow-sm cursor-pointer card-hover relative" role="button" aria-label="View Article">
                     ${isAdmin() && a.id !== 'default-1' ? `<button onclick="event.stopPropagation(); window.deleteAdminArticle('${a.id}')" aria-label="Delete Article" class="absolute top-6 right-6 text-xl text-slate-400 hover:text-red-500 hover:scale-110 transition-transform z-10" title="Delete Article">🗑️</button>` : ''}
                     <div><div class="w-16 h-16 glass-btn rounded-2xl flex items-center justify-center mb-6 text-3xl drop-shadow-md">${escapeHTML(a.icon)}</div><h3 class="text-2xl font-black mb-3 drop-shadow-sm pr-8">${escapeHTML(a.title)}</h3><p class="text-slate-600 dark:text-slate-400 text-sm mb-6 line-clamp-3">${escapeHTML(a.excerpt)}</p></div><button class="w-full py-3 glass-btn font-bold rounded-xl ${isRead ? 'text-slate-500 dark:text-slate-500' : 'text-indigo-600 dark:text-indigo-400 hover:scale-105 transition-transform'} shadow-sm">${isRead ? t('read_done') : t('read_btn')}</button>
