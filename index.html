@@ -20,6 +20,8 @@
     </script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <!-- Addictive Feature: Confetti Animation CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&family=Noto+Sans+Sinhala:wght@400;600;800;900&display=swap" rel="stylesheet">
     
     <style>
@@ -95,6 +97,21 @@
         </div>
     </div>
 
+    <!-- Addictive Feature: Level Up Celebration Modal -->
+    <div id="levelup-modal" class="fixed inset-0 z-[200] hidden items-center justify-center bg-slate-900/90 backdrop-blur-xl transition-opacity">
+        <div class="text-center bg-white dark:bg-slate-800 p-10 rounded-[3rem] shadow-[0_0_50px_rgba(99,102,241,0.4)] max-w-sm mx-4 transform transition-all scale-110 animate-slide-up border border-indigo-200 dark:border-indigo-800">
+            <div class="text-7xl mb-4 animate-bounce">🎉</div>
+            <h2 class="text-4xl font-black mb-2 text-indigo-600 dark:text-indigo-400">Level Up!</h2>
+            <p class="text-slate-600 dark:text-slate-300 font-bold mb-6">ඔබ දැන් නව මට්ටමකට පැමිණ ඇත!</p>
+            <div class="bg-indigo-50 dark:bg-indigo-900/30 rounded-2xl p-6 mb-8 border border-indigo-100 dark:border-indigo-800">
+                <span class="block text-sm font-bold text-slate-500 uppercase tracking-widest mb-1">New Level</span>
+                <span id="levelup-level-text" class="text-6xl font-black text-indigo-600 drop-shadow-md">2</span>
+                <span id="levelup-title-text" class="block text-lg font-bold text-indigo-400 mt-2 uppercase">Apprentice</span>
+            </div>
+            <button onclick="window.closeLevelUpModal()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white py-4 rounded-2xl font-black shadow-lg transition-transform hover:scale-105">නියමයි! ඉදිරියටම යමු 🚀</button>
+        </div>
+    </div>
+
     <script type="module">
         // ==========================================
         // FIREBASE INITIALIZATION & IMPORTS
@@ -104,7 +121,6 @@
         import { getFirestore, doc, setDoc, getDoc, onSnapshot, collection, query, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
         // 🔴 Firebase Config (Dynamic Support for environments) 🔴
-        // Obfuscating API Key to bypass GitHub scanner
         const fbKey = atob("QUl6YVN5QTFkUmRUc0syTWJrUzNKUlJpRy13MmFaekJlVjV2RXdV");
         let firebaseConfig = {
             apiKey: fbKey,
@@ -143,7 +159,6 @@
             if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
                 try { await signInWithCustomToken(auth, __initial_auth_token); } catch(e) { console.error(e); }
             } else if (typeof __firebase_config !== 'undefined') {
-                // If running in a seamless canvas environment but no token, fallback to anonymous
                 try { await signInAnonymously(auth); } catch(e) { console.error(e); }
             }
         };
@@ -330,9 +345,8 @@
                 'Work': { name: 'ව්‍යාපාර / Work', color: 'bg-orange-100 text-orange-700 dark:bg-orange-900/50 dark:text-orange-300 border-orange-200 dark:border-orange-800' }
             },
             readArticles: [], timerSettings: { focus: 25, break: 5 }, soundType: 'noise', pendingReviews: [],
-            detoxHabits: [], // New state for Bad Habit Detox
-            wastedTimeLog: [],
-            parkedThoughts: []
+            detoxHabits: [], wastedTimeLog: [], parkedThoughts: [],
+            lastRewardDate: null // Addictive Feature: Daily Reward State
         };
 
         let state = JSON.parse(JSON.stringify(defaultState));
@@ -434,7 +448,6 @@
             if(!auth.currentUser) return;
             try {
                 const lbRef = collection(db, 'artifacts', appId, 'public', 'data', 'leaderboard');
-                // Client-side sorting to avoid requiring composite indexes
                 const querySnapshot = await getDocs(lbRef);
                 let usersList = [];
                 querySnapshot.forEach((doc) => {
@@ -444,7 +457,7 @@
                     }
                 });
                 usersList.sort((a, b) => b.xp - a.xp); // Sort descending by XP
-                globalLeaderboard = usersList.slice(0, 10); // Limit to top 10
+                globalLeaderboard = usersList.slice(0, 3); // Limit to top 3
                 if (state.activeTab === 'profile') render();
             } catch(e) { console.error("Leaderboard fetch error:", e); }
         }
@@ -456,7 +469,6 @@
 
         onAuthStateChanged(auth, async (user) => {
             if (user) {
-                // Prevent unverified manual signups from entering, but allow Anonymous canvas users
                 if (!user.isAnonymous && user.email && !user.emailVerified && !window.isRegisteringUser) {
                     showToast("කරුණාකර පළමුව ඔබගේ Email ලිපිනය තහවුරු (Verify) කරන්න.", "error"); 
                     await signOut(auth);
@@ -476,12 +488,16 @@
                     
                     if (docSnap.exists()) {
                         state = { ...defaultState, ...docSnap.data(), isNewUser: false };
-                        if(!state.detoxHabits) state.detoxHabits = []; // Migration for new users
+                        if(!state.detoxHabits) state.detoxHabits = [];
+                        if(!state.wastedTimeLog) state.wastedTimeLog = [];
+                        if(!state.parkedThoughts) state.parkedThoughts = [];
                     } else {
                         const localData = safeJSONParse(USER_DATA_KEY, null);
                         if (localData && localData.user && localData.user.email === user.email) {
                             state = { ...defaultState, ...localData, isNewUser: false };
                             if(!state.detoxHabits) state.detoxHabits = [];
+                            if(!state.wastedTimeLog) state.wastedTimeLog = [];
+                            if(!state.parkedThoughts) state.parkedThoughts = [];
                             if (!state.user.trialEnds) state.user.trialEnds = Date.now() + (200 * 24 * 60 * 60 * 1000);
                             await setDoc(docRef, state); 
                             localStorage.removeItem(USER_DATA_KEY); 
@@ -504,6 +520,8 @@
                             if (remoteState.lastModified > (state.lastModified || 0)) {
                                 state = { ...state, ...remoteState };
                                 if(!state.detoxHabits) state.detoxHabits = [];
+                                if(!state.wastedTimeLog) state.wastedTimeLog = [];
+                                if(!state.parkedThoughts) state.parkedThoughts = [];
                                 render();
                             }
                         }
@@ -652,7 +670,6 @@
             render(); 
         }
 
-        // Google Login
         async function handleGoogleSignIn() {
             try {
                 showToast("Google හරහා ලොග් වෙමින් පවතී...", "info"); 
@@ -680,15 +697,11 @@
         // ==========================================
         // NEW FEATURES LOGIC (AI, Badges, Avatar)
         // ==========================================
-        // Call Gemini API
         async function callGemini(prompt) {
-            // Canvas (Preview) පරිසරය සඳහා ස්වයංක්‍රීය Key එක
             let apiKey = ""; 
             let model = "gemini-2.5-flash-preview-09-2025"; 
 
-            // Live වෙබ් අඩවිය (Vercel) සඳහා ඔබ ලබාදුන් Key එක භාවිත කිරීම
             if (window.location.hostname.includes("mindsetos.site")) {
-                // GitHub Scanner එකෙන් බේරීමට Base64 මගින් සඟවා ඇත
                 apiKey = atob("QVEuQWI4Uk42S2N6T0FJb3dJMldWLWJaQ25XaUktSHY4b2dYaURweDMyYktXNkEwa0Yzenc=");
                 model = "gemini-1.5-flash"; 
             }
@@ -774,7 +787,7 @@
                     if(dh.lastCheckIn !== today) {
                         dh.streak += 1;
                         dh.lastCheckIn = today;
-                        addXP(15); // Reward for avoiding bad habit
+                        addXP(15); 
                         showToast(`නියමයි! දින ${dh.streak} ක් සාර්ථකයි!`, "success");
                     }
                 }
@@ -839,6 +852,71 @@
 
         function startSOS() {
             startBreathingSOS();
+        }
+
+        // ==========================================
+        // NEW METHODS: Wasted Time & Thought Parking Lot
+        // ==========================================
+        function addWastedTime() {
+            const textEl = document.getElementById('wasted-text');
+            const minsEl = document.getElementById('wasted-mins');
+            const text = textEl?.value.trim();
+            const mins = parseInt(minsEl?.value || 0);
+            if(text && mins > 0) {
+                if(!state.wastedTimeLog) state.wastedTimeLog = [];
+                state.wastedTimeLog.unshift({ id: Date.now(), text: escapeHTML(text), mins: mins, date: getTodayStr() });
+                saveData(true); render(); showToast("සටහන් කළා. හෙට දවසේ මේ කාලයත් වැඩකට ගනිමු!", "info");
+            } else { showToast("කරුණාකර විස්තරය සහ විනාඩි ගණන ඇතුළත් කරන්න.", "error"); }
+        }
+
+        function deleteWastedTime(id) {
+            if(state.wastedTimeLog) state.wastedTimeLog = state.wastedTimeLog.filter(w => w.id !== id);
+            saveData(true); render();
+        }
+
+        function addParkedThought() {
+            const el = document.getElementById('parked-thought-input');
+            const text = el?.value.trim();
+            if(text) {
+                if(!state.parkedThoughts) state.parkedThoughts = [];
+                state.parkedThoughts.unshift({ id: Date.now(), text: escapeHTML(text), date: getTodayStr() });
+                saveData(true); el.value = ''; render(); showToast("සිතුවිල්ල මොළයෙන් ඉවත් කළා. දැන් නැවතත් Focus කරන්න!", "success");
+            }
+        }
+
+        function deleteParkedThought(id) {
+            if(state.parkedThoughts) state.parkedThoughts = state.parkedThoughts.filter(p => p.id !== id);
+            saveData(true); render();
+        }
+
+        // ==========================================
+        // ADDICTIVE FEATURES LOGIC (Variable Rewards)
+        // ==========================================
+        function claimDailyReward() {
+            const today = getTodayStr();
+            if (state.lastRewardDate === today) return;
+            
+            const rewards = [15, 25, 50, 100];
+            const weights = [0.5, 0.3, 0.15, 0.05]; // 50% chance for 15XP, 5% chance for 100XP
+            let r = Math.random(), cumulative = 0, reward = 15;
+            for (let i = 0; i < weights.length; i++) { 
+                cumulative += weights[i]; 
+                if (r <= cumulative) { reward = rewards[i]; break; } 
+            }
+            
+            state.lastRewardDate = today; 
+            addXP(reward); 
+            saveData(true); 
+            render();
+            try { 
+                if(window.confetti) confetti({ particleCount: 150, spread: 80, origin: { y: 0.5 }, zIndex: 10000, colors: ['#fbbf24', '#f59e0b', '#d97706'] }); 
+            } catch(e){}
+            showToast(`🎁 සුබ පැතුම්! ඔබට නොමිලේ XP ${reward} ක් ලැබුණා!`, "success");
+        }
+
+        function closeLevelUpModal() { 
+            const modal = document.getElementById('levelup-modal');
+            if(modal) { modal.classList.add('hidden'); modal.classList.remove('flex'); }
         }
 
         function checkBadges() {
@@ -933,44 +1011,8 @@
         }
 
         // ==========================================
-        // NEW METHODS: Wasted Time & Thought Parking Lot
-        // ==========================================
-        function addWastedTime() {
-            const textEl = document.getElementById('wasted-text');
-            const minsEl = document.getElementById('wasted-mins');
-            const text = textEl?.value.trim();
-            const mins = parseInt(minsEl?.value || 0);
-            if(text && mins > 0) {
-                if(!state.wastedTimeLog) state.wastedTimeLog = [];
-                state.wastedTimeLog.unshift({ id: Date.now(), text: escapeHTML(text), mins: mins, date: getTodayStr() });
-                saveData(true); render(); showToast("සටහන් කළා. හෙට දවසේ මේ කාලයත් වැඩකට ගනිමු!", "info");
-            } else { showToast("කරුණාකර විස්තරය සහ විනාඩි ගණන ඇතුළත් කරන්න.", "error"); }
-        }
-
-        function deleteWastedTime(id) {
-            if(state.wastedTimeLog) state.wastedTimeLog = state.wastedTimeLog.filter(w => w.id !== id);
-            saveData(true); render();
-        }
-
-        function addParkedThought() {
-            const el = document.getElementById('parked-thought-input');
-            const text = el?.value.trim();
-            if(text) {
-                if(!state.parkedThoughts) state.parkedThoughts = [];
-                state.parkedThoughts.unshift({ id: Date.now(), text: escapeHTML(text), date: getTodayStr() });
-                saveData(true); el.value = ''; render(); showToast("සිතුවිල්ල මොළයෙන් ඉවත් කළා. දැන් නැවතත් Focus කරන්න!", "success");
-            }
-        }
-
-        function deleteParkedThought(id) {
-            if(state.parkedThoughts) state.parkedThoughts = state.parkedThoughts.filter(p => p.id !== id);
-            saveData(true); render();
-        }
-
-        // ==========================================
         // FIREBASE ARTICLES (Admin Security Implementation)
         // ==========================================
-        
         async function publishAdminArticle() {
             if (!isAdmin()) return showToast("අවසර නොමැති ක්‍රියාවකි.", "error"); 
 
@@ -1062,7 +1104,11 @@
                 } 
                 return h; 
             });
-            if(newlyCompleted) { addXP(10); }
+            if(newlyCompleted) { 
+                addXP(10); 
+                // Addictive Feature: Positive Reinforcement Confetti
+                try { if(window.confetti) confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 }, zIndex: 10000 }); } catch(e){} 
+            }
             updateHistory(); render();
         }
 
@@ -1178,6 +1224,10 @@
                         updateStreakAction();
                         let focusMins = state.timerSettings?.focus || 25; addXP(focusMins); state.stats.totalFocusMinutes += focusMins; 
                         const today = getTodayStr(); state.dailyFocus[today] = (state.dailyFocus[today] || 0) + focusMins; saveData(true); 
+                        
+                        // Addictive Feature: Positive Reinforcement Confetti
+                        try { if(window.confetti) confetti({ particleCount: 150, spread: 100, origin: { y: 0.5 }, zIndex: 10000 }); } catch(e){} 
+
                         timerState.phase = 'focus-ended'; showToast("Focus session අවසන්!", "success"); triggerPushNotification("Focus session අවසන්! විවේකයක් ගන්න."); 
                     } else { showToast("විවේකය අවසන්!", "info"); triggerPushNotification("විවේකය අවසන්! නැවත වැඩ අරඹමු."); resetTimer(); } 
                     render();
@@ -1222,7 +1272,7 @@
             window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank', 'noopener,noreferrer');
         }
 
-        function clearAllData() { showConfirmModal(t('clear_all') + "?", () => { state.habits = []; state.history = []; state.reflections = {}; state.moods = {}; state.flashcards = []; state.pastTasks = {}; state.dailyFocus = {}; state.streak = { count: 0, lastDate: null }; state.pendingReviews = []; state.detoxHabits = []; resetTimer(); saveData(true); render(); showToast("සාර්ථකව හිස් කරන ලදී.", "success"); }); } 
+        function clearAllData() { showConfirmModal(t('clear_all') + "?", () => { state.habits = []; state.history = []; state.reflections = {}; state.moods = {}; state.flashcards = []; state.pastTasks = {}; state.dailyFocus = {}; state.streak = { count: 0, lastDate: null }; state.pendingReviews = []; state.detoxHabits = []; state.wastedTimeLog = []; state.parkedThoughts = []; resetTimer(); saveData(true); render(); showToast("සාර්ථකව හිස් කරන ලදී.", "success"); }); } 
         function deleteAccount() { showConfirmModal(t('del_acc') + "?", async () => { await setDoc(doc(db, 'artifacts', appId, 'users', auth.currentUser.uid, 'data', 'state'), {}); await auth.currentUser.delete(); logout(); }); }
         
         function exportData() {
@@ -1392,11 +1442,36 @@
         }
         
         function addXP(amount) { 
+            amount = Math.floor(Number(amount));
+            if (isNaN(amount) || amount <= 0) return;
             if (state.user.level >= 100) return; 
             state.user.xp += amount; let leveledUp = false;
             while (state.user.xp >= state.user.level * 100 && state.user.level < 100) { state.user.xp -= state.user.level * 100; state.user.level++; leveledUp = true; } 
             if (state.user.level >= 100) { state.user.level = 100; state.user.xp = 0; }
-            if(leveledUp) { const title = getLevelName(state.user.level).split(' ')[0]; showToast(`🎉 Level Up! Level ${state.user.level} - ${title}`, 'success'); checkBadges(); }
+            if(leveledUp) { 
+                const title = getLevelName(state.user.level).split(' ')[0]; 
+                showToast(`🎉 Level Up! Level ${state.user.level} - ${title}`, 'success'); 
+                checkBadges(); 
+                
+                // Addictive Feature: Level Up Celebration
+                try {
+                    const modal = document.getElementById('levelup-modal');
+                    if(modal) {
+                        document.getElementById('levelup-level-text').innerText = state.user.level;
+                        document.getElementById('levelup-title-text').innerText = title;
+                        modal.classList.remove('hidden'); modal.classList.add('flex');
+                        
+                        if(window.confetti) {
+                            var duration = 3000; var end = Date.now() + duration;
+                            (function frame() { 
+                                confetti({ particleCount: 5, angle: 60, spread: 55, origin: { x: 0 }, colors: ['#6366f1', '#a855f7'], zIndex: 10000 }); 
+                                confetti({ particleCount: 5, angle: 120, spread: 55, origin: { x: 1 }, colors: ['#6366f1', '#a855f7'], zIndex: 10000 }); 
+                                if (Date.now() < end) { requestAnimationFrame(frame); } 
+                            }());
+                        }
+                    }
+                } catch(e){}
+            }
             saveData(true); 
             updatePublicLeaderboard();
             fetchLeaderboard();
@@ -1438,8 +1513,9 @@
             deleteAccount, dismissReview, updateTimerSettings, setSoundType, installApp, publishAdminArticle, deleteAdminArticle,
             exportData, exportDataPDF, importData, setRating, submitFeedback, editName, updateJournalTextSilent, togglePassword,
             breakdownTaskAI, generateAIFlashcards, rateFlashcard, changeAvatar, handleGoogleSignIn,
-            addDetoxHabit, checkInDetox, resetDetox, deleteDetox, startSOS, startBreathingSOS, stopBreathingSOS, // New functions added
-            addWastedTime, deleteWastedTime, addParkedThought, deleteParkedThought // NEW Productivity functions
+            addDetoxHabit, checkInDetox, resetDetox, deleteDetox, startSOS, startBreathingSOS, stopBreathingSOS, 
+            addWastedTime, deleteWastedTime, addParkedThought, deleteParkedThought,
+            claimDailyReward, closeLevelUpModal // Addictive feature functions
         });
 
         function render() {
@@ -1571,7 +1647,20 @@
                 holidayBanner = `<div class="glass-panel p-4 rounded-2xl shadow-sm border-l-4 border-pink-500 flex items-center space-x-3 mb-4 animate-fade-in bg-gradient-to-r from-pink-50 to-transparent dark:from-pink-900/20 dark:to-transparent"><span class="text-2xl drop-shadow-md">✨</span><span class="font-bold text-sm text-pink-700 dark:text-pink-300">${t('holiday_msg_1')} ${escapeHTML(todayHolidayMessage)}${t('holiday_msg_2')}</span></div>`;
             }
 
+            // Addictive Feature: Variable Reward (Daily Box)
+            let dailyRewardHTML = '';
             const todayStr = getTodayStr();
+            if (state.lastRewardDate !== todayStr) {
+                dailyRewardHTML = `<div class="glass-panel p-4 rounded-2xl shadow-sm border border-yellow-400 dark:border-yellow-600 flex items-center justify-between mb-4 bg-gradient-to-r from-yellow-50 to-transparent dark:from-yellow-900/20 dark:to-transparent animate-pulse"><div class="flex items-center space-x-3"><span class="text-3xl drop-shadow-md">🎁</span><span class="font-bold text-sm text-yellow-700 dark:text-yellow-400">ඔබේ දෛනික ත්‍යාගය ලබාගන්න! (Daily Reward)</span></div><button onclick="window.claimDailyReward()" class="bg-yellow-500 hover:bg-yellow-400 text-white px-4 py-2 rounded-xl font-black shadow-lg text-sm hover:scale-105 transition-transform">ලබාගන්න</button></div>`;
+            }
+
+            // Addictive Feature: Loss Aversion (Streak Warning)
+            let streakWarning = '';
+            const doneToday = state.habits.some(h => h.completed && h.date === todayStr) || (state.dailyFocus[todayStr] > 0);
+            if (state.streak.count > 0 && !doneToday) {
+                streakWarning = `<div class="glass-panel p-4 rounded-2xl shadow-sm border-l-4 border-rose-500 flex items-center justify-between mb-4 bg-rose-50 dark:bg-rose-900/20 animate-pulse"><div class="flex items-center space-x-3"><span class="text-2xl">🔥</span><span class="font-bold text-sm text-rose-700 dark:text-rose-300">අවධානයයි! ඔබගේ දින ${state.streak.count} ක Streak එක අහිමි වීමේ අවදානමක් ඇත. වහාම කාර්යයක් හෝ Focus කාලයක් අවසන් කරන්න!</span></div></div>`;
+            }
+
             const todayWasted = (state.wastedTimeLog || []).filter(w => w.date === todayStr);
             const totalWastedMins = todayWasted.reduce((acc, curr) => acc + curr.mins, 0);
 
@@ -1607,7 +1696,7 @@
                     </div>
                 </header>
                 
-                <div class="mb-6">${holidayBanner}${targetHTML}${articleNotif}${reviewNotifs}</div>
+                <div class="mb-6">${dailyRewardHTML}${streakWarning}${holidayBanner}${targetHTML}${articleNotif}${reviewNotifs}</div>
 
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <button onclick="window.switchTab('timer')" aria-label="Deep Work Timer" class="glass-panel p-4 rounded-2xl shadow-sm flex items-center justify-center space-x-3 hover:bg-indigo-50/50 dark:hover:bg-indigo-900/50 transition-colors group"><span class="text-xl group-hover:scale-110 transition-transform drop-shadow">▶️</span><span class="font-bold text-sm">${t('deep_work')}</span></button>
@@ -1749,7 +1838,6 @@
                 ${settingsUI}<div class="relative w-72 h-72 mx-auto mb-10 flex items-center justify-center"><div class="absolute inset-0 bg-slate-200/50 dark:bg-slate-700/50 rounded-full shadow-inner"></div><div id="timer-circle-bg" class="absolute inset-0 timer-circle transition-all duration-500"></div><div class="absolute inset-4 glass-panel rounded-full flex flex-col items-center justify-center"><span class="text-sm font-bold text-slate-500 uppercase tracking-widest mb-1">${escapeHTML(timerState.mode)} MODE</span><span id="timer-display" class="text-7xl font-black drop-shadow-md">${String(Math.floor(timerState.timeLeft / 60)).padStart(2, '0')}:${String(timerState.timeLeft % 60).padStart(2, '0')}</span></div></div>${controlButtons}${parkingLotHTML}</div></div>`;
         }
 
-        // --- NEW FEATURE: Habit Detox View ---
         function renderDetox() {
             const today = getTodayStr();
             return `<div class="max-w-4xl mx-auto space-y-8 pb-10">
@@ -1830,7 +1918,6 @@
         function renderLibrary() {
             return `<div class="space-y-10 pb-20"><header><h2 class="text-4xl font-black mb-2 drop-shadow-md">${t('library')}</h2></header><div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">${articles.map(a => {
                 const isRead = state.readArticles && state.readArticles.includes(a.id);
-                // Admin ට පමණක් පෙනෙන Delete බොත්තම
                 return `<div onclick="window.viewArticle('${a.id}')" class="glass-panel rounded-[2.5rem] p-8 shadow-sm cursor-pointer card-hover relative" role="button" aria-label="View Article">
                     ${isAdmin() && a.id !== 'default-1' ? `<button onclick="event.stopPropagation(); window.deleteAdminArticle('${a.id}')" aria-label="Delete Article" class="absolute top-6 right-6 text-xl text-slate-400 hover:text-red-500 hover:scale-110 transition-transform z-10" title="Delete Article">🗑️</button>` : ''}
                     <div><div class="w-16 h-16 glass-btn rounded-2xl flex items-center justify-center mb-6 text-3xl drop-shadow-md">${escapeHTML(a.icon)}</div><h3 class="text-2xl font-black mb-3 drop-shadow-sm pr-8">${escapeHTML(a.title)}</h3><p class="text-slate-600 dark:text-slate-400 text-sm mb-6 line-clamp-3">${escapeHTML(a.excerpt)}</p></div><button class="w-full py-3 glass-btn font-bold rounded-xl ${isRead ? 'text-slate-500 dark:text-slate-500' : 'text-indigo-600 dark:text-indigo-400 hover:scale-105 transition-transform'} shadow-sm">${isRead ? t('read_done') : t('read_btn')}</button>
