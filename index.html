@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="si" class="light">
+<html lang="en" class="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -22,10 +22,10 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <!-- Addictive Feature: Confetti Animation CDN -->
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&family=Noto+Sans+Sinhala:wght@400;600;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
     
     <style>
-        :root { --font-main: 'Inter', 'Noto Sans Sinhala', sans-serif; }
+        :root { --font-main: 'Inter', sans-serif; }
         body { 
             font-family: var(--font-main); scroll-behavior: smooth; 
             background-color: #f8fafc;
@@ -90,16 +90,16 @@
     <div id="modal-container" class="fixed inset-0 z-[100] hidden items-center justify-center bg-slate-900/60 backdrop-blur-md transition-opacity" role="dialog" aria-modal="true"></div>
 
     <!-- Floating SOS Button & Breathing Modal -->
-    <button onclick="window.startBreathingSOS()" class="fixed bottom-28 right-6 md:bottom-8 md:right-8 z-[90] w-16 h-16 bg-gradient-to-tr from-rose-500 to-orange-500 text-white rounded-full flex items-center justify-center text-3xl shadow-[0_0_30px_rgba(244,63,94,0.6)] hover:scale-110 transition-transform animate-bounce" aria-label="Emergency SOS" title="නරක පුරුද්දක් කිරීමට සිතෙන විට වහාම ඔබන්න">🆘</button>
+    <button onclick="window.startBreathingSOS()" class="fixed bottom-28 right-6 md:bottom-8 md:right-8 z-[90] w-16 h-16 bg-gradient-to-tr from-rose-500 to-orange-500 text-white rounded-full flex items-center justify-center text-3xl shadow-[0_0_30px_rgba(244,63,94,0.6)] hover:scale-110 transition-transform animate-bounce" aria-label="Emergency SOS" title="Press immediately when you feel a craving">🆘</button>
     
     <div id="sos-breathing-modal" class="fixed inset-0 z-[200] hidden items-center justify-center bg-slate-900/95 backdrop-blur-2xl transition-opacity">
         <div class="text-center text-white flex flex-col items-center">
             <h2 class="text-4xl font-black mb-4 text-rose-400 drop-shadow-md">Craving SOS 🛑</h2>
-            <p id="breathe-text" class="text-2xl font-bold mb-16 text-slate-300 transition-opacity">සන්සුන් වන්න... / Calm down...</p>
+            <p id="breathe-text" class="text-2xl font-bold mb-16 text-slate-300 transition-opacity">Calm down...</p>
             <div class="relative w-64 h-64 flex items-center justify-center mb-16">
                 <div id="breathe-circle" class="absolute w-20 h-20 bg-gradient-to-tr from-emerald-400 to-indigo-500 rounded-full shadow-[0_0_60px_rgba(52,211,153,0.5)] transition-all ease-in-out"></div>
             </div>
-            <button onclick="window.stopBreathingSOS()" class="px-10 py-4 bg-white/10 hover:bg-white/20 rounded-2xl font-bold text-lg border border-white/20 transition-colors shadow-lg">End / අවසන් කරන්න</button>
+            <button onclick="window.stopBreathingSOS()" class="px-10 py-4 bg-white/10 hover:bg-white/20 rounded-2xl font-bold text-lg border border-white/20 transition-colors shadow-lg">End</button>
         </div>
     </div>
 
@@ -108,13 +108,13 @@
         <div class="text-center bg-white dark:bg-slate-800 p-10 rounded-[3rem] shadow-[0_0_50px_rgba(99,102,241,0.4)] max-w-sm mx-4 transform transition-all scale-110 animate-slide-up border border-indigo-200 dark:border-indigo-800">
             <div class="text-7xl mb-4 animate-bounce">🎉</div>
             <h2 class="text-4xl font-black mb-2 text-indigo-600 dark:text-indigo-400">Level Up!</h2>
-            <p class="text-slate-600 dark:text-slate-300 font-bold mb-6">ඔබ දැන් නව මට්ටමකට පැමිණ ඇත!</p>
+            <p class="text-slate-600 dark:text-slate-300 font-bold mb-6">You have reached a new level!</p>
             <div class="bg-indigo-50 dark:bg-indigo-900/30 rounded-2xl p-6 mb-8 border border-indigo-100 dark:border-indigo-800">
                 <span class="block text-sm font-bold text-slate-500 uppercase tracking-widest mb-1">New Level</span>
                 <span id="levelup-level-text" class="text-6xl font-black text-indigo-600 drop-shadow-md">2</span>
                 <span id="levelup-title-text" class="block text-lg font-bold text-indigo-400 mt-2 uppercase">Apprentice</span>
             </div>
-            <button onclick="window.closeLevelUpModal()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white py-4 rounded-2xl font-black shadow-lg transition-transform hover:scale-105">නියමයි! ඉදිරියටම යමු 🚀</button>
+            <button onclick="window.closeLevelUpModal()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white py-4 rounded-2xl font-black shadow-lg transition-transform hover:scale-105">Awesome! Let's keep going 🚀</button>
         </div>
     </div>
 
@@ -154,7 +154,7 @@
             try {
                 const redirectResult = await getRedirectResult(auth);
                 if(redirectResult && redirectResult.user) {
-                    showToast("Google Sign-In සාර්ථකයි!", "success");
+                    showToast("Google Sign-In Successful!", "success");
                 }
             } catch(e) {
                 console.error("Redirect Auth Error:", e);
@@ -203,7 +203,7 @@
         let audioCtxObj = null; 
         let noiseSourceNode = null; 
         let activeOscillators = [];
-        let timerState = { mode: 'focus', phase: 'idle', timeLeft: 25 * 60, targetEndTime: null, interval: null };
+        let timerState = { mode: 'focus', phase: 'idle', timeLeft: 25 * 60, targetEndTime: null, interval: null, isStrict: false };
         let progressChartInstance = null, focusChartInstance = null, moodChartInstance = null;
 
         function getTodayStr() {
@@ -219,7 +219,7 @@
         async function fetchTodayHoliday() {
             const d = new Date();
             const mmdd = String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
-            const fixedHolidays = { '01-01': 'නව වසර', '02-04': 'ජාතික නිදහස් දිනය', '04-13': 'සිංහල හා දෙමළ අලුත් අවුරුද්ද (පරණ අවුරුද්ද)', '04-14': 'සිංහල හා දෙමළ අලුත් අවුරුද්ද', '05-01': 'කම්කරු දිනය', '12-25': 'නත්තල් දිනය' };
+            const fixedHolidays = { '01-01': 'New Year', '02-04': 'National Independence Day', '04-13': 'Sinhala & Tamil New Year (Prior)', '04-14': 'Sinhala & Tamil New Year', '05-01': 'Labour Day', '12-25': 'Christmas Day' };
             if (fixedHolidays[mmdd]) { todayHolidayMessage = fixedHolidays[mmdd]; if(state.activeTab === 'home') render(); }
             try {
                 const res = await fetch(`https://date.nager.at/api/v3/PublicHolidays/${d.getFullYear()}/LK`);
@@ -239,164 +239,164 @@
         // DICTIONARY & FULL TRANSLATIONS
         // ==========================================
         const dict = {
-            'greeting_m': { si: 'සුබ උදෑසනක්', en: 'Good Morning' },
-            'greeting_a': { si: 'සුබ දහවලක්', en: 'Good Afternoon' },
-            'greeting_e': { si: 'සුබ රාත්‍රියක්', en: 'Good Evening' },
-            'home': { si: 'මුල් පිටුව', en: 'Home' },
-            'planner': { si: 'සැලසුම්කරු', en: 'Planner' },
+            'greeting_m': { si: 'Good Morning', en: 'Good Morning' },
+            'greeting_a': { si: 'Good Afternoon', en: 'Good Afternoon' },
+            'greeting_e': { si: 'Good Evening', en: 'Good Evening' },
+            'home': { si: 'Home', en: 'Home' },
+            'planner': { si: 'Planner', en: 'Planner' },
             'flashcards': { si: 'Flashcards', en: 'Flashcards' },
-            'library': { si: 'පුස්තකාලය', en: 'Library' },
-            'stats': { si: 'ප්‍රගතිය', en: 'Analytics' },
-            'profile': { si: 'ප්‍රොෆයිලය', en: 'Profile' },
+            'library': { si: 'Library', en: 'Library' },
+            'stats': { si: 'Analytics', en: 'Analytics' },
+            'profile': { si: 'Profile', en: 'Profile' },
             
             // Detox
-            'detox_tab': { si: 'Detox (නරක පුරුදු)', en: 'Habit Detox' },
-            'detox_title': { si: 'නරක පුරුදු අත්හැරීමේ (Detox) අභියෝගය', en: 'Bad Habit Detox Challenge' },
-            'detox_desc': { si: 'මනෝවිද්‍යාත්මක "Urge Surfing" සහ "Habit Substitution" ක්‍රම භාවිතයෙන් සතියක් ඇතුළත නරක පුරුදු වලින් මිදෙමු.', en: 'Break bad habits within a week using psychological Urge Surfing and Substitution methods.' },
-            'bad_habit_ph': { si: 'අත්හැරීමට අවශ්‍ය නරක පුරුද්ද (උදා: දුම්පානය)...', en: 'Bad habit to quit...' },
-            'substitute_ph': { si: 'ඒ වෙනුවට කරන හොඳ දෙය...', en: 'Alternative action...' },
-            'sos_btn': { si: 'විශේෂ ආධාරය (Craving SOS)', en: 'Craving SOS' },
-            'sos_craving': { si: '🔥 තදබල ආශාවක් (Craving) ආවද?', en: '🔥 Strong Craving?' },
-            'sos_desc': { si: 'මනෝවිද්‍යාවට අනුව ඕනෑම නරක පුරුද්දක් කිරීමේ තදබල ආශාවක් මොළයේ පවතින්නේ විනාඩි 3කට ආසන්න කාලයක් පමණි. එම කාලය තුළ එයට යටත් නොවී "Urge Surfing" (ආශාව දෙස උපේක්ෂාවෙන් බලා සිටීම) කිරීමෙන් ඔබට එය පහසුවෙන්ම පාලනය කරගත හැක.', en: 'Psychologically, cravings peak and pass within 3 minutes. Use "Urge Surfing" to observe the feeling without acting on it, and it will naturally fade.' },
-            'detox_empty': { si: 'ආරම්භ කිරීමට නරක පුරුද්දක් ඇතුළත් කරන්න.', en: 'Add a bad habit to start.' },
-            'detox_success': { si: '✅ අද දින සාර්ථකයි', en: '✅ Successful Today' },
+            'detox_tab': { si: 'Habit Detox', en: 'Habit Detox' },
+            'detox_title': { si: 'Bad Habit Detox Challenge', en: 'Bad Habit Detox Challenge' },
+            'detox_desc': { si: 'Break bad habits within a week using psychological Urge Surfing and Substitution methods.', en: 'Break bad habits within a week using psychological Urge Surfing and Substitution methods.' },
+            'bad_habit_ph': { si: 'Bad habit to quit...', en: 'Bad habit to quit...' },
+            'substitute_ph': { si: 'Alternative action...', en: 'Alternative action...' },
+            'sos_btn': { si: 'Craving SOS', en: 'Craving SOS' },
+            'sos_craving': { si: '🔥 Strong Craving?', en: '🔥 Strong Craving?' },
+            'sos_desc': { si: 'Psychologically, cravings peak and pass within 3 minutes. Use "Urge Surfing" to observe the feeling without acting on it, and it will naturally fade.', en: 'Psychologically, cravings peak and pass within 3 minutes. Use "Urge Surfing" to observe the feeling without acting on it, and it will naturally fade.' },
+            'detox_empty': { si: 'Add a bad habit to start.', en: 'Add a bad habit to start.' },
+            'detox_success': { si: '✅ Successful Today', en: '✅ Successful Today' },
             'detox_reset': { si: '🔄 Reset', en: '🔄 Reset' },
 
             // Planner
             'deep_work': { si: 'Deep Work', en: 'Deep Work' },
-            'new_task': { si: 'නව කාර්යයක්', en: 'New Task' },
-            'daily_progress': { si: 'අද දෛනික ප්‍රගතිය', en: 'Daily Progress' },
-            'up_next': { si: 'මීළඟට කළ යුතු', en: 'Up Next' },
-            'view_all': { si: 'සියල්ල බලන්න', en: 'View All' },
-            'all_done': { si: 'නියමයි! වැඩ අවසන්.', en: 'Awesome! All tasks done.' },
-            'add_task': { si: 'වැඩක් ඇතුළත් කරන්න...', en: 'Enter a task...' },
-            'add_btn': { si: 'එක් කරන්න', en: 'Add' },
+            'new_task': { si: 'New Task', en: 'New Task' },
+            'daily_progress': { si: 'Daily Progress', en: 'Daily Progress' },
+            'up_next': { si: 'Up Next', en: 'Up Next' },
+            'view_all': { si: 'View All', en: 'View All' },
+            'all_done': { si: 'Awesome! All tasks done.', en: 'Awesome! All tasks done.' },
+            'add_task': { si: 'Enter a task...', en: 'Enter a task...' },
+            'add_btn': { si: 'Add', en: 'Add' },
             'tiny_habit_btn': { si: '⚡ 5-Min Habit', en: '⚡ 5-Min Habit' },
             'ai_breakdown': { si: '✨ AI Breakdown (+5 XP)', en: '✨ AI Breakdown (+5 XP)' },
             'ai_restructure': { si: '✨ AI Restructure', en: '✨ AI Restructure' },
 
             // Journal
-            'journal': { si: 'දවසේ සටහන (Journal)', en: 'Daily Journal' },
-            'journal_ph': { si: 'අද දවස ගැන ලියන්න...', en: 'Write about today...' },
-            'save_journal': { si: 'සටහන සුරකින්න', en: 'Save Journal' },
-            'history': { si: 'පසුගිය දිනවල දත්ත', en: 'Past History' },
+            'journal': { si: 'Daily Journal', en: 'Daily Journal' },
+            'journal_ph': { si: 'Write about today...', en: 'Write about today...' },
+            'save_journal': { si: 'Save Journal', en: 'Save Journal' },
+            'history': { si: 'Past History', en: 'Past History' },
 
             // Timer
-            'timer_title': { si: 'බාධාවකින් තොරව අවධානය', en: 'Uninterrupted Focus Timer' },
-            'start_break': { si: 'විවේකය අරඹන්න (X)', en: 'Start Break (X)' },
-            'skip_break': { si: 'විවේකය මඟහරින්න', en: 'Skip Break' },
-            'reset_timer': { si: 'නැවත මුල සිට', en: 'Reset Timer' },
-            'focus_chart': { si: 'දෛනික Focus කාලය (විනාඩි)', en: 'Daily Focus Time (mins)' },
-            'progress_chart': { si: 'ප්‍රගති සටහන', en: 'Progress Chart' },
+            'timer_title': { si: 'Uninterrupted Focus Timer', en: 'Uninterrupted Focus Timer' },
+            'start_break': { si: 'Start Break (X)', en: 'Start Break (X)' },
+            'skip_break': { si: 'Skip Break', en: 'Skip Break' },
+            'reset_timer': { si: 'Reset Timer', en: 'Reset Timer' },
+            'focus_chart': { si: 'Daily Focus Time (mins)', en: 'Daily Focus Time (mins)' },
+            'progress_chart': { si: 'Progress Chart', en: 'Progress Chart' },
             'total_focus': { si: 'Total Focus Time', en: 'Total Focus Time' },
 
             // Settings & Profile
-            'backup_data': { si: 'Backup ගන්න', en: 'Backup Data' },
-            'restore_data': { si: 'Restore කරන්න', en: 'Restore Data' },
-            'logout': { si: 'ගිණුමෙන් ඉවත් වන්න', en: 'Logout' },
-            'clear_all': { si: 'සියලුම ලැයිස්තු හිස් කරන්න', en: 'Clear All Lists' },
-            'del_acc': { si: 'සම්පූර්ණ ගිණුම මකා දමන්න', en: 'Delete Account Entirely' },
-            'target_date': { si: 'විභාගය/ඉලක්ක දිනය:', en: 'Target / Exam Date:' },
-            'add_category': { si: 'අලුත් කාණ්ඩයක් එක් කරන්න', en: 'Add Custom Category' },
-            'subscribe': { si: 'දායකත්වය ලබාගන්න', en: 'Subscribe Now' },
-            'trial_left': { si: 'නොමිලේ දින ඉතිරිව ඇත:', en: 'Free Trial Days Left:' },
-            'trial_exp': { si: 'ඔබගේ අත්හදා බැලීමේ කාලය අවසන්.', en: 'Free trial has expired.' },
+            'backup_data': { si: 'Backup Data', en: 'Backup Data' },
+            'restore_data': { si: 'Restore Data', en: 'Restore Data' },
+            'logout': { si: 'Logout', en: 'Logout' },
+            'clear_all': { si: 'Clear All Lists', en: 'Clear All Lists' },
+            'del_acc': { si: 'Delete Account Entirely', en: 'Delete Account Entirely' },
+            'target_date': { si: 'Target / Exam Date:', en: 'Target / Exam Date:' },
+            'add_category': { si: 'Add Custom Category', en: 'Add Custom Category' },
+            'subscribe': { si: 'Subscribe Now', en: 'Subscribe Now' },
+            'trial_left': { si: 'Free Trial Days Left:', en: 'Free Trial Days Left:' },
+            'trial_exp': { si: 'Free trial has expired.', en: 'Free trial has expired.' },
             'sound_beta': { si: 'SOUND (BETA)', en: 'SOUND (BETA)' },
 
             // Time Audit & Parked Thoughts
-            'heatmap_title': { si: 'කාර්යශීලීතා සිතියම (Activity Heatmap)', en: 'Activity Heatmap' },
-            'heatmap_desc': { si: 'පසුගිය දින 90ක Focus කාලය', en: 'Last 90 Days Focus Time' },
-            'wasted_time_title': { si: '⚠️ කාලය කා දැමූ දේවල් සටහන (Time Audit)', en: 'Wasted Time Log' },
-            'wasted_ph': { si: 'මොකක්ද කළේ? (උදා: YouTube බැලුවා)', en: 'What did you do?' },
-            'wasted_mins_ph': { si: 'විනාඩි', en: 'Mins' },
-            'time_audit_desc': { si: 'Digital Minimalism & Time Audit: ඔබ අපතේ යවන කාලය ලිවීමෙන් ඊළඟ දවසේ එම කාලය 40% කින් ඉතිරි කරගත හැක.', en: 'Time Audit: Logging wasted time helps you save 40% of it the next day.' },
-            'wasted_empty': { si: 'අද කිසිම කාලයක් අපතේ ගොස් නැත. නියමයි! 🎉', en: 'No wasted time today. Awesome! 🎉' },
-            'park_thought_title': { si: '🧠 Thought Parking Lot (බාධාකාරී සිතුවිලි බැහැර කිරීම)', en: 'Thought Parking Lot' },
-            'park_thought_ph': { si: 'හිතට එන වද දෙන සිතුවිල්ල මෙහි ලියා නැවත වැඩට යොමු වන්න...', en: 'Write distracting thoughts here to free your mind...' },
+            'heatmap_title': { si: 'Activity Heatmap', en: 'Activity Heatmap' },
+            'heatmap_desc': { si: 'Last 90 Days Focus Time', en: 'Last 90 Days Focus Time' },
+            'wasted_time_title': { si: '⚠️ Wasted Time Log', en: '⚠️ Wasted Time Log' },
+            'wasted_ph': { si: 'What did you do?', en: 'What did you do?' },
+            'wasted_mins_ph': { si: 'Mins', en: 'Mins' },
+            'time_audit_desc': { si: 'Time Audit: Logging wasted time helps you save 40% of it the next day.', en: 'Time Audit: Logging wasted time helps you save 40% of it the next day.' },
+            'wasted_empty': { si: 'No wasted time today. Awesome! 🎉', en: 'No wasted time today. Awesome! 🎉' },
+            'park_thought_title': { si: '🧠 Thought Parking Lot', en: 'Thought Parking Lot' },
+            'park_thought_ph': { si: 'Write distracting thoughts here to free your mind...', en: 'Write distracting thoughts here to free your mind...' },
 
             // Misc
-            'feedback_title': { si: '⭐ යෙදුම ගැන ඔබේ අදහස (Feedback)', en: '⭐ Your Feedback' },
-            'feedback_ph': { si: 'මෙහි ඔබේ අදහස් ලියන්න...', en: 'Write your feedback here...' },
-            'send_btn': { si: 'යවන්න (Email)', en: 'Send (Email)' },
-            'q_ph': { si: 'ප්‍රශ්නය (Question)...', en: 'Question...' },
-            'a_ph': { si: 'පිළිතුර (Answer)...', en: 'Answer...' },
-            'review_chk': { si: 'දින 3කින් නැවත මතක් කරන්න (Review in 3 days)', en: 'Remind me again in 3 days (Review)' },
-            'read_btn': { si: 'කියවන්න (+5 XP)', en: 'Read (+5 XP)' },
-            'read_done': { si: 'කියෙව්වා', en: 'Read' },
-            'article_new': { si: '📰 නව ලිපියක් පලවිය:', en: '📰 New Article Published:' },
-            'article_read': { si: 'කියවන්න', en: 'Read' },
-            'remind_title': { si: '🔔 මතක් කිරීම:', en: '🔔 Reminder:' },
-            'remind_desc': { si: 'අද නැවත අධ්‍යයනය (Review) කරන්න!', en: 'Review this today!' },
-            'remind_dismiss': { si: 'මතක් කිරීම අවසන්', en: 'Dismiss' },
-            'today': { si: 'අද', en: 'Today' },
-            'percent': { si: 'ලකුණු ප්‍රතිශතය', en: 'Score Percentage' },
-            'minutes': { si: 'විනාඩි', en: 'Minutes' },
-            'no_fc': { si: 'ආරම්භ කිරීමට ෆ්ලෑෂ් කාඩ්පතක් එක් කරන්න.', en: 'Add a flashcard to get started.' },
-            'fc_q': { si: 'ප්‍රශ්නය', en: 'Question' },
-            'fc_a': { si: 'පිළිතුර', en: 'Answer' },
-            'target_rem': { si: '⏳ ඔබේ ඉලක්කයට තවත් දින', en: '⏳ Days left for your target: ' },
-            'target_today': { si: '🎯 අදයි ඔබේ ඉලක්කගත දිනය! උපරිමයෙන් කරන්න!', en: '🎯 Today is your target date! Do your best!' },
-            'target_passed': { si: '✅ ඉලක්කගත දිනය පසු වී ඇත', en: '✅ Target date has passed ' },
-            'holiday_msg_1': { si: 'අද', en: 'Today is' },
-            'holiday_msg_2': { si: 'යි! ඔබට සුබ දවසක් වේවා!', en: '! Have a great day!' },
+            'feedback_title': { si: '⭐ Your Feedback', en: '⭐ Your Feedback' },
+            'feedback_ph': { si: 'Write your feedback here...', en: 'Write your feedback here...' },
+            'send_btn': { si: 'Send (Email)', en: 'Send (Email)' },
+            'q_ph': { si: 'Question...', en: 'Question...' },
+            'a_ph': { si: 'Answer...', en: 'Answer...' },
+            'review_chk': { si: 'Remind me again in 3 days (Review)', en: 'Remind me again in 3 days (Review)' },
+            'read_btn': { si: 'Read (+5 XP)', en: 'Read (+5 XP)' },
+            'read_done': { si: 'Read', en: 'Read' },
+            'article_new': { si: '📰 New Article Published:', en: '📰 New Article Published:' },
+            'article_read': { si: 'Read', en: 'Read' },
+            'remind_title': { si: '🔔 Reminder:', en: '🔔 Reminder:' },
+            'remind_desc': { si: 'Review this today!', en: 'Review this today!' },
+            'remind_dismiss': { si: 'Dismiss', en: 'Dismiss' },
+            'today': { si: 'Today', en: 'Today' },
+            'percent': { si: 'Score Percentage', en: 'Score Percentage' },
+            'minutes': { si: 'Minutes', en: 'Minutes' },
+            'no_fc': { si: 'Add a flashcard to get started.', en: 'Add a flashcard to get started.' },
+            'fc_q': { si: 'Question', en: 'Question' },
+            'fc_a': { si: 'Answer', en: 'Answer' },
+            'target_rem': { si: '⏳ Days left for your target: ', en: '⏳ Days left for your target: ' },
+            'target_today': { si: '🎯 Today is your target date! Do your best!', en: '🎯 Today is your target date! Do your best!' },
+            'target_passed': { si: '✅ Target date has passed ', en: '✅ Target date has passed ' },
+            'holiday_msg_1': { si: 'Today is', en: 'Today is' },
+            'holiday_msg_2': { si: '! Have a great day!', en: '! Have a great day!' },
             'install_app': { si: 'Install App', en: 'Install App' },
             'admin_core': { si: 'Admin Core', en: 'Admin Core' },
             'leaderboard_title': { si: '🏆 MindsetOS Top Performers', en: '🏆 MindsetOS Top Performers' },
-            'change_name_prompt': { si: 'ඔබගේ නව නම ඇතුළත් කරන්න:', en: 'Enter your new name:' },
-            'name_updated': { si: 'නම සාර්ථකව වෙනස් කරන ලදී.', en: 'Name updated successfully.' },
-            'export_pdf': { si: 'PDF ලෙස දත්ත ලබාගන්න', en: 'Download Data (PDF)' },
-            'wa_date': { si: 'දිනය:', en: 'Date:' },
-            'wa_focus': { si: 'අද දවසේ Focus කාලය:', en: 'Today\'s Focus Time:' },
-            'wa_done': { si: 'සම්පූර්ණ කළ වැඩ:', en: 'Completed Tasks:' },
-            'wa_none': { si: 'අද කිසිවක් සම්පූර්ණ කර නැත.', en: 'Nothing completed today yet.' },
-            'wa_level': { si: 'මගේ Level එක:', en: 'My Level:' },
-            'wa_xp': { si: 'ලබාගත් XP:', en: 'Earned XP:' },
+            'change_name_prompt': { si: 'Enter your new name:', en: 'Enter your new name:' },
+            'name_updated': { si: 'Name updated successfully.', en: 'Name updated successfully.' },
+            'export_pdf': { si: 'Download Data (PDF)', en: 'Download Data (PDF)' },
+            'wa_date': { si: 'Date:', en: 'Date:' },
+            'wa_focus': { si: 'Today\'s Focus Time:', en: 'Today\'s Focus Time:' },
+            'wa_done': { si: 'Completed Tasks:', en: 'Completed Tasks:' },
+            'wa_none': { si: 'Nothing completed today yet.', en: 'Nothing completed today yet.' },
+            'wa_level': { si: 'My Level:', en: 'My Level:' },
+            'wa_xp': { si: 'Earned XP:', en: 'Earned XP:' },
 
             // Vision
             'vision_title': { si: 'Systems & Vision Board', en: 'Systems & Vision Board' },
-            'vision_desc': { si: 'ඉලක්ක (Goals) යනු ඔබ යා යුතු දිශාවයි. නමුත් ඔබව එතැනට ගෙන යන්නේ ඔබ ගොඩනඟන එදිනෙදා පද්ධති (Systems) මගිනි.', en: 'Goals provide direction, but Systems are how you actually make progress daily.' },
-            'vision_goal_lbl': { si: 'ඔබේ ඉලක්කය / සිහිනය (Goal)', en: 'Your Goal / Dream' },
-            'vision_goal_ph': { si: 'උදා: මෘදුකාංග ඉංජිනේරුවෙකු වීම...', en: 'e.g., Become a Software Engineer...' },
-            'vision_sys_lbl': { si: 'ඒ වෙනුවෙන් අද සිට දිනපතා කරන දේ (Daily System)', en: 'Daily System to achieve it' },
-            'vision_sys_ph': { si: 'උදා: දිනකට විනාඩි 30ක් කේතනය කිරීම (Coding)...', en: 'e.g., Code for 30 mins daily...' },
-            'vision_empty': { si: 'ඔබේ පළමු System එක නිර්මාණය කරන්න!', en: 'Create your first System!' },
+            'vision_desc': { si: 'Goals provide direction, but Systems are how you actually make progress daily.', en: 'Goals provide direction, but Systems are how you actually make progress daily.' },
+            'vision_goal_lbl': { si: 'Your Goal / Dream', en: 'Your Goal / Dream' },
+            'vision_goal_ph': { si: 'e.g., Become a Software Engineer...', en: 'e.g., Become a Software Engineer...' },
+            'vision_sys_lbl': { si: 'Daily System to achieve it', en: 'Daily System to achieve it' },
+            'vision_sys_ph': { si: 'e.g., Code for 30 mins daily...', en: 'e.g., Code for 30 mins daily...' },
+            'vision_empty': { si: 'Create your first System!', en: 'Create your first System!' },
 
             // Mental Health
-            'mental_title': { si: 'Mental Health (CBT & DASS-21)', en: 'Mental Health (CBT)' },
-            'mental_desc': { si: 'මානසික පීඩනය පාලනය කරමින්, ඍණාත්මක සිතුවිලි වෙනස් කර ගැනීමට මෙවලම්.', en: 'Tools to manage stress and reframe negative thoughts using CBT principles.' },
+            'mental_title': { si: 'Mental Health (CBT)', en: 'Mental Health (CBT)' },
+            'mental_desc': { si: 'Tools to manage stress and reframe negative thoughts using CBT principles.', en: 'Tools to manage stress and reframe negative thoughts using CBT principles.' },
             'mc_title': { si: 'Daily Check-in', en: 'Daily Check-in' },
-            'mc_desc': { si: 'ඔබගේ අද දවසේ පීඩනය (Stress/Anxiety) මැන බලමු.', en: 'Measure your stress/anxiety level today.' },
-            'mc_btn': { si: 'මානසික මට්ටම සටහන් කරන්න', en: 'Log Mental State' },
+            'mc_desc': { si: 'Measure your stress/anxiety level today.', en: 'Measure your stress/anxiety level today.' },
+            'mc_btn': { si: 'Log Mental State', en: 'Log Mental State' },
             'mc_recent': { si: 'Recent Stress Levels', en: 'Recent Stress Levels' },
-            'mc_empty': { si: 'දත්ත නොමැත.', en: 'No data available.' },
+            'mc_empty': { si: 'No data available.', en: 'No data available.' },
             'cbt_title': { si: 'Cognitive Restructuring (CBT)', en: 'Cognitive Restructuring (CBT)' },
-            'cbt_desc': { si: 'Journal එකෙහි ලියන ලද ඍණාත්මක සිතුවිලි AI තාක්ෂණය මගින් ධනාත්මක, යථාර්ථවාදී සිතුවිලි බවට පරිවර්තනය කරගන්න.', en: 'Use AI to reframe negative thoughts from your Journal into positive, resilient mindsets.' },
-            'cbt_btn': { si: '✨ AI මගින් සිතුවිලි ධනාත්මක කරන්න', en: '✨ Restructure with AI' },
+            'cbt_desc': { si: 'Use AI to reframe negative thoughts from your Journal into positive, resilient mindsets.', en: 'Use AI to reframe negative thoughts from your Journal into positive, resilient mindsets.' },
+            'cbt_btn': { si: '✨ Restructure with AI', en: '✨ Restructure with AI' },
 
             // Rewards & Streaks
-            'claim_reward': { si: 'ඔබේ දෛනික ත්‍යාගය ලබාගන්න!', en: 'Claim your Daily Reward!' },
-            'claim_btn': { si: 'ලබාගන්න', en: 'Claim' },
-            'streak_warn': { si: 'අවධානයයි! ඔබගේ දින X ක Streak එක අහිමි වීමේ අවදානමක් ඇත. වහාම කාර්යයක් හෝ Focus කාලයක් අවසන් කරන්න!', en: 'Warning! Your X-day streak is at risk. Complete a task or focus session now!' }
+            'claim_reward': { si: 'Claim your Daily Reward!', en: 'Claim your Daily Reward!' },
+            'claim_btn': { si: 'Claim', en: 'Claim' },
+            'streak_warn': { si: 'Warning! Your X-day streak is at risk. Complete a task or focus session now!', en: 'Warning! Your X-day streak is at risk. Complete a task or focus session now!' }
         };
 
         const levelTitles = ["Novice", "Apprentice", "Adept", "Scholar", "Expert", "Master", "Grandmaster", "Hero", "Legend", "Immortal"];
         function getLevelName(lvl) { let idx = Math.floor((lvl - 1) / 10); if(idx > 9) idx = 9; return levelTitles[idx]; }
-        function t(key) { return dict[key] ? dict[key][state.language || 'si'] : key; }
+        function t(key) { return dict[key] ? dict[key][state.language || 'en'] : key; }
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
         // ==========================================
         // STATE MANAGEMENT
         // ==========================================
         const defaultState = {
-            lastModified: 0, language: 'si', activeTab: 'home', selectedArticleId: null, flippedCards: {}, isNewUser: true,
+            lastModified: 0, language: 'en', activeTab: 'home', selectedArticleId: null, flippedCards: {}, isNewUser: true,
             user: { name: '', email: '', joined: '', targetDate: '', theme: 'light', xp: 0, level: 1, trialEnds: 0, avatar: '👤' },
             habits: [], history: [], reflections: {}, moods: {}, flashcards: [], pastTasks: {}, dailyFocus: {}, 
             stats: { totalFocusMinutes: 0 }, streak: { count: 0, lastDate: null }, lastLoginDate: null,
             badges: [],
             categories: {
-                'Study': { name: 'අධ්‍යාපනය / Study', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300 border-blue-200 dark:border-blue-800' },
-                'Health': { name: 'සෞඛ්‍යය / Health', color: 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300 border-green-200 dark:border-green-800' },
-                'Work': { name: 'ව්‍යාපාර / Work', color: 'bg-orange-100 text-orange-700 dark:bg-orange-900/50 dark:text-orange-300 border-orange-200 dark:border-orange-800' }
+                'Study': { name: 'Study', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300 border-blue-200 dark:border-blue-800' },
+                'Health': { name: 'Health', color: 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300 border-green-200 dark:border-green-800' },
+                'Work': { name: 'Work', color: 'bg-orange-100 text-orange-700 dark:bg-orange-900/50 dark:text-orange-300 border-orange-200 dark:border-orange-800' }
             },
             readArticles: [], timerSettings: { focus: 25, break: 5 }, soundType: 'noise', pendingReviews: [],
             detoxHabits: [], wastedTimeLog: [], parkedThoughts: [],
@@ -411,12 +411,12 @@
         if(!state.visionSystems) state.visionSystems = [];
         if(!state.mentalHealthRecords) state.mentalHealthRecords = [];
         
-        const priorities = { 'Q1': { name: 'හදිසි/වැදගත්', class: 'bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400' }, 'Q2': { name: 'වැදගත් පමණි', class: 'bg-indigo-50 text-indigo-600 dark:bg-indigo-900/20 dark:text-indigo-400' }, 'Q3': { name: 'සාමාන්‍ය', class: 'bg-slate-50 text-slate-600 dark:bg-slate-800 dark:text-slate-400' } };
+        const priorities = { 'Q1': { name: 'Urgent/Important', class: 'bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400' }, 'Q2': { name: 'Important Only', class: 'bg-indigo-50 text-indigo-600 dark:bg-indigo-900/20 dark:text-indigo-400' }, 'Q3': { name: 'Normal', class: 'bg-slate-50 text-slate-600 dark:bg-slate-800 dark:text-slate-400' } };
         const moodEmojis = { 'great': '🤩', 'good': '😊', 'neutral': '😐', 'bad': '😫' };
-        const badgeDict = { 'early_bird': { i:'🌅', n:'Early Bird', d:'පාන්දර 6ට පෙර වැඩ ආරම්භ කිරීම' }, 'streak_7': { i:'🔥', n:'Unstoppable', d:'දින 7ක Streak එකක් තබා ගැනීම' }, 'focus_10h': { i:'⏳', n:'Focus Master', d:'පැය 10ක Focus කාලයක් ලබා ගැනීම' }, 'flash_pro': { i:'🧠', n:'Flash Pro', d:'Flashcards 10ක් සෑදීම' } };
+        const badgeDict = { 'early_bird': { i:'🌅', n:'Early Bird', d:'Start work before 6 AM' }, 'streak_7': { i:'🔥', n:'Unstoppable', d:'Maintain a 7-day streak' }, 'focus_10h': { i:'⏳', n:'Focus Master', d:'Achieve 10 hours of focus time' }, 'flash_pro': { i:'🧠', n:'Flash Pro', d:'Create 10 flashcards' } };
         const availableAvatars = ['👤', '👨‍🚀', '🐱‍👤', '🦸‍♂️', '🧙‍♂️', '🧛‍♂️', '🤖', '👑'];
         
-        const defaultArticles = [{ id: "default-1", title: "මනස සන්සුන් කරගැනීමේ විද්‍යාව", author: "MindsetOS Team", category: "Health", icon: "🧘‍♂️", color: "text-blue-500", readTime: "විනාඩි 3", excerpt: "මානසික ආතතිය අවම කරගැනීමට හා අවධානය වැඩි කරගැනීමට...", intro: "ඔබේ මනස සන්සුන් කිරීම යනු හුදු විවේකයක් පමණක් නොව, මොළයේ ක්‍රියාකාරීත්වය වර්ධනය කරන විද්‍යාත්මක ක්‍රියාවලියකි.", sections: [{title: "හුස්ම ගැනීමේ වැදගත්කම", text: "ගැඹුරු හුස්ම ගැනීම් මගින් රුධිර පීඩනය පාලනය කර ස්නායු පද්ධතිය සන්සුන් කරයි."}], science: "Deep breathing activates the parasympathetic nervous system, lowering cortisol levels." }];
+        const defaultArticles = [{ id: "default-1", title: "The Science of Calming the Mind", author: "MindsetOS Team", category: "Health", icon: "🧘‍♂️", color: "text-blue-500", readTime: "3 mins", excerpt: "To reduce mental stress and increase focus...", intro: "Calming your mind is not just about resting, but a scientific process that enhances brain function.", sections: [{title: "The Importance of Breathing", text: "Deep breathing regulates blood pressure and calms the nervous system."}], science: "Deep breathing activates the parasympathetic nervous system, lowering cortisol levels." }];
         let articles = [...defaultArticles];
 
         // ==========================================
@@ -527,7 +527,7 @@
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 if (!user.isAnonymous && user.email && !user.emailVerified && !window.isRegisteringUser) {
-                    showToast("කරුණාකර පළමුව ඔබගේ Email ලිපිනය තහවුරු (Verify) කරන්න.", "error"); 
+                    showToast("Please verify your Email address first.", "error"); 
                     await signOut(auth);
                     state.isNewUser = true;
                     isAppLoading = false;
@@ -562,7 +562,7 @@
                             if (!state.user.trialEnds) state.user.trialEnds = Date.now() + (200 * 24 * 60 * 60 * 1000);
                             await setDoc(docRef, state); 
                             localStorage.removeItem(USER_DATA_KEY); 
-                            showToast("පැරණි දත්ත සාර්ථකව Cloud වෙත ගෙන යන ලදී!", "success"); 
+                            showToast("Old data successfully migrated to the Cloud!", "success"); 
                         } else {
                             state = { ...defaultState, isNewUser: false, user: { ...defaultState.user, name: user.displayName || "User", email: user.email || "anonymous", joined: getTodayStr(), trialEnds: Date.now() + (200 * 24 * 60 * 60 * 1000) } };
                             await setDoc(docRef, state);
@@ -633,6 +633,11 @@
             if (localSaveTimeout) {
                 saveData(true);
             }
+            if (timerState.phase === 'running' && timerState.isStrict) {
+                e.preventDefault();
+                e.returnValue = 'You are in Strict Detox Mode! Leaving will break your focus.';
+                return e.returnValue;
+            }
         });
 
         let localSaveTimeout = null;
@@ -655,11 +660,11 @@
             const n = document.getElementById('init-name')?.value.trim(); 
             const e = document.getElementById('init-email')?.value.trim().toLowerCase(); 
             const p = document.getElementById('init-password')?.value; 
-            if(!n || !e || !p || p.length < 6) return showToast("කරුණාකර නිවැරදි තොරතුරු ඇතුළත් කරන්න.", "error"); 
-            if(!emailRegex.test(e)) return showToast("කරුණාකර නිවැරදි Email ලිපිනයක් ඇතුළත් කරන්න.", "error"); 
+            if(!n || !e || !p || p.length < 6) return showToast("Please enter valid information.", "error"); 
+            if(!emailRegex.test(e)) return showToast("Please enter a valid Email address.", "error"); 
 
             try {
-                showToast("ගිණුම සෑදෙමින් පවතී...", "info"); 
+                showToast("Creating account...", "info"); 
                 window.isRegisteringUser = true;
                 const userCredential = await createUserWithEmailAndPassword(auth, e, p);
                 
@@ -679,13 +684,13 @@
                 await signOut(auth);
                 window.isRegisteringUser = false;
                 
-                showToast("සාර්ථකයි! Verification link එක ඔබගේ Email එකට යවන ලදී.", "success"); 
+                showToast("Success! Verification link sent to your Email.", "success"); 
                 window.switchAuthMode();
             } catch(error) {
                 window.isRegisteringUser = false;
-                let msg = "දෝෂයකි: " + error.message;
-                if(error.code === 'auth/email-already-in-use') msg = "මෙම Email ලිපිනය දැනටමත් භාවිතයේ පවතී.";
-                else if(error.code === 'auth/weak-password') msg = "Password එකෙහි ආරක්ෂාව ප්‍රමාණවත් නැත.";
+                let msg = "Error: " + error.message;
+                if(error.code === 'auth/email-already-in-use') msg = "This Email is already in use.";
+                else if(error.code === 'auth/weak-password') msg = "Password is not strong enough.";
                 showToast(msg, "error");
             }
         }
@@ -693,32 +698,32 @@
         async function handleLogin() {
             const e = document.getElementById('init-email')?.value.trim().toLowerCase(); 
             const p = document.getElementById('init-password')?.value; 
-            if(!e || !p) return showToast("කරුණාකර Email සහ Password යන දෙකම ඇතුළත් කරන්න.", "error"); 
+            if(!e || !p) return showToast("Invalid Email or Password.", "error"); 
 
             try {
-                showToast("ලොග් වෙමින් පවතී...", "info"); 
+                showToast("Logging in...", "info"); 
                 const userCredential = await signInWithEmailAndPassword(auth, e, p);
                 if (!userCredential.user.emailVerified) {
-                    showToast("කරුණාකර පළමුව ඔබගේ Email ලිපිනය තහවුරු (Verify) කරන්න.", "error"); 
+                    showToast("Please verify your Email address first.", "error"); 
                     await signOut(auth);
                     return;
                 }
                 state.activeTab = 'home'; 
             } catch(error) {
-                let msg = error.code === 'auth/invalid-credential' ? "වැරදි Email හෝ Password එකකි." : "දෝෂයකි: " + error.message;
+                let msg = error.code === 'auth/invalid-credential' ? "Invalid Email or Password." : "Error: " + error.message;
                 showToast(msg, "error");
             }
         }
 
         function handleForgotPassword() {
-            showPromptModal("ඔබගේ ලියාපදිංචි Email ලිපිනය ඇතුළත් කරන්න:", async (email) => { 
+            showPromptModal("Enter your registered Email address:", async (email) => { 
                 const e = email.trim().toLowerCase();
-                if (!e || !emailRegex.test(e)) return showToast("කරුණාකර නිවැරදි Email ලිපිනයක් ඇතුළත් කරන්න.", "error");
+                if (!e || !emailRegex.test(e)) return showToast("Please enter a valid Email address.", "error");
                 try {
                     await sendPasswordResetEmail(auth, e);
-                    showToast("Password Reset link එක යවන ලදී!", "success"); 
+                    showToast("Password Reset link sent!", "success"); 
                 } catch(error) {
-                    showToast("මෙම Email ලිපිනයට අදාළ ගිණුමක් නොමැත.", "error"); 
+                    showToast("No account found for this Email.", "error"); 
                 }
             });
         }
@@ -734,7 +739,7 @@
 
         async function handleGoogleSignIn() {
             try {
-                showToast("Google හරහා ලොග් වෙමින් පවතී...", "info"); 
+                showToast("Logging in with Google...", "info"); 
                 const provider = new GoogleAuthProvider();
                 provider.setCustomParameters({ prompt: 'select_account' });
                 
@@ -743,15 +748,15 @@
                 console.error("Google Sign-in Error:", error);
                 
                 if (error.code === 'auth/unauthorized-domain') {
-                    showToast("දෝෂයක්: මෙම ඩොමේන් එක Firebase හි අනුමත කර නැත.", "error"); 
+                    showToast("Error: This domain is not authorized in Firebase.", "error"); 
                 } else if (error.message && error.message.toLowerCase().includes("invalid action")) {
-                    showToast("දෝෂයක්: Firebase හි Google Sign-In සක්‍රිය (Enable) කර ඇත්දැයි පරීක්ෂා කරන්න.", "error"); 
+                    showToast("Error: Check if Google Sign-In is enabled in Firebase.", "error"); 
                 } else if (error.code === 'auth/popup-blocked' || error.code === 'auth/cancelled-popup-request') {
-                    showToast("Popup අවහිර වී ඇත. Redirect හරහා ලොග් වෙමින් පවතී...", "info"); 
+                    showToast("Popup blocked. Logging in via redirect...", "info"); 
                     const provider = new GoogleAuthProvider();
                     await signInWithRedirect(auth, provider);
                 } else if (error.code !== 'auth/popup-closed-by-user') {
-                    showToast("Google ලොග් වීමේදී දෝෂයක්: " + error.message, "error"); 
+                    showToast("Google Sign-In Error: " + error.message, "error"); 
                 }
             }
         }
@@ -769,7 +774,7 @@
             }
 
             try {
-                showToast("AI කෘතිම බුද්ධිය ක්‍රියාත්මක වෙමින් පවතී... ⏳", "info"); 
+                showToast("AI is processing... ⏳", "info"); 
                 const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
                     method: 'POST', headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
@@ -788,9 +793,9 @@
             } catch (e) { 
                 console.error(e);
                 if (e.message === "INVALID_KEY") {
-                    showToast("AI Error: API Key එක සම්බන්ධ ගැටළුවකි. කරුණාකර එය නිවැරදිදැයි පරීක්ෂා කරන්න.", "error");
+                    showToast("AI Error: Invalid API Key. Please verify.", "error");
                 } else {
-                    showToast("AI Error: කරුණාකර නැවත උත්සාහ කරන්න.", "error"); 
+                    showToast("AI Error: Please try again.", "error"); 
                 }
                 return null; 
             }
@@ -799,7 +804,7 @@
         async function breakdownTaskAI(id) {
             const h = state.habits.find(x => x.id === id);
             if(!h) return;
-            const prompt = `Break down this task into 3 small actionable sub-tasks: "${h.text}". Language: Sinhala. Return ONLY a valid JSON array of strings like ["task 1", "task 2"]. No other markdown or text.`;
+            const prompt = `Break down this task into 3 small actionable sub-tasks: "${h.text}". Language: English. Return ONLY a valid JSON array of strings like ["task 1", "task 2"]. No other markdown or text.`;
             const aiText = await callGemini(prompt);
             if(aiText) {
                 try {
@@ -808,57 +813,57 @@
                         state.habits.unshift({ id: Date.now() + Math.random(), text: "↳ " + escapeHTML(sub), time: '', needsReview: false, category: h.category, priority: h.priority, completed: false, date: getTodayStr(), isRecurring: false });
                     });
                     addXP(5); 
-                    saveData(true); render(); showToast(t('ai_breakdown'), "success"); 
-                } catch(e) { showToast("AI දත්ත කියවීමේ දෝෂයක්.", "error"); } 
+                    saveData(true); render(); showToast("AI broke down the task! (+5 XP)", "success"); 
+                } catch(e) { showToast("AI Data parsing error.", "error"); } 
             }
         }
 
         async function generateAIFlashcards() {
-            showPromptModal(t('q_ph'), async (text) => { 
+            showPromptModal("Enter the topic to generate Flashcards:", async (text) => { 
                 if(!text) return;
-                const prompt = `Create 3 flashcards for the topic: "${text}". Language: Sinhala. Format strictly as JSON array of objects with 'q' and 'a' keys. No other text.`;
+                const prompt = `Create 3 flashcards for the topic: "${text}". Language: English. Format strictly as JSON array of objects with 'q' and 'a' keys. No other text.`;
                 const aiText = await callGemini(prompt);
                 if(aiText) {
                     try {
                         const parsed = JSON.parse(aiText.replace(/```json/g, '').replace(/```/g, '').trim());
                         parsed.forEach(item => state.flashcards.unshift({ id: Date.now() + Math.random(), q: escapeHTML(item.q), a: escapeHTML(item.a), dueDate: 0, interval: 1, ease: 2.5 }));
-                        checkBadges(); saveData(true); render(); showToast("AI මගින් Flashcards සෑදුවා!", "success"); 
-                    } catch(e) { showToast("AI දත්ත කියවීමේ දෝෂයක්.", "error"); } 
+                        checkBadges(); saveData(true); render(); showToast("Flashcards generated by AI!", "success"); 
+                    } catch(e) { showToast("AI Data parsing error.", "error"); } 
                 }
             });
         }
 
         function addTinyHabit() {
-            showPromptModal("විනාඩි 5කින් ආරම්භ කළ හැකි ඉතා කුඩා පුරුද්දක් ඇතුළත් කරන්න / Add a 5-minute tiny habit:", (val) => {
+            showPromptModal("Add a 5-minute tiny habit:", (val) => {
                 if(val && val.trim()) {
                     state.habits.unshift({ id: Date.now(), text: "⚡ 5-Min: " + escapeHTML(val.trim()), time: '', needsReview: false, isRecurring: true, category: 'Health', priority: 'Q1', completed: false, date: getTodayStr() });
-                    saveData(true); render(); showToast("Atomic Habit එක සාර්ථකව එක් කළා! මෙය දිනපතා කරන්න.", "success");
+                    saveData(true); render(); showToast("Atomic Habit added successfully! Do this daily.", "success");
                 }
             });
         }
 
         async function aiRestructureJournal() {
             const text = state.reflections[getTodayStr()];
-            if (!text || text.trim().length < 5) return showToast("කරුණාකර පළමුව ඔබේ සිතුවිලි Journal එකෙහි ලියන්න.", "error");
-            const prompt = `Act as a Cognitive Behavioral Therapist (CBT). Take this user's journal entry: "${text}". Identify any negative thoughts, anxieties, or cognitive distortions, and gently restructure them into a positive, resilient, and growth-oriented mindset. Keep it encouraging and empathetic. Language: Sinhala. Keep it under 4 sentences. Return plain text only.`;
+            if (!text || text.trim().length < 5) return showToast("Please write your thoughts in the Journal first.", "error");
+            const prompt = `Act as a Cognitive Behavioral Therapist (CBT). Take this user's journal entry: "${text}". Identify any negative thoughts, anxieties, or cognitive distortions, and gently restructure them into a positive, resilient, and growth-oriented mindset. Keep it encouraging and empathetic. Language: English. Keep it under 4 sentences. Return plain text only.`;
             const aiText = await callGemini(prompt);
             if(aiText) {
                 state.reflections[getTodayStr()] = state.reflections[getTodayStr()] + "\n\n🤖 AI Restructure: " + aiText;
-                saveData(true); render(); showToast("AI මගින් ඍණාත්මක සිතුවිලි ධනාත්මකව වෙනස් කළා!", "success");
+                saveData(true); render(); showToast("AI successfully reframed your negative thoughts!", "success");
             }
         }
 
         function takeMentalCheck() {
-            showPromptModal("අද දින ඔබගේ මානසික පීඩනය 1 සිට 10 දක්වා අගයකින් කොපමණද? / Stress level (1-10)?", (val) => {
+            showPromptModal("What is your stress level today (1-10)?", (val) => {
                 const score = parseInt(val);
                 if (score >= 1 && score <= 10) {
                     if(!state.mentalHealthRecords) state.mentalHealthRecords = [];
                     state.mentalHealthRecords.push({ date: getTodayStr(), score: score });
                     saveData(true); render(); 
-                    if(score > 6) showToast("ඔබගේ පීඩනය ඉහළයි. කරුණාකර 'Craving SOS' හෝ 'Journal' භාවිතයෙන් සිත නිදහස් කරගන්න.", "info");
-                    else showToast("මානසික මට්ටම සටහන් කළා. ඔබ හොඳ තත්ත්වයක සිටී!", "success");
+                    if(score > 6) showToast("Your stress is high. Please use 'Craving SOS' or 'Journal' to relax.", "info");
+                    else showToast("Mental state logged. You are doing great!", "success");
                 } else {
-                    showToast("කරුණාකර 1ත් 10ත් අතර අගයක් ලබා දෙන්න.", "error");
+                    showToast("Please enter a value between 1 and 10.", "error");
                 }
             });
         }
@@ -869,9 +874,9 @@
             if (vGoal && vSys) {
                 if(!state.visionSystems) state.visionSystems = [];
                 state.visionSystems.unshift({ id: Date.now(), goal: escapeHTML(vGoal), system: escapeHTML(vSys) });
-                saveData(true); render(); showToast("සාර්ථකයි! දැන් ඉලක්කය අමතක කර පද්ධතිය (System) මත වැඩ කරන්න.", "success");
+                saveData(true); render(); showToast("Success! Now forget the goal and focus on the System.", "success");
             } else {
-                showToast("කරුණාකර ඉලක්කය සහ පද්ධතිය යන දෙකම පුරවන්න.", "error");
+                showToast("Please fill in both the goal and the system.", "error");
             }
         }
         
@@ -891,8 +896,8 @@
                 if(!state.detoxHabits) state.detoxHabits = [];
                 state.detoxHabits.unshift({ id: Date.now(), habit: escapeHTML(h), substitute: escapeHTML(s), streak: 0, lastCheckIn: null });
                 saveData(true); if(hEl) hEl.value = ''; if(sEl) sEl.value = '';
-                render(); showToast("අභියෝගය ආරම්භ විය! ඔබට ජය!", "success");
-            } else { showToast("කරුණාකර නරක පුරුද්ද ඇතුළත් කරන්න.", "error"); }
+                render(); showToast("Challenge started! Best of luck!", "success");
+            } else { showToast("Please enter the bad habit.", "error"); }
         }
 
         function checkInDetox(id) {
@@ -903,7 +908,7 @@
                         dh.streak += 1;
                         dh.lastCheckIn = today;
                         addXP(15); 
-                        showToast(`නියමයි! දින ${dh.streak} ක් සාර්ථකයි!`, "success");
+                        showToast(`Awesome! ${dh.streak} days successful!`, "success");
                     }
                 }
                 return dh;
@@ -912,12 +917,12 @@
         }
 
         function resetDetox(id) {
-            showConfirmModal("ඔබට අද දින මෙම පුරුද්ද පාලනය කරගැනීමට නොහැකි වුණාද? කම්පා වෙන්න එපා, අපි නැවත මුල සිට අරඹමු!", () => {
+            showConfirmModal("Couldn't control the habit today? Don't worry, let's start over!", () => {
                 state.detoxHabits = state.detoxHabits.map(dh => {
                     if(dh.id === id) { dh.streak = 0; dh.lastCheckIn = null; }
                     return dh;
                 });
-                saveData(true); render(); showToast("අභියෝගය නැවතත් මුල සිට ආරම්භ විය.", "info");
+                saveData(true); render(); showToast("Challenge restarted.", "info");
             });
         }
 
@@ -935,17 +940,17 @@
             modal.classList.add('flex');
 
             const breatheCycle = () => {
-                textEl.innerText = "ගැඹුරින් හුස්ම ගන්න... (Inhale)";
+                textEl.innerText = "Breathe in deeply... (Inhale)";
                 circleEl.style.transitionDuration = '4s';
                 circleEl.style.transform = 'scale(3)';
                 circleEl.classList.replace('from-emerald-400', 'from-blue-400');
                 
                 setTimeout(() => {
-                    textEl.innerText = "හුස්ම රඳවාගන්න... (Hold)";
+                    textEl.innerText = "Hold your breath... (Hold)";
                     circleEl.style.transitionDuration = '7s';
                     
                     setTimeout(() => {
-                        textEl.innerText = "සෙමෙන් හුස්ම පිට කරන්න... (Exhale)";
+                        textEl.innerText = "Exhale slowly... (Exhale)";
                         circleEl.style.transitionDuration = '8s';
                         circleEl.style.transform = 'scale(1)';
                         circleEl.classList.replace('from-blue-400', 'from-emerald-400');
@@ -962,7 +967,7 @@
             modal.classList.add('hidden');
             modal.classList.remove('flex');
             clearInterval(breatheInterval);
-            showToast("නියමයි! ඔබ ඒ ආශාව සාර්ථකව පාලනය කරගත්තා. ජය!", "success");
+            showToast("Awesome! You successfully controlled the craving.", "success");
         }
 
         function startSOS() {
@@ -977,8 +982,8 @@
             if(text && mins > 0) {
                 if(!state.wastedTimeLog) state.wastedTimeLog = [];
                 state.wastedTimeLog.unshift({ id: Date.now(), text: escapeHTML(text), mins: mins, date: getTodayStr() });
-                saveData(true); render(); showToast("සටහන් කළා. හෙට දවසේ මේ කාලයත් වැඩකට ගනිමු!", "info");
-            } else { showToast("කරුණාකර විස්තරය සහ විනාඩි ගණන ඇතුළත් කරන්න.", "error"); }
+                saveData(true); render(); showToast("Logged. Let's use this time productively tomorrow!", "info");
+            } else { showToast("Please enter the description and minutes.", "error"); }
         }
 
         function deleteWastedTime(id) {
@@ -992,7 +997,7 @@
             if(text) {
                 if(!state.parkedThoughts) state.parkedThoughts = [];
                 state.parkedThoughts.unshift({ id: Date.now(), text: escapeHTML(text), date: getTodayStr() });
-                saveData(true); el.value = ''; render(); showToast("සිතුවිල්ල මොළයෙන් ඉවත් කළා. දැන් නැවතත් Focus කරන්න!", "success");
+                saveData(true); el.value = ''; render(); showToast("Thought parked. Now focus again!", "success");
             }
         }
 
@@ -1020,7 +1025,7 @@
             try { 
                 if(window.confetti) confetti({ particleCount: 150, spread: 80, origin: { y: 0.5 }, zIndex: 10000, colors: ['#fbbf24', '#f59e0b', '#d97706'] }); 
             } catch(e){}
-            showToast(`🎁 සුබ පැතුම්! ඔබට නොමිලේ XP ${reward} ක් ලැබුණා!`, "success");
+            showToast(`🎁 Congratulations! You received ${reward} free XP!`, "success");
         }
 
         function closeLevelUpModal() { 
@@ -1038,7 +1043,7 @@
             
             if(newBadges.length > 0) {
                 state.badges.push(...newBadges);
-                newBadges.forEach(b => showToast(`🏆 නව පදක්කමක්: ${badgeDict[b].n}!`, 'success')); 
+                newBadges.forEach(b => showToast(`🏆 New Badge: ${badgeDict[b].n}!`, 'success')); 
                 saveData(true);
             }
         }
@@ -1046,9 +1051,9 @@
         function changeAvatar() {
             const currentIdx = availableAvatars.indexOf(state.user.avatar || '👤');
             const maxAvatars = Math.min(availableAvatars.length, Math.floor(state.user.level / 5) + 1);
-            if (maxAvatars <= 1) return showToast("Level 5 න් පසු නව Avatars ලබාගත හැක!", "info"); 
+            if (maxAvatars <= 1) return showToast("New Avatars available after Level 5!", "info"); 
             state.user.avatar = availableAvatars[(currentIdx + 1) % maxAvatars];
-            saveData(true); render(); showToast("Avatar එක වෙනස් කළා!", "success"); 
+            saveData(true); render(); showToast("Avatar changed!", "success"); 
         }
 
         function rateFlashcard(id, quality) {
@@ -1059,7 +1064,7 @@
             else { card.interval = (card.interval || 1) * 3; card.ease = (card.ease || 2.5) + 0.15; }
             card.dueDate = Date.now() + (card.interval * 24 * 60 * 60 * 1000);
             state.flippedCards[id] = false;
-            saveData(true); render(); showToast("මතකය යාවත්කාලීන කළා!", "success"); 
+            saveData(true); render(); showToast("Memory updated!", "success"); 
         }
 
         function updateStreakAction() {
@@ -1119,36 +1124,36 @@
         }
 
         async function publishAdminArticle() {
-            if (!isAdmin()) return showToast("අවසර නොමැති ක්‍රියාවකි.", "error"); 
+            if (!isAdmin()) return showToast("Unauthorized action.", "error"); 
 
             const title = document.getElementById('admin-art-title')?.value; const intro = document.getElementById('admin-art-intro')?.value; const text = document.getElementById('admin-art-text')?.value;
             const author = document.getElementById('admin-art-author')?.value || 'Admin'; const cat = document.getElementById('admin-art-cat')?.value || 'General'; const time = document.getElementById('admin-art-time')?.value || '5m';
-            if(!title || !intro || !text) return showToast("කරුණාකර සියලු විස්තර පුරවන්න.", "error"); 
+            if(!title || !intro || !text) return showToast("Please fill in all details.", "error"); 
             
             const newArtID = 'art-' + Date.now();
             const newArticle = {
-                id: newArtID, title: escapeHTML(title), author: escapeHTML(author), category: escapeHTML(cat), icon: '⭐', color: 'text-yellow-500', readTime: escapeHTML(time), excerpt: escapeHTML(intro.substring(0, 100)) + '...', intro: escapeHTML(intro), sections: [{title: 'අන්තර්ගතය', text: escapeHTML(text)}], science: 'Admin Data', timestamp: Date.now()
+                id: newArtID, title: escapeHTML(title), author: escapeHTML(author), category: escapeHTML(cat), icon: '⭐', color: 'text-yellow-500', readTime: escapeHTML(time), excerpt: escapeHTML(intro.substring(0, 100)) + '...', intro: escapeHTML(intro), sections: [{title: 'Content', text: escapeHTML(text)}], science: 'Admin Data', timestamp: Date.now()
             };
 
             try {
                 const articleRef = doc(db, 'artifacts', appId, 'public', 'data', 'articles', newArtID);
                 await setDoc(articleRef, newArticle);
-                showToast("ලිපිය සාර්ථකව ප්‍රකාශයට පත් කළා!", "success"); 
+                showToast("Article published successfully!", "success"); 
                 
                 if(document.getElementById('admin-art-title')) document.getElementById('admin-art-title').value = '';
                 if(document.getElementById('admin-art-intro')) document.getElementById('admin-art-intro').value = '';
                 if(document.getElementById('admin-art-text')) document.getElementById('admin-art-text').value = '';
-            } catch(e) { showToast("ලිපිය පළකිරීමේදී දෝෂයක් මතු විය.", "error"); }
+            } catch(e) { showToast("Error publishing article.", "error"); }
         }
 
         async function deleteAdminArticle(articleId) {
-            if (!isAdmin()) return showToast("අවසර නොමැති ක්‍රියාවකි.", "error"); 
-            showConfirmModal("මෙම ලිපිය සම්පූර්ණයෙන්ම ඉවත් කිරීමට ඔබට අවශ්‍යද?", async () => { 
+            if (!isAdmin()) return showToast("Unauthorized action.", "error"); 
+            showConfirmModal("Are you sure you want to delete this article entirely?", async () => { 
                 try {
                     const articleRef = doc(db, 'artifacts', appId, 'public', 'data', 'articles', articleId);
                     await deleteDoc(articleRef);
-                    showToast("ලිපිය සාර්ථකව ඉවත් කරන ලදී.", "success"); 
-                } catch(e) { showToast("ලිපිය මැකීමේදී දෝෂයක් මතු විය.", "error"); }
+                    showToast("Article deleted successfully.", "success"); 
+                } catch(e) { showToast("Error deleting article.", "error"); }
             });
         }
 
@@ -1161,8 +1166,8 @@
             if (text) { 
                 state.habits.unshift({ id: Date.now(), text: escapeHTML(text), time: time, needsReview: needsReview, isRecurring: isRec, category: cat, priority: pri, completed: false, date: getTodayStr() }); 
                 updateHistory(); if(inputEl) inputEl.value = ''; if(timeEl) timeEl.value = ''; if(reviewEl) reviewEl.checked = false; if(recEl) recEl.checked = false;
-                render(); setTimeout(() => document.getElementById('habit-text')?.focus(), 50); showToast("සාර්ථකව එක් කරන ලදී!", "success"); 
-            } else { showToast("කරුණාකර කාර්යයක් ඇතුළත් කරන්න", "error"); } 
+                render(); setTimeout(() => document.getElementById('habit-text')?.focus(), 50); showToast("Added successfully!", "success"); 
+            } else { showToast("Please enter a task.", "error"); } 
         }
         
         function toggleHabit(id) {
@@ -1226,8 +1231,8 @@
             const q = qEl?.value.trim(); const a = aEl?.value.trim(); 
             if(q && a) { 
                 state.flashcards.unshift({ id: Date.now(), q: escapeHTML(q), a: escapeHTML(a) }); 
-                saveData(true); qEl.value = ''; aEl.value = ''; render(); showToast("සාර්ථකව එක් කරන ලදී!", "success"); 
-            } else { showToast("කරුණාකර ප්‍රශ්නය සහ පිළිතුර දෙකම ඇතුළත් කරන්න.", "error"); } 
+                saveData(true); qEl.value = ''; aEl.value = ''; render(); showToast("Added successfully!", "success"); 
+            } else { showToast("Please enter both question and answer.", "error"); } 
         }
         function deleteFlashcard(id) { state.flashcards = state.flashcards.filter(f => f.id !== id); saveData(true); render(); }
         function flipCardDOM(id, element) { state.flippedCards[id] = !state.flippedCards[id]; element.querySelector('.preserve-3d').classList.toggle('rotate-y-180'); }
@@ -1240,7 +1245,7 @@
             }
             try {
                 const AC = window.AudioContext || window.webkitAudioContext;
-                if (!AC) return showToast("Audio API ඔබගේ බ්‍රව්සරයේ සහය නොදක්වයි.", "error"); 
+                if (!AC) return showToast("Audio API is not supported in your browser.", "error"); 
                 audioCtxObj = new AC();
                 if (audioCtxObj.state === 'suspended') audioCtxObj.resume();
                 
@@ -1263,7 +1268,7 @@
                     if (state.soundType === 'rain') { filter.type = 'lowpass'; filter.frequency.value = 200; } else { filter.type = 'lowpass'; filter.frequency.value = 400; }
                     noiseSourceNode.connect(filter); filter.connect(audioCtxObj.destination); noiseSourceNode.start();
                 }
-                showToast('Focus sound සක්‍රිය කරන ලදී', 'success'); 
+                showToast('Focus sound activated.', 'success'); 
             } catch(e) { console.log(e); }
         }
 
@@ -1279,6 +1284,10 @@
             if ('Notification' in window && Notification.permission !== 'granted' && Notification.permission !== 'denied') Notification.requestPermission();
             
             if (timerState.phase === 'running' || timerState.phase === 'break-running') { 
+                if (timerState.isStrict && timerState.mode === 'focus') {
+                    showToast("Strict Detox Active! You cannot pause. Keep going!", "error");
+                    return;
+                }
                 clearInterval(timerState.interval); timerState.targetEndTime = null; timerState.phase = timerState.phase === 'running' ? 'paused' : 'break-paused'; 
             } else if (timerState.phase === 'paused' || timerState.phase === 'break-paused') {
                 timerState.phase = timerState.phase === 'paused' ? 'running' : 'break-running'; startTimerInterval();
@@ -1303,16 +1312,28 @@
                         const today = getTodayStr(); state.dailyFocus[today] = (state.dailyFocus[today] || 0) + focusMins; saveData(true); 
                         
                         try { if(window.confetti) confetti({ particleCount: 150, spread: 100, origin: { y: 0.5 }, zIndex: 10000 }); } catch(e){} 
-                        timerState.phase = 'focus-ended'; showToast("Focus session අවසන්!", "success"); triggerPushNotification("Focus session අවසන්! විවේකයක් ගන්න."); 
-                    } else { showToast("විවේකය අවසන්!", "info"); triggerPushNotification("විවේකය අවසන්! නැවත වැඩ අරඹමු."); resetTimer(); } 
+                        timerState.phase = 'focus-ended'; showToast("Focus session ended!", "success"); triggerPushNotification("Focus session ended! Take a break."); 
+                    } else { showToast("Break ended!", "info"); triggerPushNotification("Break ended! Back to work."); resetTimer(); } 
                     render();
                 }
             }, 1000);
         }
         
-        function resetTimer() { clearInterval(timerState.interval); timerState.targetEndTime = null; timerState.mode = 'focus'; timerState.phase = 'idle'; timerState.timeLeft = (state.timerSettings?.focus || 25) * 60; render(); }
+        function resetTimer() { 
+            if (timerState.phase === 'running' && timerState.isStrict && timerState.mode === 'focus') {
+                showConfirmModal("Strict Detox active! Quitting now will cost you 50 XP. Are you sure you want to give up?", () => {
+                    addXP(-50);
+                    forceResetTimer();
+                });
+            } else {
+                forceResetTimer();
+            }
+        }
+        
+        function forceResetTimer() { clearInterval(timerState.interval); timerState.targetEndTime = null; timerState.mode = 'focus'; timerState.phase = 'idle'; timerState.timeLeft = (state.timerSettings?.focus || 25) * 60; render(); }
         function startBreakManual() { timerState.mode = 'break'; timerState.timeLeft = (state.timerSettings?.break || 5) * 60; timerState.phase = 'break-running'; initAudioCtx(); startTimerInterval(); render(); }
-        function skipBreakManual() { resetTimer(); render(); }
+        function skipBreakManual() { forceResetTimer(); }
+        function toggleStrictMode(val) { timerState.isStrict = val; render(); }
         
         function updateTimerUI() {
             const el = document.getElementById('timer-display');
@@ -1330,7 +1351,7 @@
             const focusMins = focusTimeToday % 60;
             const timeString = focusHours > 0 ? `${focusHours}h ${focusMins}m` : `${focusMins}m`;
 
-            const dateStr = new Date().toLocaleDateString(state.language === 'en' ? 'en-US' : 'si-LK');
+            const dateStr = new Date().toLocaleDateString(state.language === 'en' ? 'en-US' : 'en-US');
             const emojiNumbers = {'0':'0️⃣','1':'1️⃣','2':'2️⃣','3':'3️⃣','4':'4️⃣','5':'5️⃣','6':'6️⃣','7':'7️⃣','8':'8️⃣','9':'9️⃣', '/':' / ', '-':' - '};
             const emojiDate = dateStr.split('').map(c => emojiNumbers[c] || c).join('');
 
@@ -1347,19 +1368,19 @@
             window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank', 'noopener,noreferrer');
         }
 
-        function clearAllData() { showConfirmModal(t('clear_all') + "?", () => { state.habits = []; state.history = []; state.reflections = {}; state.moods = {}; state.flashcards = []; state.pastTasks = {}; state.dailyFocus = {}; state.streak = { count: 0, lastDate: null }; state.pendingReviews = []; state.detoxHabits = []; state.wastedTimeLog = []; state.parkedThoughts = []; state.visionSystems = []; state.mentalHealthRecords = []; resetTimer(); saveData(true); render(); showToast("සාර්ථකව හිස් කරන ලදී.", "success"); }); } 
+        function clearAllData() { showConfirmModal(t('clear_all') + "?", () => { state.habits = []; state.history = []; state.reflections = {}; state.moods = {}; state.flashcards = []; state.pastTasks = {}; state.dailyFocus = {}; state.streak = { count: 0, lastDate: null }; state.pendingReviews = []; state.detoxHabits = []; state.wastedTimeLog = []; state.parkedThoughts = []; state.visionSystems = []; state.mentalHealthRecords = []; resetTimer(); saveData(true); render(); showToast("Cleared successfully.", "success"); }); } 
         function deleteAccount() { showConfirmModal(t('del_acc') + "?", async () => { await setDoc(doc(db, 'artifacts', appId, 'users', auth.currentUser.uid, 'data', 'state'), {}); await auth.currentUser.delete(); logout(); }); }
         
         function exportData() {
             const dataStr = JSON.stringify(state); const blob = new Blob([dataStr], { type: "application/json" }); const url = URL.createObjectURL(blob);
             const a = document.createElement('a'); a.href = url; a.download = `MindsetOS_Backup_${state.user.email}_${new Date().toISOString().split('T')[0]}.json`;
-            a.click(); URL.revokeObjectURL(url); showToast("Backup සාර්ථකයි.", "success"); 
+            a.click(); URL.revokeObjectURL(url); showToast("Backup successful.", "success"); 
         }
 
         function exportDataPDF() {
-            showToast("PDF සැකසෙමින් පවතී...", "info"); 
+            showToast("Generating PDF...", "info"); 
             const printWindow = window.open('', '_blank');
-            if(!printWindow) return showToast("PDF ලබාගැනීමට Popups වලට අවසර දෙන්න", "error"); 
+            if(!printWindow) return showToast("Please allow popups to download PDF.", "error"); 
 
             let html = `<html><head><title>MindsetOS Backup - ${escapeHTML(state.user.name)}</title><style>body { font-family: 'Segoe UI', sans-serif; padding: 40px; } .stat-box { border: 1px solid #cbd5e1; padding: 20px; border-radius: 12px; margin-bottom: 20px; } .item { margin-bottom: 15px; border-bottom: 1px solid #f1f5f9; padding-bottom: 15px;} .date { font-weight: bold; }</style></head><body>`;
             html += `<h1>MindsetOS Data Summary</h1><div class="stat-box"><p>Name: ${escapeHTML(state.user.name)}</p><p>Email: ${escapeHTML(state.user.email)}</p></div>`;
@@ -1377,9 +1398,9 @@
             reader.onload = async function(e) {
                 try {
                     const data = JSON.parse(e.target.result);
-                    if (data && data.user) { state = { ...state, ...data }; saveData(true); showToast("Restore සාර්ථකයි!", "success"); render(); } 
-                    else showToast("වැරදි Backup ගොනුවකි!", "error"); 
-                } catch (err) { showToast("ගොනුව කියවීමේදී දෝෂයක්!", "error"); } 
+                    if (data && data.user) { state = { ...state, ...data }; saveData(true); showToast("Restore successful!", "success"); render(); } 
+                    else showToast("Invalid backup file!", "error"); 
+                } catch (err) { showToast("Error reading file!", "error"); } 
             };
             reader.readAsText(file);
         }
@@ -1388,17 +1409,17 @@
         
         function submitFeedback() {
             const text = document.getElementById('feedback-text')?.value;
-            if(!text && !state.appRating) return showToast("කරුණාකර ඔබේ අදහස හෝ තරු මට්ටම ලබාදෙන්න.", "error"); 
+            if(!text && !state.appRating) return showToast("Please provide your feedback or a star rating.", "error"); 
             const safeText = (text || '').substring(0, 1500);
             const subject = encodeURIComponent(`MindsetOS Feedback - Rating: ${state.appRating || 0}/5`);
             const body = encodeURIComponent(`From: ${state.user.name} (${state.user.email})\nLevel: ${state.user.level}\n\nFeedback:\n${safeText || 'No text provided.'}`);
             window.open(`mailto:${MY_ADMIN_EMAIL}?subject=${subject}&body=${body}`, '_blank', 'noopener,noreferrer');
-            showToast("Email Client විවෘත වෙමින් පවතී...", "success"); 
+            showToast("Opening Email Client...", "success"); 
             state.appRating = 0; if(document.getElementById('feedback-text')) document.getElementById('feedback-text').value = ''; render();
         }
 
-        function updateTargetDate(val) { state.user.targetDate = val; saveData(true); render(); showToast("ඉලක්ක දිනය යාවත්කාලීන විය.", "success"); } 
-        function addCustomCategory() { showPromptModal(t('add_category'), (catName) => { if (catName && catName.trim()) { const id = 'Cat_' + Date.now(); state.categories[id] = { name: escapeHTML(catName.trim()), color: 'bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300 border-purple-200 dark:border-purple-800' }; saveData(true); render(); showToast("කාණ්ඩය සාර්ථකව එක් කරන ලදී.", "success"); } }); } 
+        function updateTargetDate(val) { state.user.targetDate = val; saveData(true); render(); showToast("Target date updated.", "success"); } 
+        function addCustomCategory() { showPromptModal(t('add_category'), (catName) => { if (catName && catName.trim()) { const id = 'Cat_' + Date.now(); state.categories[id] = { name: escapeHTML(catName.trim()), color: 'bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300 border-purple-200 dark:border-purple-800' }; saveData(true); render(); showToast("Category added successfully.", "success"); } }); } 
         
         function editName() { showPromptModal(t('change_name_prompt'), (newName) => { if (newName && newName.trim().length > 0) { state.user.name = newName.trim(); saveData(true); updatePublicLeaderboard(); render(); showToast(t('name_updated'), "success"); fetchLeaderboard(); } }); }
         function setLang(lang) { if (state.language !== lang) { state.language = lang; saveData(true); render(); } }
@@ -1427,7 +1448,18 @@
         
         function addXP(amount) { 
             amount = Math.floor(Number(amount));
-            if (isNaN(amount) || amount <= 0 || state.user.level >= 100) return;
+            if (isNaN(amount)) return;
+            
+            if (amount < 0) {
+                state.user.xp += amount;
+                while (state.user.xp < 0 && state.user.level > 1) { state.user.level--; state.user.xp += (state.user.level * 100); }
+                if (state.user.xp < 0) state.user.xp = 0;
+                showToast(`⚠️ Penalty applied! Lost ${Math.abs(amount)} XP.`, "error");
+                saveData(true); updatePublicLeaderboard(); fetchLeaderboard(); render();
+                return;
+            }
+
+            if (amount <= 0 || state.user.level >= 100) return;
             state.user.xp += amount; let leveledUp = false;
             while (state.user.xp >= state.user.level * 100 && state.user.level < 100) { state.user.xp -= state.user.level * 100; state.user.level++; leveledUp = true; } 
             if (state.user.level >= 100) { state.user.level = 100; state.user.xp = 0; }
@@ -1491,7 +1523,7 @@
             addDetoxHabit, checkInDetox, resetDetox, deleteDetox, startSOS, startBreathingSOS, stopBreathingSOS, 
             addWastedTime, deleteWastedTime, addParkedThought, deleteParkedThought,
             claimDailyReward, closeLevelUpModal,
-            addTinyHabit, aiRestructureJournal, takeMentalCheck, addSystemGoal, deleteSystemGoal
+            addTinyHabit, aiRestructureJournal, takeMentalCheck, addSystemGoal, deleteSystemGoal, toggleStrictMode
         });
 
         function render() {
@@ -1521,16 +1553,12 @@
             let content = state.activeTab==='home' ? renderHome() : state.activeTab==='planner' ? renderPlanner() : state.activeTab==='timer' ? renderTimer() : state.activeTab==='flashcards' ? renderFlashcards() : state.activeTab==='library' ? renderLibrary() : state.activeTab==='stats' ? renderStats() : state.activeTab==='detox' ? renderDetox() : state.activeTab==='vision' ? renderVision() : state.activeTab==='mental' ? renderMentalHealth() : renderProfile();
             if(state.selectedArticleId) content = renderArticleView();
 
-            const uiDateString = new Date().toLocaleDateString(state.language === 'en' ? 'en-US' : 'si-LK', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+            const uiDateString = new Date().toLocaleDateString(state.language === 'en' ? 'en-US' : 'en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
             root.innerHTML = `
             <div class="min-h-screen md:pl-24 lg:pl-72 pb-28 md:pb-0 flex flex-col print-content">
                 ${renderSidebar()}
                 <div class="fixed top-0 right-0 p-4 md:p-6 z-40 flex items-center space-x-3 md:space-x-4 print-hidden">
-                    <div class="glass-nav p-1 rounded-xl flex items-center space-x-1 shadow-sm border border-slate-300 dark:border-slate-600">
-                        <button onclick="window.setLang('si')" aria-label="Switch to Sinhala" class="px-3 py-1 text-xs font-black rounded-lg transition-colors ${state.language === 'si' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700'}">SI</button>
-                        <button onclick="window.setLang('en')" aria-label="Switch to English" class="px-3 py-1 text-xs font-black rounded-lg transition-colors ${state.language === 'en' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700'}">EN</button>
-                    </div>
                     <button onclick="window.toggleTheme()" aria-label="Toggle Theme" class="w-10 h-10 glass-nav rounded-full flex items-center justify-center shadow-sm border border-slate-300 dark:border-slate-600 transition-transform hover:scale-105"><span class="text-xl">${state.user.theme === 'dark' ? '☀️' : '🌙'}</span></button>
                     <div class="glass-nav px-4 py-2 rounded-2xl flex items-center space-x-4 shadow-sm border border-slate-300 dark:border-slate-600 cursor-pointer hover:scale-105 transition-transform" onclick="window.switchTab('profile')" aria-label="View Profile">
                         <div class="flex items-center space-x-2"><span class="text-xl">👤</span></div>
@@ -1678,7 +1706,7 @@
         }
 
         // ==========================================
-        // EXISTING TABS (Fully Restored & Fixed)
+        // EXISTING TABS
         // ==========================================
         function renderHome() {
             const score = state.habits.length ? Math.round((state.habits.filter(h => h.completed).length / state.habits.length) * 100) : 0;
@@ -1686,6 +1714,8 @@
             let greeting = t('greeting_m'); if (hour >= 12 && hour < 18) greeting = t('greeting_a'); else if (hour >= 18) greeting = t('greeting_e');
             const pendingTasks = state.habits.filter(h => !h.completed).slice(0, 3);
             const userName = state.user.name || "User";
+            const addictiveQuotes = ["Your future is created by what you do today, not tomorrow.", "Discipline is choosing between what you want now and what you want most.", "Don't stop when you're tired. Stop when you're done.", "The pain of discipline is far less than the pain of regret.", "Small daily improvements over time lead to stunning results."];
+            const dailyQuote = addictiveQuotes[new Date().getDay() % addictiveQuotes.length];
 
             let targetHTML = '';
             if(state.user.targetDate) {
@@ -1768,6 +1798,7 @@
                     <div>
                         <p class="text-indigo-600 dark:text-indigo-400 font-bold tracking-widest uppercase text-sm mb-2 drop-shadow-sm">__DATE_PLACEHOLDER__</p>
                         <h2 class="text-4xl md:text-5xl font-black tracking-tight drop-shadow-sm">${greeting}, ${escapeHTML(userName)}! <span class="inline-block">✨</span></h2>
+                        <p class="text-slate-500 dark:text-slate-400 font-medium mt-3 text-sm italic border-l-2 border-indigo-400 pl-3">"${dailyQuote}"</p>
                     </div>
                 </header>
                 
@@ -1828,11 +1859,11 @@
                             </label>
                             <label class="flex items-center space-x-2 cursor-pointer font-bold text-sm text-slate-600 dark:text-slate-400">
                                 <input type="checkbox" id="habit-recurring" aria-label="Recurring Habit" class="w-5 h-5 rounded text-emerald-600 accent-emerald-600"/>
-                                <span>Daily / දිනපතා</span>
+                                <span>Daily</span>
                             </label>
                         </div>
                         <div class="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
-                            <button onclick="window.addTinyHabit()" class="bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-4 py-3 rounded-xl font-black shadow-lg hover:scale-105 transition-transform" title="මහා කාර්යයක් විනාඩි 5ක කුඩා පුරුද්දකට කඩා ආරම්භ කරන්න.">${t('tiny_habit_btn')}</button>
+                            <button onclick="window.addTinyHabit()" class="bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-4 py-3 rounded-xl font-black shadow-lg hover:scale-105 transition-transform" title="Break down a major task into a small 5-minute habit to begin.">${t('tiny_habit_btn')}</button>
                             <button onclick="window.addHabit()" class="bg-indigo-600 text-white px-8 py-3 rounded-xl font-black shadow-lg hover:bg-indigo-500 w-full sm:w-auto">${t('add_btn')}</button>
                         </div>
                     </div>
@@ -1883,9 +1914,15 @@
 
             let settingsUI = '';
             if (timerState.phase === 'idle') {
-                settingsUI = `<div class="flex justify-center space-x-6 mb-8 animate-fade-in">
+                settingsUI = `<div class="flex justify-center space-x-6 mb-4 animate-fade-in">
                     <div class="flex flex-col items-center"><label for="focus-time-input" class="text-[10px] font-bold text-slate-500 uppercase mb-1">Focus (Min)</label><input type="number" id="focus-time-input" value="${escapeHTML(state.timerSettings?.focus || 25)}" onchange="window.updateTimerSettings('focus', this.value)" class="w-16 sm:w-20 px-2 sm:px-3 py-2 text-center glass-btn rounded-xl font-black text-base sm:text-lg outline-none focus:border-indigo-500" min="1" max="120"></div>
                     <div class="flex flex-col items-center"><label for="break-time-input" class="text-[10px] font-bold text-slate-500 uppercase mb-1">Break (Min)</label><input type="number" id="break-time-input" value="${escapeHTML(state.timerSettings?.break || 5)}" onchange="window.updateTimerSettings('break', this.value)" class="w-16 sm:w-20 px-2 sm:px-3 py-2 text-center glass-btn rounded-xl font-black text-base sm:text-lg outline-none focus:border-indigo-500" min="1" max="30"></div>
+                </div>
+                <div class="flex justify-center mb-8 animate-fade-in">
+                    <label class="flex items-center space-x-2 cursor-pointer font-bold text-xs sm:text-sm text-rose-600 bg-rose-50 dark:bg-rose-900/20 px-4 py-2 rounded-xl border border-rose-200 dark:border-rose-800 transition-transform hover:scale-105">
+                        <input type="checkbox" id="timer-strict-mode" ${timerState.isStrict ? 'checked' : ''} onchange="window.toggleStrictMode(this.checked)" class="w-4 h-4 rounded text-rose-600 accent-rose-600"/>
+                        <span>🔒 Strict Detox (Penalty for quitting)</span>
+                    </label>
                 </div>`;
             }
 
@@ -1956,7 +1993,7 @@
                                 </div>
                                 <div class="flex flex-wrap items-center gap-3">
                                     ${!isCheckedToday ? `<button onclick="window.checkInDetox(${dh.id})" class="bg-emerald-500 hover:bg-emerald-400 text-white px-4 py-2 rounded-xl font-black shadow-sm text-sm transition-transform hover:scale-105">✅ Done</button>` : `<span class="bg-emerald-100 text-emerald-700 px-4 py-2 rounded-xl font-black text-sm">${t('detox_success')}</span>`}
-                                    <button onclick="window.resetDetox(${dh.id})" class="bg-orange-100 hover:bg-orange-200 text-orange-700 px-4 py-2 rounded-xl font-black shadow-sm text-sm transition-transform hover:scale-105" title="වැරදීමකින් පුරුද්ද කළා නම් මුල සිට අරඹන්න">${t('detox_reset')}</button>
+                                    <button onclick="window.resetDetox(${dh.id})" class="bg-orange-100 hover:bg-orange-200 text-orange-700 px-4 py-2 rounded-xl font-black shadow-sm text-sm transition-transform hover:scale-105" title="Restart if you relapsed by mistake">${t('detox_reset')}</button>
                                     <button onclick="window.deleteDetox(${dh.id})" class="p-2 text-slate-400 hover:text-red-500 transition-transform hover:scale-110">🗑️</button>
                                 </div>
                             </div>
@@ -1983,12 +2020,12 @@
                     <input type="text" id="fc-a" aria-label="Flashcard Answer" placeholder="${t('a_ph')}" class="flex-1 px-4 py-3 glass-btn rounded-xl outline-none font-bold min-w-0"/>
                     <button onclick="window.addFlashcard()" class="bg-indigo-600 text-white px-6 py-3 rounded-xl font-black shrink-0">${t('add_btn')}</button>
                 </div>
-                <button onclick="window.generateAIFlashcards()" class="w-full py-3 border-2 border-indigo-200 dark:border-indigo-800 text-indigo-600 dark:text-indigo-400 font-bold rounded-xl hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-colors flex justify-center items-center gap-2">✨ AI මගින් Flashcards සෑදීම</button>
+                <button onclick="window.generateAIFlashcards()" class="w-full py-3 border-2 border-indigo-200 dark:border-indigo-800 text-indigo-600 dark:text-indigo-400 font-bold rounded-xl hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-colors flex justify-center items-center gap-2">✨ Generate Flashcards via AI</button>
             </div>
             
-            ${futureCards > 0 ? `<div class="text-center font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 p-3 rounded-xl border border-emerald-200 dark:border-emerald-800 text-sm">🎉 Flashcards ${futureCards} ක් සාර්ථකව මතක තබාගෙන ඇත (Reviewed). අදට නියමිත ඒවා පහතින්:</div>` : ''}
+            ${futureCards > 0 ? `<div class="text-center font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 p-3 rounded-xl border border-emerald-200 dark:border-emerald-800 text-sm">🎉 ${futureCards} Flashcards successfully reviewed for today. Upcoming are below:</div>` : ''}
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 perspective">${dueCards.length === 0 ? `<div class="col-span-full text-center py-10 text-slate-400 font-bold">${state.flashcards.length > 0 ? 'අද දිනට නියමිත Flashcards අවසන්!' : t('no_fc')}</div>` : dueCards.map(f => `<div class="relative h-56 w-full group cursor-pointer" onclick="window.flipCardDOM('${f.id}', this)" role="button" aria-label="Flip Flashcard"><div class="absolute inset-0 w-full h-full preserve-3d ${state.flippedCards[f.id] ? 'rotate-y-180' : ''}"><div class="absolute inset-0 backface-hidden glass-panel rounded-[2rem] p-6 flex flex-col justify-center items-center shadow-sm"><span class="text-xs font-bold text-indigo-500 mb-2">${t('fc_q')}</span><h3 class="text-xl font-black text-center break-words w-full">${escapeHTML(f.q)}</h3><button onclick="event.stopPropagation(); window.deleteFlashcard(${f.id})" aria-label="Delete Flashcard" class="absolute top-4 right-4 text-slate-400 hover:text-red-500 text-lg hover:scale-110 transition-transform">🗑️</button></div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 perspective">${dueCards.length === 0 ? `<div class="col-span-full text-center py-10 text-slate-400 font-bold">${state.flashcards.length > 0 ? 'All Flashcards for today are done!' : t('no_fc')}</div>` : dueCards.map(f => `<div class="relative h-56 w-full group cursor-pointer" onclick="window.flipCardDOM('${f.id}', this)" role="button" aria-label="Flip Flashcard"><div class="absolute inset-0 w-full h-full preserve-3d ${state.flippedCards[f.id] ? 'rotate-y-180' : ''}"><div class="absolute inset-0 backface-hidden glass-panel rounded-[2rem] p-6 flex flex-col justify-center items-center shadow-sm"><span class="text-xs font-bold text-indigo-500 mb-2">${t('fc_q')}</span><h3 class="text-xl font-black text-center break-words w-full">${escapeHTML(f.q)}</h3><button onclick="event.stopPropagation(); window.deleteFlashcard(${f.id})" aria-label="Delete Flashcard" class="absolute top-4 right-4 text-slate-400 hover:text-red-500 text-lg hover:scale-110 transition-transform">🗑️</button></div>
             <div class="absolute inset-0 backface-hidden rotate-y-180 bg-indigo-600/90 text-white rounded-[2rem] p-4 flex flex-col justify-between items-center shadow-md">
                 <span class="text-xs font-bold text-indigo-200">${t('fc_a')}</span>
                 <h3 class="text-2xl font-black text-center break-words w-full overflow-y-auto custom-scrollbar max-h-24">${escapeHTML(f.a)}</h3>
@@ -2068,7 +2105,7 @@
 
             let badgesHTML = '';
             if (state.badges && state.badges.length > 0) {
-                badgesHTML = `<div class="glass-panel p-6 rounded-[2rem] shadow-sm mt-6 text-left"><h4 class="font-black text-indigo-600 dark:text-indigo-400 mb-4 text-center sm:text-left">🏆 මගේ පදක්කම්</h4><div class="flex flex-wrap gap-4 justify-center sm:justify-start">${state.badges.map(b => `<div class="flex flex-col items-center bg-slate-100 dark:bg-slate-800 p-3 rounded-2xl w-24 text-center border border-slate-200 dark:border-slate-700 shadow-sm" title="${badgeDict[b]?.d || ''}"><span class="text-3xl mb-2 drop-shadow-sm">${badgeDict[b]?.i || '🎖️'}</span><span class="text-[10px] font-black text-slate-700 dark:text-slate-300 tracking-tight leading-tight">${badgeDict[b]?.n || 'Badge'}</span></div>`).join('')}</div></div>`;
+                badgesHTML = `<div class="glass-panel p-6 rounded-[2rem] shadow-sm mt-6 text-left"><h4 class="font-black text-indigo-600 dark:text-indigo-400 mb-4 text-center sm:text-left">🏆 My Badges</h4><div class="flex flex-wrap gap-4 justify-center sm:justify-start">${state.badges.map(b => `<div class="flex flex-col items-center bg-slate-100 dark:bg-slate-800 p-3 rounded-2xl w-24 text-center border border-slate-200 dark:border-slate-700 shadow-sm" title="${badgeDict[b]?.d || ''}"><span class="text-3xl mb-2 drop-shadow-sm">${badgeDict[b]?.i || '🎖️'}</span><span class="text-[10px] font-black text-slate-700 dark:text-slate-300 tracking-tight leading-tight">${badgeDict[b]?.n || 'Badge'}</span></div>`).join('')}</div></div>`;
             }
 
             return `<div class="max-w-2xl mx-auto space-y-8 pb-20">
@@ -2139,6 +2176,12 @@
             return `<div class="max-w-3xl mx-auto space-y-8 pb-20 print-content"><div class="flex justify-between items-center print-hidden"><button onclick="window.switchTab('library')" class="glass-btn px-4 py-2 rounded-xl flex items-center space-x-2 font-bold shadow-sm"><span class="text-xl">⬅️</span><span>Back</span></button></div><h2 class="text-3xl sm:text-5xl font-black drop-shadow-md print-text-black">${escapeHTML(a.title)}</h2><div class="flex space-x-4 text-xs sm:text-sm font-bold opacity-70"><span>Author: ${escapeHTML(a.author)}</span></div><p class="text-lg sm:text-xl italic border-l-4 border-indigo-400 pl-4 sm:pl-6 print-text-black font-medium">${escapeHTML(a.intro)}</p>${a.sections.map(s=>`<div class="space-y-2"><h3 class="text-xl sm:text-2xl font-black text-indigo-600 drop-shadow-sm">${escapeHTML(s.title)}</h3><p class="text-base sm:text-lg font-medium leading-relaxed whitespace-pre-wrap">${escapeHTML(s.text)}</p></div>`).join('')}</div>`;
         }
 
+        function initApp() {
+            fetchTodayHoliday();
+            setInterval(checkNewDay, 60000);
+        }
+
+        initApp();
     </script>
 </body>
 </html>
