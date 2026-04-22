@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" class="light">
+<html lang="si" class="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -22,10 +22,10 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <!-- Addictive Feature: Confetti Animation CDN -->
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&family=Noto+Sans+Sinhala:wght@400;600;800;900&display=swap" rel="stylesheet">
     
     <style>
-        :root { --font-main: 'Inter', sans-serif; }
+        :root { --font-main: 'Inter', 'Noto Sans Sinhala', sans-serif; }
         body { 
             font-family: var(--font-main); scroll-behavior: smooth; 
             background-color: #f8fafc;
@@ -57,17 +57,11 @@
         @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
         
         .card-hover:hover { transform: translateY(-5px); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); }
-        
-        /* Fixed Scrollbar UI for Mobile Nav and Web */
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: rgba(156, 163, 175, 0.5); border-radius: 10px; }
         .dark ::-webkit-scrollbar-thumb { background: rgba(71, 85, 105, 0.5); }
-        
-        /* Custom hide scrollbar class for smooth mobile nav */
-        .hide-scrollbar::-webkit-scrollbar { display: none; }
-        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        .custom-scrollbar::-webkit-scrollbar { height: 8px; width: 8px; display: block; }
+        .custom-scrollbar::-webkit-scrollbar { height: 8px; width: 8px; }
         
         .timer-circle { border-radius: 50%; }
         .perspective { perspective: 1000px; }
@@ -89,32 +83,32 @@
     <div id="toast-container" class="fixed top-24 right-6 flex flex-col space-y-2 pointer-events-none z-[120]" aria-live="polite"></div>
     <div id="modal-container" class="fixed inset-0 z-[100] hidden items-center justify-center bg-slate-900/60 backdrop-blur-md transition-opacity" role="dialog" aria-modal="true"></div>
 
-    <!-- Floating SOS Button & Breathing Modal -->
-    <button onclick="window.startBreathingSOS()" class="fixed bottom-28 right-6 md:bottom-8 md:right-8 z-[90] w-16 h-16 bg-gradient-to-tr from-rose-500 to-orange-500 text-white rounded-full flex items-center justify-center text-3xl shadow-[0_0_30px_rgba(244,63,94,0.6)] hover:scale-110 transition-transform animate-bounce" aria-label="Emergency SOS" title="Press immediately when you feel a craving">🆘</button>
+    <!-- NEW: Floating SOS Button & Breathing Modal -->
+    <button onclick="window.startBreathingSOS()" class="fixed bottom-24 right-6 md:bottom-8 md:right-8 z-[90] w-16 h-16 bg-gradient-to-tr from-rose-500 to-orange-500 text-white rounded-full flex items-center justify-center text-3xl shadow-[0_0_30px_rgba(244,63,94,0.6)] hover:scale-110 transition-transform animate-bounce" aria-label="Emergency SOS" title="නරක පුරුද්දක් කිරීමට සිතෙන විට වහාම ඔබන්න">🆘</button>
     
     <div id="sos-breathing-modal" class="fixed inset-0 z-[200] hidden items-center justify-center bg-slate-900/95 backdrop-blur-2xl transition-opacity">
         <div class="text-center text-white flex flex-col items-center">
             <h2 class="text-4xl font-black mb-4 text-rose-400 drop-shadow-md">Craving SOS 🛑</h2>
-            <p id="breathe-text" class="text-2xl font-bold mb-16 text-slate-300 transition-opacity">Calm down...</p>
+            <p id="breathe-text" class="text-2xl font-bold mb-16 text-slate-300 transition-opacity">සන්සුන් වන්න...</p>
             <div class="relative w-64 h-64 flex items-center justify-center mb-16">
                 <div id="breathe-circle" class="absolute w-20 h-20 bg-gradient-to-tr from-emerald-400 to-indigo-500 rounded-full shadow-[0_0_60px_rgba(52,211,153,0.5)] transition-all ease-in-out"></div>
             </div>
-            <button onclick="window.stopBreathingSOS()" class="px-10 py-4 bg-white/10 hover:bg-white/20 rounded-2xl font-bold text-lg border border-white/20 transition-colors shadow-lg">End</button>
+            <button onclick="window.stopBreathingSOS()" class="px-10 py-4 bg-white/10 hover:bg-white/20 rounded-2xl font-bold text-lg border border-white/20 transition-colors shadow-lg">අවසන් කරන්න</button>
         </div>
     </div>
 
-    <!-- Level Up Celebration Modal -->
+    <!-- Addictive Feature: Level Up Celebration Modal -->
     <div id="levelup-modal" class="fixed inset-0 z-[200] hidden items-center justify-center bg-slate-900/90 backdrop-blur-xl transition-opacity">
         <div class="text-center bg-white dark:bg-slate-800 p-10 rounded-[3rem] shadow-[0_0_50px_rgba(99,102,241,0.4)] max-w-sm mx-4 transform transition-all scale-110 animate-slide-up border border-indigo-200 dark:border-indigo-800">
             <div class="text-7xl mb-4 animate-bounce">🎉</div>
             <h2 class="text-4xl font-black mb-2 text-indigo-600 dark:text-indigo-400">Level Up!</h2>
-            <p class="text-slate-600 dark:text-slate-300 font-bold mb-6">You have reached a new level!</p>
+            <p class="text-slate-600 dark:text-slate-300 font-bold mb-6">ඔබ දැන් නව මට්ටමකට පැමිණ ඇත!</p>
             <div class="bg-indigo-50 dark:bg-indigo-900/30 rounded-2xl p-6 mb-8 border border-indigo-100 dark:border-indigo-800">
                 <span class="block text-sm font-bold text-slate-500 uppercase tracking-widest mb-1">New Level</span>
                 <span id="levelup-level-text" class="text-6xl font-black text-indigo-600 drop-shadow-md">2</span>
                 <span id="levelup-title-text" class="block text-lg font-bold text-indigo-400 mt-2 uppercase">Apprentice</span>
             </div>
-            <button onclick="window.closeLevelUpModal()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white py-4 rounded-2xl font-black shadow-lg transition-transform hover:scale-105">Awesome! Let's keep going 🚀</button>
+            <button onclick="window.closeLevelUpModal()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white py-4 rounded-2xl font-black shadow-lg transition-transform hover:scale-105">නියමයි! ඉදිරියටම යමු 🚀</button>
         </div>
     </div>
 
@@ -126,6 +120,7 @@
         import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendEmailVerification, onAuthStateChanged, signOut, sendPasswordResetEmail, signInWithCustomToken, signInAnonymously, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
         import { getFirestore, doc, setDoc, getDoc, onSnapshot, collection, query, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
+        // 🔴 Firebase Config (Dynamic Support for environments) 🔴
         const fbKey = atob("QUl6YVN5QTFkUmRUc0syTWJrUzNKUlJpRy13MmFaekJlVjV2RXdV");
         let firebaseConfig = {
             apiKey: fbKey,
@@ -150,11 +145,12 @@
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'mindsetos-global';
         const MY_ADMIN_EMAIL = "sdatrex3@gmail.com"; 
 
+        // Initial Auth Hook for seamless environments
         const initAuth = async () => {
             try {
                 const redirectResult = await getRedirectResult(auth);
                 if(redirectResult && redirectResult.user) {
-                    showToast("Google Sign-In Successful!", "success");
+                    showToast("Google Sign-In සාර්ථකයි!", "success");
                 }
             } catch(e) {
                 console.error("Redirect Auth Error:", e);
@@ -203,7 +199,7 @@
         let audioCtxObj = null; 
         let noiseSourceNode = null; 
         let activeOscillators = [];
-        let timerState = { mode: 'focus', phase: 'idle', timeLeft: 25 * 60, targetEndTime: null, interval: null, isStrict: false };
+        let timerState = { mode: 'focus', phase: 'idle', timeLeft: 25 * 60, targetEndTime: null, interval: null };
         let progressChartInstance = null, focusChartInstance = null, moodChartInstance = null;
 
         function getTodayStr() {
@@ -219,7 +215,7 @@
         async function fetchTodayHoliday() {
             const d = new Date();
             const mmdd = String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
-            const fixedHolidays = { '01-01': 'New Year', '02-04': 'National Independence Day', '04-13': 'Sinhala & Tamil New Year (Prior)', '04-14': 'Sinhala & Tamil New Year', '05-01': 'Labour Day', '12-25': 'Christmas Day' };
+            const fixedHolidays = { '01-01': 'නව වසර', '02-04': 'ජාතික නිදහස් දිනය', '04-13': 'සිංහල හා දෙමළ අලුත් අවුරුද්ද (පරණ අවුරුද්ද)', '04-14': 'සිංහල හා දෙමළ අලුත් අවුරුද්ද', '05-01': 'කම්කරු දිනය', '12-25': 'නත්තල් දිනය' };
             if (fixedHolidays[mmdd]) { todayHolidayMessage = fixedHolidays[mmdd]; if(state.activeTab === 'home') render(); }
             try {
                 const res = await fetch(`https://date.nager.at/api/v3/PublicHolidays/${d.getFullYear()}/LK`);
@@ -236,187 +232,134 @@
         }
 
         // ==========================================
-        // DICTIONARY & FULL TRANSLATIONS
+        // DICTIONARY & LEVELS
         // ==========================================
         const dict = {
-            'greeting_m': { si: 'Good Morning', en: 'Good Morning' },
-            'greeting_a': { si: 'Good Afternoon', en: 'Good Afternoon' },
-            'greeting_e': { si: 'Good Evening', en: 'Good Evening' },
-            'home': { si: 'Home', en: 'Home' },
-            'planner': { si: 'Planner', en: 'Planner' },
+            'greeting_m': { si: 'සුබ උදෑසනක්', en: 'Good Morning' },
+            'greeting_a': { si: 'සුබ දහවලක්', en: 'Good Afternoon' },
+            'greeting_e': { si: 'සුබ රාත්‍රියක්', en: 'Good Evening' },
+            'home': { si: 'මුල් පිටුව', en: 'Home' },
+            'planner': { si: 'සැලසුම්කරු', en: 'Planner' },
             'flashcards': { si: 'Flashcards', en: 'Flashcards' },
-            'library': { si: 'Library', en: 'Library' },
-            'stats': { si: 'Analytics', en: 'Analytics' },
-            'profile': { si: 'Profile', en: 'Profile' },
-            
-            // Detox
-            'detox_tab': { si: 'Habit Detox', en: 'Habit Detox' },
-            'detox_title': { si: 'Bad Habit Detox Challenge', en: 'Bad Habit Detox Challenge' },
-            'detox_desc': { si: 'Break bad habits within a week using psychological Urge Surfing and Substitution methods.', en: 'Break bad habits within a week using psychological Urge Surfing and Substitution methods.' },
-            'bad_habit_ph': { si: 'Bad habit to quit...', en: 'Bad habit to quit...' },
-            'substitute_ph': { si: 'Alternative action...', en: 'Alternative action...' },
-            'sos_btn': { si: 'Craving SOS', en: 'Craving SOS' },
-            'sos_craving': { si: '🔥 Strong Craving?', en: '🔥 Strong Craving?' },
-            'sos_desc': { si: 'Psychologically, cravings peak and pass within 3 minutes. Use "Urge Surfing" to observe the feeling without acting on it, and it will naturally fade.', en: 'Psychologically, cravings peak and pass within 3 minutes. Use "Urge Surfing" to observe the feeling without acting on it, and it will naturally fade.' },
-            'detox_empty': { si: 'Add a bad habit to start.', en: 'Add a bad habit to start.' },
-            'detox_success': { si: '✅ Successful Today', en: '✅ Successful Today' },
-            'detox_reset': { si: '🔄 Reset', en: '🔄 Reset' },
-
-            // Planner
+            'library': { si: 'පුස්තකාලය', en: 'Library' },
+            'stats': { si: 'ප්‍රගතිය', en: 'Analytics' },
+            'profile': { si: 'ප්‍රොෆයිලය', en: 'Profile' },
+            'detox_tab': { si: 'Detox (නරක පුරුදු)', en: 'Habit Detox' },
+            'detox_title': { si: 'නරක පුරුදු අත්හැරීමේ (Detox) අභියෝගය', en: 'Bad Habit Detox Challenge' },
+            'detox_desc': { si: 'මනෝවිද්‍යාත්මක "Urge Surfing" සහ "Habit Substitution" ක්‍රම භාවිතයෙන් සතියක් ඇතුළත නරක පුරුදු වලින් මිදෙමු.', en: 'Break bad habits within a week using psychological Urge Surfing and Substitution methods.' },
+            'bad_habit_ph': { si: 'අත්හැරීමට අවශ්‍ය නරක පුරුද්ද (උදා: දුම්පානය, ෆෝන් එක බැලීම)...', en: 'Bad habit to quit...' },
+            'substitute_ph': { si: 'ඒ වෙනුවට කරන හොඳ දෙය (උදා: වතුර වීදුරුවක් බීම)...', en: 'Alternative action...' },
+            'sos_btn': { si: 'විශේෂ ආධාරය (Craving SOS)', en: 'Craving SOS' },
             'deep_work': { si: 'Deep Work', en: 'Deep Work' },
-            'new_task': { si: 'New Task', en: 'New Task' },
-            'daily_progress': { si: 'Daily Progress', en: 'Daily Progress' },
-            'up_next': { si: 'Up Next', en: 'Up Next' },
-            'view_all': { si: 'View All', en: 'View All' },
-            'all_done': { si: 'Awesome! All tasks done.', en: 'Awesome! All tasks done.' },
-            'add_task': { si: 'Enter a task...', en: 'Enter a task...' },
-            'add_btn': { si: 'Add', en: 'Add' },
-            'tiny_habit_btn': { si: '⚡ 5-Min Habit', en: '⚡ 5-Min Habit' },
-            'ai_breakdown': { si: '✨ AI Breakdown (+5 XP)', en: '✨ AI Breakdown (+5 XP)' },
-            'ai_restructure': { si: '✨ AI Restructure', en: '✨ AI Restructure' },
-
-            // Journal
-            'journal': { si: 'Daily Journal', en: 'Daily Journal' },
-            'journal_ph': { si: 'Write about today...', en: 'Write about today...' },
-            'save_journal': { si: 'Save Journal', en: 'Save Journal' },
-            'history': { si: 'Past History', en: 'Past History' },
-
-            // Timer
-            'timer_title': { si: 'Uninterrupted Focus Timer', en: 'Uninterrupted Focus Timer' },
-            'start_break': { si: 'Start Break (X)', en: 'Start Break (X)' },
-            'skip_break': { si: 'Skip Break', en: 'Skip Break' },
-            'reset_timer': { si: 'Reset Timer', en: 'Reset Timer' },
-            'focus_chart': { si: 'Daily Focus Time (mins)', en: 'Daily Focus Time (mins)' },
-            'progress_chart': { si: 'Progress Chart', en: 'Progress Chart' },
+            'new_task': { si: 'නව කාර්යයක්', en: 'New Task' },
+            'daily_progress': { si: 'අද දෛනික ප්‍රගතිය', en: 'Daily Progress' },
+            'up_next': { si: 'මීළඟට කළ යුතු', en: 'Up Next' },
+            'view_all': { si: 'සියල්ල බලන්න', en: 'View All' },
+            'all_done': { si: 'නියමයි! වැඩ අවසන්.', en: 'Awesome! All tasks done.' },
+            'add_task': { si: 'වැඩක් ඇතුළත් කරන්න...', en: 'Enter a task...' },
+            'add_btn': { si: 'එක් කරන්න', en: 'Add' },
+            'journal': { si: 'දවසේ සටහන (Journal)', en: 'Daily Journal' },
+            'journal_ph': { si: 'අද දවස ගැන ලියන්න...', en: 'Write about today...' },
+            'save_journal': { si: 'සටහන සුරකින්න', en: 'Save Journal' },
+            'history': { si: 'පසුගිය දිනවල දත්ත', en: 'Past History' },
+            'timer_title': { si: 'බාධාවකින් තොරව අවධානය', en: 'Uninterrupted Focus Timer' },
+            'start_break': { si: 'විවේකය අරඹන්න (5m)', en: 'Start Break (5m)' },
+            'skip_break': { si: 'විවේකය මඟහරින්න', en: 'Skip Break' },
+            'reset_timer': { si: 'නැවත මුල සිට', en: 'Reset Timer' },
+            'focus_chart': { si: 'දෛනික Focus කාලය (විනාඩි)', en: 'Daily Focus Time (mins)' },
+            'progress_chart': { si: 'ප්‍රගති සටහන', en: 'Progress Chart' },
             'total_focus': { si: 'Total Focus Time', en: 'Total Focus Time' },
-
-            // Settings & Profile
-            'backup_data': { si: 'Backup Data', en: 'Backup Data' },
-            'restore_data': { si: 'Restore Data', en: 'Restore Data' },
-            'logout': { si: 'Logout', en: 'Logout' },
-            'clear_all': { si: 'Clear All Lists', en: 'Clear All Lists' },
-            'del_acc': { si: 'Delete Account Entirely', en: 'Delete Account Entirely' },
-            'target_date': { si: 'Target / Exam Date:', en: 'Target / Exam Date:' },
-            'add_category': { si: 'Add Custom Category', en: 'Add Custom Category' },
-            'subscribe': { si: 'Subscribe Now', en: 'Subscribe Now' },
-            'trial_left': { si: 'Free Trial Days Left:', en: 'Free Trial Days Left:' },
-            'trial_exp': { si: 'Free trial has expired.', en: 'Free trial has expired.' },
+            'backup_data': { si: 'Backup ගන්න', en: 'Backup Data' },
+            'restore_data': { si: 'Restore කරන්න', en: 'Restore Data' },
+            'logout': { si: 'ගිණුමෙන් ඉවත් වන්න', en: 'Logout' },
+            'clear_all': { si: 'සියලුම ලැයිස්තු හිස් කරන්න', en: 'Clear All Lists' },
+            'del_acc': { si: 'සම්පූර්ණ ගිණුම මකා දමන්න', en: 'Delete Account Entirely' },
+            'target_date': { si: 'විභාගය/ඉලක්ක දිනය:', en: 'Target / Exam Date:' },
+            'add_category': { si: 'අලුත් කාණ්ඩයක් එක් කරන්න', en: 'Add Custom Category' },
+            'subscribe': { si: 'දායකත්වය ලබාගන්න', en: 'Subscribe Now' },
+            'trial_left': { si: 'නොමිලේ දින ඉතිරිව ඇත:', en: 'Free Trial Days Left:' },
+            'trial_exp': { si: 'ඔබගේ අත්හදා බැලීමේ කාලය අවසන්.', en: 'Free trial has expired.' },
             'sound_beta': { si: 'SOUND (BETA)', en: 'SOUND (BETA)' },
-
-            // Time Audit & Parked Thoughts
-            'heatmap_title': { si: 'Activity Heatmap', en: 'Activity Heatmap' },
-            'heatmap_desc': { si: 'Last 90 Days Focus Time', en: 'Last 90 Days Focus Time' },
-            'wasted_time_title': { si: '⚠️ Wasted Time Log', en: '⚠️ Wasted Time Log' },
-            'wasted_ph': { si: 'What did you do?', en: 'What did you do?' },
-            'wasted_mins_ph': { si: 'Mins', en: 'Mins' },
-            'time_audit_desc': { si: 'Time Audit: Logging wasted time helps you save 40% of it the next day.', en: 'Time Audit: Logging wasted time helps you save 40% of it the next day.' },
-            'wasted_empty': { si: 'No wasted time today. Awesome! 🎉', en: 'No wasted time today. Awesome! 🎉' },
-            'park_thought_title': { si: '🧠 Thought Parking Lot', en: 'Thought Parking Lot' },
-            'park_thought_ph': { si: 'Write distracting thoughts here to free your mind...', en: 'Write distracting thoughts here to free your mind...' },
-
-            // Misc
-            'feedback_title': { si: '⭐ Your Feedback', en: '⭐ Your Feedback' },
-            'feedback_ph': { si: 'Write your feedback here...', en: 'Write your feedback here...' },
-            'send_btn': { si: 'Send (Email)', en: 'Send (Email)' },
-            'q_ph': { si: 'Question...', en: 'Question...' },
-            'a_ph': { si: 'Answer...', en: 'Answer...' },
-            'review_chk': { si: 'Remind me again in 3 days (Review)', en: 'Remind me again in 3 days (Review)' },
-            'read_btn': { si: 'Read (+5 XP)', en: 'Read (+5 XP)' },
-            'read_done': { si: 'Read', en: 'Read' },
-            'article_new': { si: '📰 New Article Published:', en: '📰 New Article Published:' },
-            'article_read': { si: 'Read', en: 'Read' },
-            'remind_title': { si: '🔔 Reminder:', en: '🔔 Reminder:' },
-            'remind_desc': { si: 'Review this today!', en: 'Review this today!' },
-            'remind_dismiss': { si: 'Dismiss', en: 'Dismiss' },
-            'today': { si: 'Today', en: 'Today' },
-            'percent': { si: 'Score Percentage', en: 'Score Percentage' },
-            'minutes': { si: 'Minutes', en: 'Minutes' },
-            'no_fc': { si: 'Add a flashcard to get started.', en: 'Add a flashcard to get started.' },
-            'fc_q': { si: 'Question', en: 'Question' },
-            'fc_a': { si: 'Answer', en: 'Answer' },
-            'target_rem': { si: '⏳ Days left for your target: ', en: '⏳ Days left for your target: ' },
-            'target_today': { si: '🎯 Today is your target date! Do your best!', en: '🎯 Today is your target date! Do your best!' },
-            'target_passed': { si: '✅ Target date has passed ', en: '✅ Target date has passed ' },
-            'holiday_msg_1': { si: 'Today is', en: 'Today is' },
-            'holiday_msg_2': { si: '! Have a great day!', en: '! Have a great day!' },
+            'heatmap_title': { si: 'කාර්යශීලීතා සිතියම (Activity Heatmap)', en: 'Activity Heatmap' },
+            'heatmap_desc': { si: 'පසුගිය දින 90ක Focus කාලය', en: 'Last 90 Days Focus Time' },
+            'wasted_time_title': { si: '⚠️ කාලය කා දැමූ දේවල් සටහන (Time Audit)', en: 'Wasted Time Log' },
+            'wasted_ph': { si: 'මොකක්ද කළේ? (උදා: YouTube බැලුවා)', en: 'What did you do?' },
+            'wasted_mins_ph': { si: 'විනාඩි', en: 'Mins' },
+            'park_thought_title': { si: '🧠 Thought Parking Lot (බාධාකාරී සිතුවිලි බැහැර කිරීම)', en: 'Thought Parking Lot' },
+            'park_thought_ph': { si: 'හිතට එන වද දෙන සිතුවිල්ල මෙහි ලියා නැවත වැඩට යොමු වන්න...', en: 'Write distracting thoughts here...' },
+            'feedback_title': { si: '⭐ යෙදුම ගැන ඔබේ අදහස (Feedback)', en: '⭐ Your Feedback' },
+            'feedback_ph': { si: 'මෙහි ඔබේ අදහස් ලියන්න...', en: 'Write your feedback here...' },
+            'send_btn': { si: 'යවන්න (Email)', en: 'Send (Email)' },
+            'q_ph': { si: 'ප්‍රශ්නය (Question)...', en: 'Question...' },
+            'a_ph': { si: 'පිළිතුර (Answer)...', en: 'Answer...' },
+            'review_chk': { si: 'දින 3කින් නැවත මතක් කරන්න (Review in 3 days)', en: 'Remind me again in 3 days (Review)' },
+            'read_btn': { si: 'කියවන්න (+5 XP)', en: 'Read (+5 XP)' },
+            'read_done': { si: 'කියෙව්වා', en: 'Read' },
+            'article_new': { si: '📰 නව ලිපියක් පලවිය:', en: '📰 New Article Published:' },
+            'article_read': { si: 'කියවන්න', en: 'Read' },
+            'remind_title': { si: '🔔 මතක් කිරීම:', en: '🔔 Reminder:' },
+            'remind_desc': { si: 'අද නැවත අධ්‍යයනය (Review) කරන්න!', en: 'Review this today!' },
+            'remind_dismiss': { si: 'මතක් කිරීම අවසන්', en: 'Dismiss' },
+            'today': { si: 'අද', en: 'Today' },
+            'percent': { si: 'ලකුණු ප්‍රතිශතය', en: 'Score Percentage' },
+            'minutes': { si: 'විනාඩි', en: 'Minutes' },
+            'no_fc': { si: 'ආරම්භ කිරීමට ෆ්ලෑෂ් කාඩ්පතක් එක් කරන්න.', en: 'Add a flashcard to get started.' },
+            'fc_q': { si: 'ප්‍රශ්නය', en: 'Question' },
+            'fc_a': { si: 'පිළිතුර', en: 'Answer' },
+            'target_rem': { si: '⏳ ඔබේ ඉලක්කයට තවත් දින', en: '⏳ Days left for your target: ' },
+            'target_today': { si: '🎯 අදයි ඔබේ ඉලක්කගත දිනය! උපරිමයෙන් කරන්න!', en: '🎯 Today is your target date! Do your best!' },
+            'target_passed': { si: '✅ ඉලක්කගත දිනය පසු වී ඇත', en: '✅ Target date has passed ' },
+            'holiday_msg_1': { si: 'අද', en: 'Today is' },
+            'holiday_msg_2': { si: 'යි! ඔබට සුබ දවසක් වේවා!', en: '! Have a great day!' },
             'install_app': { si: 'Install App', en: 'Install App' },
             'admin_core': { si: 'Admin Core', en: 'Admin Core' },
             'leaderboard_title': { si: '🏆 MindsetOS Top Performers', en: '🏆 MindsetOS Top Performers' },
-            'change_name_prompt': { si: 'Enter your new name:', en: 'Enter your new name:' },
-            'name_updated': { si: 'Name updated successfully.', en: 'Name updated successfully.' },
-            'export_pdf': { si: 'Download Data (PDF)', en: 'Download Data (PDF)' },
-            'wa_date': { si: 'Date:', en: 'Date:' },
-            'wa_focus': { si: 'Today\'s Focus Time:', en: 'Today\'s Focus Time:' },
-            'wa_done': { si: 'Completed Tasks:', en: 'Completed Tasks:' },
-            'wa_none': { si: 'Nothing completed today yet.', en: 'Nothing completed today yet.' },
-            'wa_level': { si: 'My Level:', en: 'My Level:' },
-            'wa_xp': { si: 'Earned XP:', en: 'Earned XP:' },
-
-            // Vision
-            'vision_title': { si: 'Systems & Vision Board', en: 'Systems & Vision Board' },
-            'vision_desc': { si: 'Goals provide direction, but Systems are how you actually make progress daily.', en: 'Goals provide direction, but Systems are how you actually make progress daily.' },
-            'vision_goal_lbl': { si: 'Your Goal / Dream', en: 'Your Goal / Dream' },
-            'vision_goal_ph': { si: 'e.g., Become a Software Engineer...', en: 'e.g., Become a Software Engineer...' },
-            'vision_sys_lbl': { si: 'Daily System to achieve it', en: 'Daily System to achieve it' },
-            'vision_sys_ph': { si: 'e.g., Code for 30 mins daily...', en: 'e.g., Code for 30 mins daily...' },
-            'vision_empty': { si: 'Create your first System!', en: 'Create your first System!' },
-
-            // Mental Health
-            'mental_title': { si: 'Mental Health (CBT)', en: 'Mental Health (CBT)' },
-            'mental_desc': { si: 'Tools to manage stress and reframe negative thoughts using CBT principles.', en: 'Tools to manage stress and reframe negative thoughts using CBT principles.' },
-            'mc_title': { si: 'Daily Check-in', en: 'Daily Check-in' },
-            'mc_desc': { si: 'Measure your stress/anxiety level today.', en: 'Measure your stress/anxiety level today.' },
-            'mc_btn': { si: 'Log Mental State', en: 'Log Mental State' },
-            'mc_recent': { si: 'Recent Stress Levels', en: 'Recent Stress Levels' },
-            'mc_empty': { si: 'No data available.', en: 'No data available.' },
-            'cbt_title': { si: 'Cognitive Restructuring (CBT)', en: 'Cognitive Restructuring (CBT)' },
-            'cbt_desc': { si: 'Use AI to reframe negative thoughts from your Journal into positive, resilient mindsets.', en: 'Use AI to reframe negative thoughts from your Journal into positive, resilient mindsets.' },
-            'cbt_btn': { si: '✨ Restructure with AI', en: '✨ Restructure with AI' },
-
-            // Rewards & Streaks
-            'claim_reward': { si: 'Claim your Daily Reward!', en: 'Claim your Daily Reward!' },
-            'claim_btn': { si: 'Claim', en: 'Claim' },
-            'streak_warn': { si: 'Warning! Your X-day streak is at risk. Complete a task or focus session now!', en: 'Warning! Your X-day streak is at risk. Complete a task or focus session now!' }
+            'change_name_prompt': { si: 'ඔබගේ නව නම ඇතුළත් කරන්න:', en: 'Enter your new name:' },
+            'name_updated': { si: 'නම සාර්ථකව වෙනස් කරන ලදී.', en: 'Name updated successfully.' },
+            'export_pdf': { si: 'PDF ලෙස දත්ත ලබාගන්න', en: 'Download Data (PDF)' },
+            'wa_date': { si: 'දිනය:', en: 'Date:' },
+            'wa_focus': { si: 'අද දවසේ Focus කාලය:', en: 'Today\'s Focus Time:' },
+            'wa_done': { si: 'සම්පූර්ණ කළ වැඩ:', en: 'Completed Tasks:' },
+            'wa_none': { si: 'අද කිසිවක් සම්පූර්ණ කර නැත.', en: 'Nothing completed today yet.' },
+            'wa_level': { si: 'මගේ Level එක:', en: 'My Level:' },
+            'wa_xp': { si: 'ලබාගත් XP:', en: 'Earned XP:' }
         };
 
         const levelTitles = ["Novice", "Apprentice", "Adept", "Scholar", "Expert", "Master", "Grandmaster", "Hero", "Legend", "Immortal"];
         function getLevelName(lvl) { let idx = Math.floor((lvl - 1) / 10); if(idx > 9) idx = 9; return levelTitles[idx]; }
-        function t(key) { return dict[key] ? dict[key][state.language || 'en'] : key; }
+        function t(key) { return dict[key] ? dict[key][state.language || 'si'] : key; }
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
         // ==========================================
         // STATE MANAGEMENT
         // ==========================================
         const defaultState = {
-            lastModified: 0, language: 'en', activeTab: 'home', selectedArticleId: null, flippedCards: {}, isNewUser: true,
+            lastModified: 0, language: 'si', activeTab: 'home', selectedArticleId: null, flippedCards: {}, isNewUser: true,
             user: { name: '', email: '', joined: '', targetDate: '', theme: 'light', xp: 0, level: 1, trialEnds: 0, avatar: '👤' },
             habits: [], history: [], reflections: {}, moods: {}, flashcards: [], pastTasks: {}, dailyFocus: {}, 
             stats: { totalFocusMinutes: 0 }, streak: { count: 0, lastDate: null }, lastLoginDate: null,
             badges: [],
             categories: {
-                'Study': { name: 'Study', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300 border-blue-200 dark:border-blue-800' },
-                'Health': { name: 'Health', color: 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300 border-green-200 dark:border-green-800' },
-                'Work': { name: 'Work', color: 'bg-orange-100 text-orange-700 dark:bg-orange-900/50 dark:text-orange-300 border-orange-200 dark:border-orange-800' }
+                'Study': { name: 'අධ්‍යාපනය / Study', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300 border-blue-200 dark:border-blue-800' },
+                'Health': { name: 'සෞඛ්‍යය / Health', color: 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300 border-green-200 dark:border-green-800' },
+                'Work': { name: 'ව්‍යාපාර / Work', color: 'bg-orange-100 text-orange-700 dark:bg-orange-900/50 dark:text-orange-300 border-orange-200 dark:border-orange-800' }
             },
             readArticles: [], timerSettings: { focus: 25, break: 5 }, soundType: 'noise', pendingReviews: [],
             detoxHabits: [], wastedTimeLog: [], parkedThoughts: [],
-            lastRewardDate: null,
-            visionSystems: [], mentalHealthRecords: [] 
+            lastRewardDate: null // Addictive Feature: Daily Reward State
         };
 
         let state = JSON.parse(JSON.stringify(defaultState));
         if(!state.detoxHabits) state.detoxHabits = [];
         if(!state.wastedTimeLog) state.wastedTimeLog = [];
         if(!state.parkedThoughts) state.parkedThoughts = [];
-        if(!state.visionSystems) state.visionSystems = [];
-        if(!state.mentalHealthRecords) state.mentalHealthRecords = [];
         
-        const priorities = { 'Q1': { name: 'Urgent/Important', class: 'bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400' }, 'Q2': { name: 'Important Only', class: 'bg-indigo-50 text-indigo-600 dark:bg-indigo-900/20 dark:text-indigo-400' }, 'Q3': { name: 'Normal', class: 'bg-slate-50 text-slate-600 dark:bg-slate-800 dark:text-slate-400' } };
+        const priorities = { 'Q1': { name: 'හදිසි/වැදගත්', class: 'bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400' }, 'Q2': { name: 'වැදගත් පමණි', class: 'bg-indigo-50 text-indigo-600 dark:bg-indigo-900/20 dark:text-indigo-400' }, 'Q3': { name: 'සාමාන්‍ය', class: 'bg-slate-50 text-slate-600 dark:bg-slate-800 dark:text-slate-400' } };
         const moodEmojis = { 'great': '🤩', 'good': '😊', 'neutral': '😐', 'bad': '😫' };
-        const badgeDict = { 'early_bird': { i:'🌅', n:'Early Bird', d:'Start work before 6 AM' }, 'streak_7': { i:'🔥', n:'Unstoppable', d:'Maintain a 7-day streak' }, 'focus_10h': { i:'⏳', n:'Focus Master', d:'Achieve 10 hours of focus time' }, 'flash_pro': { i:'🧠', n:'Flash Pro', d:'Create 10 flashcards' } };
+        const badgeDict = { 'early_bird': { i:'🌅', n:'Early Bird', d:'පාන්දර 6ට පෙර වැඩ ආරම්භ කිරීම' }, 'streak_7': { i:'🔥', n:'Unstoppable', d:'දින 7ක Streak එකක් තබා ගැනීම' }, 'focus_10h': { i:'⏳', n:'Focus Master', d:'පැය 10ක Focus කාලයක් ලබා ගැනීම' }, 'flash_pro': { i:'🧠', n:'Flash Pro', d:'Flashcards 10ක් සෑදීම' } };
         const availableAvatars = ['👤', '👨‍🚀', '🐱‍👤', '🦸‍♂️', '🧙‍♂️', '🧛‍♂️', '🤖', '👑'];
         
-        const defaultArticles = [{ id: "default-1", title: "The Science of Calming the Mind", author: "MindsetOS Team", category: "Health", icon: "🧘‍♂️", color: "text-blue-500", readTime: "3 mins", excerpt: "To reduce mental stress and increase focus...", intro: "Calming your mind is not just about resting, but a scientific process that enhances brain function.", sections: [{title: "The Importance of Breathing", text: "Deep breathing regulates blood pressure and calms the nervous system."}], science: "Deep breathing activates the parasympathetic nervous system, lowering cortisol levels." }];
+        const defaultArticles = [{ id: "default-1", title: "මනස සන්සුන් කරගැනීමේ විද්‍යාව", author: "MindsetOS Team", category: "Health", icon: "🧘‍♂️", color: "text-blue-500", readTime: "විනාඩි 3", excerpt: "මානසික ආතතිය අවම කරගැනීමට හා අවධානය වැඩි කරගැනීමට...", intro: "ඔබේ මනස සන්සුන් කිරීම යනු හුදු විවේකයක් පමණක් නොව, මොළයේ ක්‍රියාකාරීත්වය වර්ධනය කරන විද්‍යාත්මක ක්‍රියාවලියකි.", sections: [{title: "හුස්ම ගැනීමේ වැදගත්කම", text: "ගැඹුරු හුස්ම ගැනීම් මගින් රුධිර පීඩනය පාලනය කර ස්නායු පද්ධතිය සන්සුන් කරයි."}], science: "Deep breathing activates the parasympathetic nervous system, lowering cortisol levels." }];
         let articles = [...defaultArticles];
 
         // ==========================================
@@ -484,14 +427,14 @@
         }
 
         // ==========================================
-        // LEADERBOARD LOGIC
+        // LEADERBOARD LOGIC (Security & Scalability Update)
         // ==========================================
         async function updatePublicLeaderboard() {
             if (!auth.currentUser || state.isNewUser) return;
             if (isAdmin()) {
                 try {
                     const lbRef = doc(db, 'artifacts', appId, 'public', 'data', 'leaderboard', auth.currentUser.uid);
-                    await deleteDoc(lbRef); 
+                    await deleteDoc(lbRef); // Hide admin
                 } catch(e) {}
                 return;
             }
@@ -513,8 +456,8 @@
                         usersList.push(d);
                     }
                 });
-                usersList.sort((a, b) => b.xp - a.xp); 
-                globalLeaderboard = usersList.slice(0, 3); 
+                usersList.sort((a, b) => b.xp - a.xp); // Sort descending by XP
+                globalLeaderboard = usersList.slice(0, 3); // Limit to top 3
                 if (state.activeTab === 'profile') render();
             } catch(e) { console.error("Leaderboard fetch error:", e); }
         }
@@ -527,7 +470,7 @@
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 if (!user.isAnonymous && user.email && !user.emailVerified && !window.isRegisteringUser) {
-                    showToast("Please verify your Email address first.", "error"); 
+                    showToast("කරුණාකර පළමුව ඔබගේ Email ලිපිනය තහවුරු (Verify) කරන්න.", "error"); 
                     await signOut(auth);
                     state.isNewUser = true;
                     isAppLoading = false;
@@ -548,8 +491,6 @@
                         if(!state.detoxHabits) state.detoxHabits = [];
                         if(!state.wastedTimeLog) state.wastedTimeLog = [];
                         if(!state.parkedThoughts) state.parkedThoughts = [];
-                        if(!state.visionSystems) state.visionSystems = [];
-                        if(!state.mentalHealthRecords) state.mentalHealthRecords = [];
                     } else {
                         const localData = safeJSONParse(USER_DATA_KEY, null);
                         if (localData && localData.user && localData.user.email === user.email) {
@@ -557,19 +498,17 @@
                             if(!state.detoxHabits) state.detoxHabits = [];
                             if(!state.wastedTimeLog) state.wastedTimeLog = [];
                             if(!state.parkedThoughts) state.parkedThoughts = [];
-                            if(!state.visionSystems) state.visionSystems = [];
-                            if(!state.mentalHealthRecords) state.mentalHealthRecords = [];
                             if (!state.user.trialEnds) state.user.trialEnds = Date.now() + (200 * 24 * 60 * 60 * 1000);
                             await setDoc(docRef, state); 
                             localStorage.removeItem(USER_DATA_KEY); 
-                            showToast("Old data successfully migrated to the Cloud!", "success"); 
+                            showToast("පැරණි දත්ත සාර්ථකව Cloud වෙත ගෙන යන ලදී!", "success"); 
                         } else {
                             state = { ...defaultState, isNewUser: false, user: { ...defaultState.user, name: user.displayName || "User", email: user.email || "anonymous", joined: getTodayStr(), trialEnds: Date.now() + (200 * 24 * 60 * 60 * 1000) } };
                             await setDoc(docRef, state);
                         }
                     }
                     
-                    state.activeTab = 'home';
+                    state.activeTab = 'home'; // Route to home
                     timerState.timeLeft = (state.timerSettings.focus || 25) * 60;
                     applyTheme();
                     updatePublicLeaderboard();
@@ -583,8 +522,6 @@
                                 if(!state.detoxHabits) state.detoxHabits = [];
                                 if(!state.wastedTimeLog) state.wastedTimeLog = [];
                                 if(!state.parkedThoughts) state.parkedThoughts = [];
-                                if(!state.visionSystems) state.visionSystems = [];
-                                if(!state.mentalHealthRecords) state.mentalHealthRecords = [];
                                 render();
                             }
                         }
@@ -633,14 +570,10 @@
             if (localSaveTimeout) {
                 saveData(true);
             }
-            if (timerState.phase === 'running' && timerState.isStrict) {
-                e.preventDefault();
-                e.returnValue = 'You are in Strict Detox Mode! Leaving will break your focus.';
-                return e.returnValue;
-            }
         });
 
         let localSaveTimeout = null;
+        // Saving Data
         function saveData(immediate = false) { 
             if (state.isNewUser || !auth.currentUser) return;
             state.lastModified = Date.now(); 
@@ -660,11 +593,11 @@
             const n = document.getElementById('init-name')?.value.trim(); 
             const e = document.getElementById('init-email')?.value.trim().toLowerCase(); 
             const p = document.getElementById('init-password')?.value; 
-            if(!n || !e || !p || p.length < 6) return showToast("Please enter valid information.", "error"); 
-            if(!emailRegex.test(e)) return showToast("Please enter a valid Email address.", "error"); 
+            if(!n || !e || !p || p.length < 6) return showToast("කරුණාකර නිවැරදි තොරතුරු ඇතුළත් කරන්න.", "error"); 
+            if(!emailRegex.test(e)) return showToast("කරුණාකර නිවැරදි Email ලිපිනයක් ඇතුළත් කරන්න.", "error"); 
 
             try {
-                showToast("Creating account...", "info"); 
+                showToast("ගිණුම සෑදෙමින් පවතී...", "info"); 
                 window.isRegisteringUser = true;
                 const userCredential = await createUserWithEmailAndPassword(auth, e, p);
                 
@@ -684,13 +617,13 @@
                 await signOut(auth);
                 window.isRegisteringUser = false;
                 
-                showToast("Success! Verification link sent to your Email.", "success"); 
+                showToast("සාර්ථකයි! Verification link එක ඔබගේ Email එකට යවන ලදී.", "success"); 
                 window.switchAuthMode();
             } catch(error) {
                 window.isRegisteringUser = false;
-                let msg = "Error: " + error.message;
-                if(error.code === 'auth/email-already-in-use') msg = "This Email is already in use.";
-                else if(error.code === 'auth/weak-password') msg = "Password is not strong enough.";
+                let msg = "දෝෂයකි: " + error.message;
+                if(error.code === 'auth/email-already-in-use') msg = "මෙම Email ලිපිනය දැනටමත් භාවිතයේ පවතී.";
+                else if(error.code === 'auth/weak-password') msg = "Password එකෙහි ආරක්ෂාව ප්‍රමාණවත් නැත.";
                 showToast(msg, "error");
             }
         }
@@ -698,32 +631,32 @@
         async function handleLogin() {
             const e = document.getElementById('init-email')?.value.trim().toLowerCase(); 
             const p = document.getElementById('init-password')?.value; 
-            if(!e || !p) return showToast("Invalid Email or Password.", "error"); 
+            if(!e || !p) return showToast("කරුණාකර Email සහ Password යන දෙකම ඇතුළත් කරන්න.", "error"); 
 
             try {
-                showToast("Logging in...", "info"); 
+                showToast("ලොග් වෙමින් පවතී...", "info"); 
                 const userCredential = await signInWithEmailAndPassword(auth, e, p);
                 if (!userCredential.user.emailVerified) {
-                    showToast("Please verify your Email address first.", "error"); 
+                    showToast("කරුණාකර පළමුව ඔබගේ Email ලිපිනය තහවුරු (Verify) කරන්න.", "error"); 
                     await signOut(auth);
                     return;
                 }
-                state.activeTab = 'home'; 
+                state.activeTab = 'home'; // Route to home
             } catch(error) {
-                let msg = error.code === 'auth/invalid-credential' ? "Invalid Email or Password." : "Error: " + error.message;
+                let msg = error.code === 'auth/invalid-credential' ? "වැරදි Email හෝ Password එකකි." : "දෝෂයකි: " + error.message;
                 showToast(msg, "error");
             }
         }
 
         function handleForgotPassword() {
-            showPromptModal("Enter your registered Email address:", async (email) => { 
+            showPromptModal("ඔබගේ ලියාපදිංචි Email ලිපිනය ඇතුළත් කරන්න:", async (email) => { 
                 const e = email.trim().toLowerCase();
-                if (!e || !emailRegex.test(e)) return showToast("Please enter a valid Email address.", "error");
+                if (!e || !emailRegex.test(e)) return showToast("කරුණාකර නිවැරදි Email ලිපිනයක් ඇතුළත් කරන්න.", "error");
                 try {
                     await sendPasswordResetEmail(auth, e);
-                    showToast("Password Reset link sent!", "success"); 
+                    showToast("Password Reset link එක යවන ලදී!", "success"); 
                 } catch(error) {
-                    showToast("No account found for this Email.", "error"); 
+                    showToast("මෙම Email ලිපිනයට අදාළ ගිණුමක් නොමැත.", "error"); 
                 }
             });
         }
@@ -739,7 +672,7 @@
 
         async function handleGoogleSignIn() {
             try {
-                showToast("Logging in with Google...", "info"); 
+                showToast("Google හරහා ලොග් වෙමින් පවතී...", "info"); 
                 const provider = new GoogleAuthProvider();
                 provider.setCustomParameters({ prompt: 'select_account' });
                 
@@ -748,21 +681,21 @@
                 console.error("Google Sign-in Error:", error);
                 
                 if (error.code === 'auth/unauthorized-domain') {
-                    showToast("Error: This domain is not authorized in Firebase.", "error"); 
+                    showToast("දෝෂයක්: මෙම ඩොමේන් එක Firebase හි අනුමත කර නැත.", "error"); 
                 } else if (error.message && error.message.toLowerCase().includes("invalid action")) {
-                    showToast("Error: Check if Google Sign-In is enabled in Firebase.", "error"); 
+                    showToast("දෝෂයක්: Firebase හි Google Sign-In සක්‍රිය (Enable) කර ඇත්දැයි පරීක්ෂා කරන්න.", "error"); 
                 } else if (error.code === 'auth/popup-blocked' || error.code === 'auth/cancelled-popup-request') {
-                    showToast("Popup blocked. Logging in via redirect...", "info"); 
+                    showToast("Popup අවහිර වී ඇත. Redirect හරහා ලොග් වෙමින් පවතී...", "info"); 
                     const provider = new GoogleAuthProvider();
                     await signInWithRedirect(auth, provider);
                 } else if (error.code !== 'auth/popup-closed-by-user') {
-                    showToast("Google Sign-In Error: " + error.message, "error"); 
+                    showToast("Google ලොග් වීමේදී දෝෂයක්: " + error.message, "error"); 
                 }
             }
         }
 
         // ==========================================
-        // NEW FEATURES LOGIC (AI, CBT, Systems, Tiny Habits)
+        // NEW FEATURES LOGIC (AI, Badges, Avatar)
         // ==========================================
         async function callGemini(prompt) {
             let apiKey = ""; 
@@ -774,7 +707,7 @@
             }
 
             try {
-                showToast("AI is processing... ⏳", "info"); 
+                showToast("AI කෘතිම බුද්ධිය ක්‍රියාත්මක වෙමින් පවතී... ⏳", "info"); 
                 const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
                     method: 'POST', headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
@@ -793,9 +726,9 @@
             } catch (e) { 
                 console.error(e);
                 if (e.message === "INVALID_KEY") {
-                    showToast("AI Error: Invalid API Key. Please verify.", "error");
+                    showToast("AI Error: API Key එක සම්බන්ධ ගැටළුවකි. කරුණාකර එය නිවැරදිදැයි පරීක්ෂා කරන්න.", "error");
                 } else {
-                    showToast("AI Error: Please try again.", "error"); 
+                    showToast("AI Error: කරුණාකර නැවත උත්සාහ කරන්න.", "error"); 
                 }
                 return null; 
             }
@@ -804,7 +737,7 @@
         async function breakdownTaskAI(id) {
             const h = state.habits.find(x => x.id === id);
             if(!h) return;
-            const prompt = `Break down this task into 3 small actionable sub-tasks: "${h.text}". Language: English. Return ONLY a valid JSON array of strings like ["task 1", "task 2"]. No other markdown or text.`;
+            const prompt = `Break down this task into 3 small actionable sub-tasks: "${h.text}". Language: Sinhala. Return ONLY a valid JSON array of strings like ["task 1", "task 2"]. No other markdown or text.`;
             const aiText = await callGemini(prompt);
             if(aiText) {
                 try {
@@ -812,77 +745,24 @@
                     parsed.reverse().forEach(sub => {
                         state.habits.unshift({ id: Date.now() + Math.random(), text: "↳ " + escapeHTML(sub), time: '', needsReview: false, category: h.category, priority: h.priority, completed: false, date: getTodayStr(), isRecurring: false });
                     });
-                    addXP(5); 
-                    saveData(true); render(); showToast("AI broke down the task! (+5 XP)", "success"); 
-                } catch(e) { showToast("AI Data parsing error.", "error"); } 
+                    saveData(true); render(); showToast("AI මගින් Task එක බෙදා වෙන් කළා!", "success"); 
+                } catch(e) { showToast("AI දත්ත කියවීමේ දෝෂයක්.", "error"); } 
             }
         }
 
         async function generateAIFlashcards() {
-            showPromptModal("Enter the topic to generate Flashcards:", async (text) => { 
+            showPromptModal("Flashcards සෑදීමට අවශ්‍ය පාඩම් කොටස හෝ මාතෘකාව ඇතුළත් කරන්න:", async (text) => { 
                 if(!text) return;
-                const prompt = `Create 3 flashcards for the topic: "${text}". Language: English. Format strictly as JSON array of objects with 'q' and 'a' keys. No other text.`;
+                const prompt = `Create 3 flashcards for the topic: "${text}". Language: Sinhala. Format strictly as JSON array of objects with 'q' and 'a' keys. No other text.`;
                 const aiText = await callGemini(prompt);
                 if(aiText) {
                     try {
                         const parsed = JSON.parse(aiText.replace(/```json/g, '').replace(/```/g, '').trim());
                         parsed.forEach(item => state.flashcards.unshift({ id: Date.now() + Math.random(), q: escapeHTML(item.q), a: escapeHTML(item.a), dueDate: 0, interval: 1, ease: 2.5 }));
-                        checkBadges(); saveData(true); render(); showToast("Flashcards generated by AI!", "success"); 
-                    } catch(e) { showToast("AI Data parsing error.", "error"); } 
+                        checkBadges(); saveData(true); render(); showToast("AI මගින් Flashcards සෑදුවා!", "success"); 
+                    } catch(e) { showToast("AI දත්ත කියවීමේ දෝෂයක්.", "error"); } 
                 }
             });
-        }
-
-        function addTinyHabit() {
-            showPromptModal("Add a 5-minute tiny habit:", (val) => {
-                if(val && val.trim()) {
-                    state.habits.unshift({ id: Date.now(), text: "⚡ 5-Min: " + escapeHTML(val.trim()), time: '', needsReview: false, isRecurring: true, category: 'Health', priority: 'Q1', completed: false, date: getTodayStr() });
-                    saveData(true); render(); showToast("Atomic Habit added successfully! Do this daily.", "success");
-                }
-            });
-        }
-
-        async function aiRestructureJournal() {
-            const text = state.reflections[getTodayStr()];
-            if (!text || text.trim().length < 5) return showToast("Please write your thoughts in the Journal first.", "error");
-            const prompt = `Act as a Cognitive Behavioral Therapist (CBT). Take this user's journal entry: "${text}". Identify any negative thoughts, anxieties, or cognitive distortions, and gently restructure them into a positive, resilient, and growth-oriented mindset. Keep it encouraging and empathetic. Language: English. Keep it under 4 sentences. Return plain text only.`;
-            const aiText = await callGemini(prompt);
-            if(aiText) {
-                state.reflections[getTodayStr()] = state.reflections[getTodayStr()] + "\n\n🤖 AI Restructure: " + aiText;
-                saveData(true); render(); showToast("AI successfully reframed your negative thoughts!", "success");
-            }
-        }
-
-        function takeMentalCheck() {
-            showPromptModal("What is your stress level today (1-10)?", (val) => {
-                const score = parseInt(val);
-                if (score >= 1 && score <= 10) {
-                    if(!state.mentalHealthRecords) state.mentalHealthRecords = [];
-                    state.mentalHealthRecords.push({ date: getTodayStr(), score: score });
-                    saveData(true); render(); 
-                    if(score > 6) showToast("Your stress is high. Please use 'Craving SOS' or 'Journal' to relax.", "info");
-                    else showToast("Mental state logged. You are doing great!", "success");
-                } else {
-                    showToast("Please enter a value between 1 and 10.", "error");
-                }
-            });
-        }
-
-        function addSystemGoal() {
-            const vGoal = document.getElementById('vision-goal')?.value.trim();
-            const vSys = document.getElementById('vision-system')?.value.trim();
-            if (vGoal && vSys) {
-                if(!state.visionSystems) state.visionSystems = [];
-                state.visionSystems.unshift({ id: Date.now(), goal: escapeHTML(vGoal), system: escapeHTML(vSys) });
-                saveData(true); render(); showToast("Success! Now forget the goal and focus on the System.", "success");
-            } else {
-                showToast("Please fill in both the goal and the system.", "error");
-            }
-        }
-        
-        function deleteSystemGoal(id) {
-            state.visionSystems = state.visionSystems.filter(s => s.id !== id);
-            saveData(true); render();
         }
 
         // ==========================================
@@ -896,8 +776,8 @@
                 if(!state.detoxHabits) state.detoxHabits = [];
                 state.detoxHabits.unshift({ id: Date.now(), habit: escapeHTML(h), substitute: escapeHTML(s), streak: 0, lastCheckIn: null });
                 saveData(true); if(hEl) hEl.value = ''; if(sEl) sEl.value = '';
-                render(); showToast("Challenge started! Best of luck!", "success");
-            } else { showToast("Please enter the bad habit.", "error"); }
+                render(); showToast("අභියෝගය ආරම්භ විය! ඔබට ජය!", "success");
+            } else { showToast("කරුණාකර නරක පුරුද්ද ඇතුළත් කරන්න.", "error"); }
         }
 
         function checkInDetox(id) {
@@ -908,7 +788,7 @@
                         dh.streak += 1;
                         dh.lastCheckIn = today;
                         addXP(15); 
-                        showToast(`Awesome! ${dh.streak} days successful!`, "success");
+                        showToast(`නියමයි! දින ${dh.streak} ක් සාර්ථකයි!`, "success");
                     }
                 }
                 return dh;
@@ -917,12 +797,12 @@
         }
 
         function resetDetox(id) {
-            showConfirmModal("Couldn't control the habit today? Don't worry, let's start over!", () => {
+            showConfirmModal("ඔබට අද දින මෙම පුරුද්ද පාලනය කරගැනීමට නොහැකි වුණාද? කම්පා වෙන්න එපා, අපි නැවත මුල සිට අරඹමු!", () => {
                 state.detoxHabits = state.detoxHabits.map(dh => {
                     if(dh.id === id) { dh.streak = 0; dh.lastCheckIn = null; }
                     return dh;
                 });
-                saveData(true); render(); showToast("Challenge restarted.", "info");
+                saveData(true); render(); showToast("අභියෝගය නැවතත් මුල සිට ආරම්භ විය.", "info");
             });
         }
 
@@ -940,17 +820,17 @@
             modal.classList.add('flex');
 
             const breatheCycle = () => {
-                textEl.innerText = "Breathe in deeply... (Inhale)";
+                textEl.innerText = "ගැඹුරින් හුස්ම ගන්න... (Inhale)";
                 circleEl.style.transitionDuration = '4s';
                 circleEl.style.transform = 'scale(3)';
                 circleEl.classList.replace('from-emerald-400', 'from-blue-400');
                 
                 setTimeout(() => {
-                    textEl.innerText = "Hold your breath... (Hold)";
+                    textEl.innerText = "හුස්ම රඳවාගන්න... (Hold)";
                     circleEl.style.transitionDuration = '7s';
                     
                     setTimeout(() => {
-                        textEl.innerText = "Exhale slowly... (Exhale)";
+                        textEl.innerText = "සෙමෙන් හුස්ම පිට කරන්න... (Exhale)";
                         circleEl.style.transitionDuration = '8s';
                         circleEl.style.transform = 'scale(1)';
                         circleEl.classList.replace('from-blue-400', 'from-emerald-400');
@@ -967,13 +847,16 @@
             modal.classList.add('hidden');
             modal.classList.remove('flex');
             clearInterval(breatheInterval);
-            showToast("Awesome! You successfully controlled the craving.", "success");
+            showToast("නියමයි! ඔබ ඒ ආශාව සාර්ථකව පාලනය කරගත්තා. ජය!", "success");
         }
 
         function startSOS() {
             startBreathingSOS();
         }
 
+        // ==========================================
+        // NEW METHODS: Wasted Time & Thought Parking Lot
+        // ==========================================
         function addWastedTime() {
             const textEl = document.getElementById('wasted-text');
             const minsEl = document.getElementById('wasted-mins');
@@ -982,8 +865,8 @@
             if(text && mins > 0) {
                 if(!state.wastedTimeLog) state.wastedTimeLog = [];
                 state.wastedTimeLog.unshift({ id: Date.now(), text: escapeHTML(text), mins: mins, date: getTodayStr() });
-                saveData(true); render(); showToast("Logged. Let's use this time productively tomorrow!", "info");
-            } else { showToast("Please enter the description and minutes.", "error"); }
+                saveData(true); render(); showToast("සටහන් කළා. හෙට දවසේ මේ කාලයත් වැඩකට ගනිමු!", "info");
+            } else { showToast("කරුණාකර විස්තරය සහ විනාඩි ගණන ඇතුළත් කරන්න.", "error"); }
         }
 
         function deleteWastedTime(id) {
@@ -997,7 +880,7 @@
             if(text) {
                 if(!state.parkedThoughts) state.parkedThoughts = [];
                 state.parkedThoughts.unshift({ id: Date.now(), text: escapeHTML(text), date: getTodayStr() });
-                saveData(true); el.value = ''; render(); showToast("Thought parked. Now focus again!", "success");
+                saveData(true); el.value = ''; render(); showToast("සිතුවිල්ල මොළයෙන් ඉවත් කළා. දැන් නැවතත් Focus කරන්න!", "success");
             }
         }
 
@@ -1006,12 +889,15 @@
             saveData(true); render();
         }
 
+        // ==========================================
+        // ADDICTIVE FEATURES LOGIC (Variable Rewards)
+        // ==========================================
         function claimDailyReward() {
             const today = getTodayStr();
             if (state.lastRewardDate === today) return;
             
             const rewards = [15, 25, 50, 100];
-            const weights = [0.5, 0.3, 0.15, 0.05]; 
+            const weights = [0.5, 0.3, 0.15, 0.05]; // 50% chance for 15XP, 5% chance for 100XP
             let r = Math.random(), cumulative = 0, reward = 15;
             for (let i = 0; i < weights.length; i++) { 
                 cumulative += weights[i]; 
@@ -1025,7 +911,7 @@
             try { 
                 if(window.confetti) confetti({ particleCount: 150, spread: 80, origin: { y: 0.5 }, zIndex: 10000, colors: ['#fbbf24', '#f59e0b', '#d97706'] }); 
             } catch(e){}
-            showToast(`🎁 Congratulations! You received ${reward} free XP!`, "success");
+            showToast(`🎁 සුබ පැතුම්! ඔබට නොමිලේ XP ${reward} ක් ලැබුණා!`, "success");
         }
 
         function closeLevelUpModal() { 
@@ -1043,7 +929,7 @@
             
             if(newBadges.length > 0) {
                 state.badges.push(...newBadges);
-                newBadges.forEach(b => showToast(`🏆 New Badge: ${badgeDict[b].n}!`, 'success')); 
+                newBadges.forEach(b => showToast(`🏆 නව පදක්කමක්: ${badgeDict[b].n}!`, 'success')); 
                 saveData(true);
             }
         }
@@ -1051,9 +937,9 @@
         function changeAvatar() {
             const currentIdx = availableAvatars.indexOf(state.user.avatar || '👤');
             const maxAvatars = Math.min(availableAvatars.length, Math.floor(state.user.level / 5) + 1);
-            if (maxAvatars <= 1) return showToast("New Avatars available after Level 5!", "info"); 
+            if (maxAvatars <= 1) return showToast("Level 5 න් පසු නව Avatars ලබාගත හැක!", "info"); 
             state.user.avatar = availableAvatars[(currentIdx + 1) % maxAvatars];
-            saveData(true); render(); showToast("Avatar changed!", "success"); 
+            saveData(true); render(); showToast("Avatar එක වෙනස් කළා!", "success"); 
         }
 
         function rateFlashcard(id, quality) {
@@ -1064,7 +950,7 @@
             else { card.interval = (card.interval || 1) * 3; card.ease = (card.ease || 2.5) + 0.15; }
             card.dueDate = Date.now() + (card.interval * 24 * 60 * 60 * 1000);
             state.flippedCards[id] = false;
-            saveData(true); render(); showToast("Memory updated!", "success"); 
+            saveData(true); render(); showToast("මතකය යාවත්කාලීන කළා!", "success"); 
         }
 
         function updateStreakAction() {
@@ -1083,6 +969,7 @@
             saveData(true);
         }
 
+        // Check for a new day
         function checkNewDay() {
             if (state.isNewUser) return;
             const today = getTodayStr(); 
@@ -1123,40 +1010,65 @@
             if (stateMutated) render();
         }
 
+        // ==========================================
+        // FIREBASE ARTICLES (Admin Security Implementation)
+        // ==========================================
         async function publishAdminArticle() {
-            if (!isAdmin()) return showToast("Unauthorized action.", "error"); 
+            if (!isAdmin()) return showToast("අවසර නොමැති ක්‍රියාවකි.", "error"); 
 
             const title = document.getElementById('admin-art-title')?.value; const intro = document.getElementById('admin-art-intro')?.value; const text = document.getElementById('admin-art-text')?.value;
             const author = document.getElementById('admin-art-author')?.value || 'Admin'; const cat = document.getElementById('admin-art-cat')?.value || 'General'; const time = document.getElementById('admin-art-time')?.value || '5m';
-            if(!title || !intro || !text) return showToast("Please fill in all details.", "error"); 
+            if(!title || !intro || !text) return showToast("කරුණාකර සියලු විස්තර පුරවන්න.", "error"); 
             
             const newArtID = 'art-' + Date.now();
             const newArticle = {
-                id: newArtID, title: escapeHTML(title), author: escapeHTML(author), category: escapeHTML(cat), icon: '⭐', color: 'text-yellow-500', readTime: escapeHTML(time), excerpt: escapeHTML(intro.substring(0, 100)) + '...', intro: escapeHTML(intro), sections: [{title: 'Content', text: escapeHTML(text)}], science: 'Admin Data', timestamp: Date.now()
+                id: newArtID,
+                title: escapeHTML(title),
+                author: escapeHTML(author),
+                category: escapeHTML(cat),
+                icon: '⭐',
+                color: 'text-yellow-500',
+                readTime: escapeHTML(time),
+                excerpt: escapeHTML(intro.substring(0, 100)) + '...',
+                intro: escapeHTML(intro),
+                sections: [{title: 'අන්තර්ගතය', text: escapeHTML(text)}],
+                science: 'Admin Data',
+                timestamp: Date.now()
             };
 
             try {
                 const articleRef = doc(db, 'artifacts', appId, 'public', 'data', 'articles', newArtID);
                 await setDoc(articleRef, newArticle);
-                showToast("Article published successfully!", "success"); 
+                showToast("ලිපිය සාර්ථකව ප්‍රකාශයට පත් කළා!", "success"); 
                 
                 if(document.getElementById('admin-art-title')) document.getElementById('admin-art-title').value = '';
                 if(document.getElementById('admin-art-intro')) document.getElementById('admin-art-intro').value = '';
                 if(document.getElementById('admin-art-text')) document.getElementById('admin-art-text').value = '';
-            } catch(e) { showToast("Error publishing article.", "error"); }
+                
+            } catch(e) {
+                console.error("Error publishing article:", e);
+                showToast("ලිපිය පළකිරීමේදී දෝෂයක් මතු විය.", "error"); 
+            }
         }
 
         async function deleteAdminArticle(articleId) {
-            if (!isAdmin()) return showToast("Unauthorized action.", "error"); 
-            showConfirmModal("Are you sure you want to delete this article entirely?", async () => { 
+            if (!isAdmin()) return showToast("අවසර නොමැති ක්‍රියාවකි.", "error"); 
+
+            showConfirmModal("මෙම ලිපිය සම්පූර්ණයෙන්ම ඉවත් කිරීමට ඔබට අවශ්‍යද?", async () => { 
                 try {
                     const articleRef = doc(db, 'artifacts', appId, 'public', 'data', 'articles', articleId);
                     await deleteDoc(articleRef);
-                    showToast("Article deleted successfully.", "success"); 
-                } catch(e) { showToast("Error deleting article.", "error"); }
+                    showToast("ලිපිය සාර්ථකව ඉවත් කරන ලදී.", "success"); 
+                } catch(e) {
+                    console.error("Error deleting article:", e);
+                    showToast("ලිපිය මැකීමේදී දෝෂයක් මතු විය.", "error"); 
+                }
             });
         }
 
+        // ==========================================
+        // FEATURES & TIMER
+        // ==========================================
         function addHabit() {
             const inputEl = document.getElementById('habit-text'); const timeEl = document.getElementById('habit-time'); const reviewEl = document.getElementById('habit-review');
             const recEl = document.getElementById('habit-recurring');
@@ -1166,8 +1078,8 @@
             if (text) { 
                 state.habits.unshift({ id: Date.now(), text: escapeHTML(text), time: time, needsReview: needsReview, isRecurring: isRec, category: cat, priority: pri, completed: false, date: getTodayStr() }); 
                 updateHistory(); if(inputEl) inputEl.value = ''; if(timeEl) timeEl.value = ''; if(reviewEl) reviewEl.checked = false; if(recEl) recEl.checked = false;
-                render(); setTimeout(() => document.getElementById('habit-text')?.focus(), 50); showToast("Added successfully!", "success"); 
-            } else { showToast("Please enter a task.", "error"); } 
+                render(); setTimeout(() => document.getElementById('habit-text')?.focus(), 50); showToast("සාර්ථකව එක් කරන ලදී!", "success"); 
+            } else { showToast("කරුණාකර කාර්යයක් ඇතුළත් කරන්න", "error"); } 
         }
         
         function toggleHabit(id) {
@@ -1194,6 +1106,7 @@
             });
             if(newlyCompleted) { 
                 addXP(10); 
+                // Addictive Feature: Positive Reinforcement Confetti
                 try { if(window.confetti) confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 }, zIndex: 10000 }); } catch(e){} 
             }
             updateHistory(); render();
@@ -1221,7 +1134,9 @@
         function saveJournal() { 
             const textEl = document.getElementById('journal-text');
             if (textEl) state.reflections[getTodayStr()] = textEl.value; 
-            saveData(true); showToast(t('save_journal'), 'success'); render(); 
+            saveData(true); 
+            showToast(t('save_journal'), 'success'); 
+            render(); 
         }
         
         function setMood(mood) { state.moods[getTodayStr()] = mood; saveData(true); render(); }
@@ -1231,8 +1146,8 @@
             const q = qEl?.value.trim(); const a = aEl?.value.trim(); 
             if(q && a) { 
                 state.flashcards.unshift({ id: Date.now(), q: escapeHTML(q), a: escapeHTML(a) }); 
-                saveData(true); qEl.value = ''; aEl.value = ''; render(); showToast("Added successfully!", "success"); 
-            } else { showToast("Please enter both question and answer.", "error"); } 
+                saveData(true); qEl.value = ''; aEl.value = ''; render(); showToast("සාර්ථකව එක් කරන ලදී!", "success"); 
+            } else { showToast("කරුණාකර ප්‍රශ්නය සහ පිළිතුර දෙකම ඇතුළත් කරන්න.", "error"); } 
         }
         function deleteFlashcard(id) { state.flashcards = state.flashcards.filter(f => f.id !== id); saveData(true); render(); }
         function flipCardDOM(id, element) { state.flippedCards[id] = !state.flippedCards[id]; element.querySelector('.preserve-3d').classList.toggle('rotate-y-180'); }
@@ -1245,7 +1160,7 @@
             }
             try {
                 const AC = window.AudioContext || window.webkitAudioContext;
-                if (!AC) return showToast("Audio API is not supported in your browser.", "error"); 
+                if (!AC) return showToast("Audio API ඔබගේ බ්‍රව්සරයේ සහය නොදක්වයි.", "error"); 
                 audioCtxObj = new AC();
                 if (audioCtxObj.state === 'suspended') audioCtxObj.resume();
                 
@@ -1268,10 +1183,13 @@
                     if (state.soundType === 'rain') { filter.type = 'lowpass'; filter.frequency.value = 200; } else { filter.type = 'lowpass'; filter.frequency.value = 400; }
                     noiseSourceNode.connect(filter); filter.connect(audioCtxObj.destination); noiseSourceNode.start();
                 }
-                showToast('Focus sound activated.', 'success'); 
+                showToast('Focus sound සක්‍රිය කරන ලදී', 'success'); 
             } catch(e) { console.log(e); }
         }
 
+        // ==========================================
+        // ADJUSTABLE POMODORO FUNCTIONS
+        // ==========================================
         function updateTimerSettings(type, val) {
             let num = parseInt(val); if (isNaN(num) || num < 1) num = 1;
             if (!state.timerSettings) state.timerSettings = { focus: 25, break: 5 };
@@ -1284,10 +1202,6 @@
             if ('Notification' in window && Notification.permission !== 'granted' && Notification.permission !== 'denied') Notification.requestPermission();
             
             if (timerState.phase === 'running' || timerState.phase === 'break-running') { 
-                if (timerState.isStrict && timerState.mode === 'focus') {
-                    showToast("Strict Detox Active! You cannot pause. Keep going!", "error");
-                    return;
-                }
                 clearInterval(timerState.interval); timerState.targetEndTime = null; timerState.phase = timerState.phase === 'running' ? 'paused' : 'break-paused'; 
             } else if (timerState.phase === 'paused' || timerState.phase === 'break-paused') {
                 timerState.phase = timerState.phase === 'paused' ? 'running' : 'break-running'; startTimerInterval();
@@ -1311,29 +1225,19 @@
                         let focusMins = state.timerSettings?.focus || 25; addXP(focusMins); state.stats.totalFocusMinutes += focusMins; 
                         const today = getTodayStr(); state.dailyFocus[today] = (state.dailyFocus[today] || 0) + focusMins; saveData(true); 
                         
+                        // Addictive Feature: Positive Reinforcement Confetti
                         try { if(window.confetti) confetti({ particleCount: 150, spread: 100, origin: { y: 0.5 }, zIndex: 10000 }); } catch(e){} 
-                        timerState.phase = 'focus-ended'; showToast("Focus session ended!", "success"); triggerPushNotification("Focus session ended! Take a break."); 
-                    } else { showToast("Break ended!", "info"); triggerPushNotification("Break ended! Back to work."); resetTimer(); } 
+
+                        timerState.phase = 'focus-ended'; showToast("Focus session අවසන්!", "success"); triggerPushNotification("Focus session අවසන්! විවේකයක් ගන්න."); 
+                    } else { showToast("විවේකය අවසන්!", "info"); triggerPushNotification("විවේකය අවසන්! නැවත වැඩ අරඹමු."); resetTimer(); } 
                     render();
                 }
             }, 1000);
         }
         
-        function resetTimer() { 
-            if (timerState.phase === 'running' && timerState.isStrict && timerState.mode === 'focus') {
-                showConfirmModal("Strict Detox active! Quitting now will cost you 50 XP. Are you sure you want to give up?", () => {
-                    addXP(-50);
-                    forceResetTimer();
-                });
-            } else {
-                forceResetTimer();
-            }
-        }
-        
-        function forceResetTimer() { clearInterval(timerState.interval); timerState.targetEndTime = null; timerState.mode = 'focus'; timerState.phase = 'idle'; timerState.timeLeft = (state.timerSettings?.focus || 25) * 60; render(); }
+        function resetTimer() { clearInterval(timerState.interval); timerState.targetEndTime = null; timerState.mode = 'focus'; timerState.phase = 'idle'; timerState.timeLeft = (state.timerSettings?.focus || 25) * 60; render(); }
         function startBreakManual() { timerState.mode = 'break'; timerState.timeLeft = (state.timerSettings?.break || 5) * 60; timerState.phase = 'break-running'; initAudioCtx(); startTimerInterval(); render(); }
-        function skipBreakManual() { forceResetTimer(); }
-        function toggleStrictMode(val) { timerState.isStrict = val; render(); }
+        function skipBreakManual() { resetTimer(); render(); }
         
         function updateTimerUI() {
             const el = document.getElementById('timer-display');
@@ -1351,7 +1255,7 @@
             const focusMins = focusTimeToday % 60;
             const timeString = focusHours > 0 ? `${focusHours}h ${focusMins}m` : `${focusMins}m`;
 
-            const dateStr = new Date().toLocaleDateString(state.language === 'en' ? 'en-US' : 'en-US');
+            const dateStr = new Date().toLocaleDateString(state.language === 'en' ? 'en-US' : 'si-LK');
             const emojiNumbers = {'0':'0️⃣','1':'1️⃣','2':'2️⃣','3':'3️⃣','4':'4️⃣','5':'5️⃣','6':'6️⃣','7':'7️⃣','8':'8️⃣','9':'9️⃣', '/':' / ', '-':' - '};
             const emojiDate = dateStr.split('').map(c => emojiNumbers[c] || c).join('');
 
@@ -1368,29 +1272,73 @@
             window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank', 'noopener,noreferrer');
         }
 
-        function clearAllData() { showConfirmModal(t('clear_all') + "?", () => { state.habits = []; state.history = []; state.reflections = {}; state.moods = {}; state.flashcards = []; state.pastTasks = {}; state.dailyFocus = {}; state.streak = { count: 0, lastDate: null }; state.pendingReviews = []; state.detoxHabits = []; state.wastedTimeLog = []; state.parkedThoughts = []; state.visionSystems = []; state.mentalHealthRecords = []; resetTimer(); saveData(true); render(); showToast("Cleared successfully.", "success"); }); } 
+        function clearAllData() { showConfirmModal(t('clear_all') + "?", () => { state.habits = []; state.history = []; state.reflections = {}; state.moods = {}; state.flashcards = []; state.pastTasks = {}; state.dailyFocus = {}; state.streak = { count: 0, lastDate: null }; state.pendingReviews = []; state.detoxHabits = []; state.wastedTimeLog = []; state.parkedThoughts = []; resetTimer(); saveData(true); render(); showToast("සාර්ථකව හිස් කරන ලදී.", "success"); }); } 
         function deleteAccount() { showConfirmModal(t('del_acc') + "?", async () => { await setDoc(doc(db, 'artifacts', appId, 'users', auth.currentUser.uid, 'data', 'state'), {}); await auth.currentUser.delete(); logout(); }); }
         
         function exportData() {
             const dataStr = JSON.stringify(state); const blob = new Blob([dataStr], { type: "application/json" }); const url = URL.createObjectURL(blob);
             const a = document.createElement('a'); a.href = url; a.download = `MindsetOS_Backup_${state.user.email}_${new Date().toISOString().split('T')[0]}.json`;
-            a.click(); URL.revokeObjectURL(url); showToast("Backup successful.", "success"); 
+            a.click(); URL.revokeObjectURL(url); showToast("Backup සාර්ථකයි.", "success"); 
         }
 
         function exportDataPDF() {
-            showToast("Generating PDF...", "info"); 
+            showToast("PDF සැකසෙමින් පවතී...", "info"); 
             const printWindow = window.open('', '_blank');
-            if(!printWindow) return showToast("Please allow popups to download PDF.", "error"); 
+            if(!printWindow) return showToast("PDF ලබාගැනීමට Popups වලට අවසර දෙන්න", "error"); 
 
-            let html = `<html><head><title>MindsetOS Backup - ${escapeHTML(state.user.name)}</title><style>body { font-family: 'Segoe UI', sans-serif; padding: 40px; } .stat-box { border: 1px solid #cbd5e1; padding: 20px; border-radius: 12px; margin-bottom: 20px; } .item { margin-bottom: 15px; border-bottom: 1px solid #f1f5f9; padding-bottom: 15px;} .date { font-weight: bold; }</style></head><body>`;
-            html += `<h1>MindsetOS Data Summary</h1><div class="stat-box"><p>Name: ${escapeHTML(state.user.name)}</p><p>Email: ${escapeHTML(state.user.email)}</p></div>`;
-            html += `<h2>Journal Entries</h2>`;
+            let html = `
+            <html><head><title>MindsetOS Backup - ${escapeHTML(state.user.name)}</title>
+            <style>
+                body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 40px; color: #1e293b; line-height: 1.6; }
+                h1 { color: #4f46e5; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; }
+                h2 { color: #6366f1; margin-top: 30px; }
+                .stat-box { border: 1px solid #cbd5e1; padding: 20px; border-radius: 12px; margin-bottom: 20px; background: #f8fafc; }
+                .stat-box p { margin: 5px 0; font-size: 16px; }
+                .item { margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid #f1f5f9; }
+                .date { font-weight: 800; color: #475569; font-size: 14px; margin-bottom: 5px; }
+                .content { font-size: 15px; color: #334155; }
+                ul { margin-top: 5px; padding-left: 20px; }
+                li { margin-bottom: 4px; }
+            </style>
+            </head><body>
+                <h1>MindsetOS Data Summary</h1>
+                <div class="stat-box">
+                    <p><strong>Name:</strong> ${escapeHTML(state.user.name)}</p>
+                    <p><strong>Email:</strong> ${escapeHTML(state.user.email)}</p>
+                    <p><strong>Current Level:</strong> ${state.user.level} (${state.user.xp} XP)</p>
+                    <p><strong>Total Focus Time:</strong> ${Math.floor((state.stats.totalFocusMinutes || 0)/60)}h ${((state.stats.totalFocusMinutes || 0)%60)}m</p>
+                    <p><strong>Current Streak:</strong> ${state.streak.count} days</p>
+                </div>
+
+                <h2>Daily Journal Entries</h2>
+            `;
+            
             const reflections = Object.keys(state.reflections).sort((a,b) => new Date(b) - new Date(a));
-            reflections.forEach(d => { html += `<div class="item"><div class="date">${d}</div><div>${escapeHTML(state.reflections[d])}</div></div>`; });
+            if(reflections.length === 0) html += `<p class="content">No journal entries found.</p>`;
+            reflections.forEach(d => {
+                html += `<div class="item"><div class="date">${d}</div><div class="content">${escapeHTML(state.reflections[d])}</div></div>`;
+            });
+
+            html += `<h2>Past Completed Tasks</h2>`;
+            const pastTasks = Object.keys(state.pastTasks).sort((a,b) => new Date(b) - new Date(a));
+            if(pastTasks.length === 0) html += `<p class="content">No past tasks found.</p>`;
+            pastTasks.forEach(d => {
+                html += `<div class="item"><div class="date">${d}</div><ul class="content">`;
+                state.pastTasks[d].forEach(task => {
+                    html += `<li>${escapeHTML(task.text)} ${task.time ? `(${escapeHTML(task.time)})`:''}</li>`;
+                });
+                html += `</ul></div>`;
+            });
+
             html += `</body></html>`;
             
-            printWindow.document.write(html); printWindow.document.close(); printWindow.focus();
-            setTimeout(() => { printWindow.print(); }, 500);
+            printWindow.document.write(html);
+            printWindow.document.close();
+            printWindow.focus();
+            
+            setTimeout(() => {
+                printWindow.print();
+            }, 500);
         }
         
         function importData(event) {
@@ -1398,9 +1346,9 @@
             reader.onload = async function(e) {
                 try {
                     const data = JSON.parse(e.target.result);
-                    if (data && data.user) { state = { ...state, ...data }; saveData(true); showToast("Restore successful!", "success"); render(); } 
-                    else showToast("Invalid backup file!", "error"); 
-                } catch (err) { showToast("Error reading file!", "error"); } 
+                    if (data && data.user) { state = { ...state, ...data }; saveData(true); showToast("Restore සාර්ථකයි!", "success"); render(); } 
+                    else showToast("වැරදි Backup ගොනුවකි!", "error"); 
+                } catch (err) { showToast("ගොනුව කියවීමේදී දෝෂයක්!", "error"); } 
             };
             reader.readAsText(file);
         }
@@ -1409,29 +1357,76 @@
         
         function submitFeedback() {
             const text = document.getElementById('feedback-text')?.value;
-            if(!text && !state.appRating) return showToast("Please provide your feedback or a star rating.", "error"); 
+            if(!text && !state.appRating) return showToast("කරුණාකර ඔබේ අදහස හෝ තරු මට්ටම ලබාදෙන්න.", "error"); 
+            
             const safeText = (text || '').substring(0, 1500);
             const subject = encodeURIComponent(`MindsetOS Feedback - Rating: ${state.appRating || 0}/5`);
             const body = encodeURIComponent(`From: ${state.user.name} (${state.user.email})\nLevel: ${state.user.level}\n\nFeedback:\n${safeText || 'No text provided.'}`);
-            window.open(`mailto:${MY_ADMIN_EMAIL}?subject=${subject}&body=${body}`, '_blank', 'noopener,noreferrer');
-            showToast("Opening Email Client...", "success"); 
-            state.appRating = 0; if(document.getElementById('feedback-text')) document.getElementById('feedback-text').value = ''; render();
+            
+            const mailtoLink = `mailto:${MY_ADMIN_EMAIL}?subject=${subject}&body=${body}`;
+            window.open(mailtoLink, '_blank', 'noopener,noreferrer');
+            
+            showToast("Email Client විවෘත වෙමින් පවතී...", "success"); 
+            state.appRating = 0;
+            if(document.getElementById('feedback-text')) document.getElementById('feedback-text').value = '';
+            render();
         }
 
-        function updateTargetDate(val) { state.user.targetDate = val; saveData(true); render(); showToast("Target date updated.", "success"); } 
-        function addCustomCategory() { showPromptModal(t('add_category'), (catName) => { if (catName && catName.trim()) { const id = 'Cat_' + Date.now(); state.categories[id] = { name: escapeHTML(catName.trim()), color: 'bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300 border-purple-200 dark:border-purple-800' }; saveData(true); render(); showToast("Category added successfully.", "success"); } }); } 
+        function updateTargetDate(val) { state.user.targetDate = val; saveData(true); render(); showToast("ඉලක්ක දිනය යාවත්කාලීන විය.", "success"); } 
+        function addCustomCategory() { showPromptModal(t('add_category'), (catName) => { if (catName && catName.trim()) { const id = 'Cat_' + Date.now(); state.categories[id] = { name: escapeHTML(catName.trim()), color: 'bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300 border-purple-200 dark:border-purple-800' }; saveData(true); render(); showToast("කාණ්ඩය සාර්ථකව එක් කරන ලදී.", "success"); } }); } 
         
-        function editName() { showPromptModal(t('change_name_prompt'), (newName) => { if (newName && newName.trim().length > 0) { state.user.name = newName.trim(); saveData(true); updatePublicLeaderboard(); render(); showToast(t('name_updated'), "success"); fetchLeaderboard(); } }); }
-        function setLang(lang) { if (state.language !== lang) { state.language = lang; saveData(true); render(); } }
+        function editName() {
+            showPromptModal(t('change_name_prompt'), (newName) => {
+                if (newName && newName.trim().length > 0) {
+                    state.user.name = newName.trim();
+                    saveData(true);
+                    updatePublicLeaderboard();
+                    render();
+                    showToast(t('name_updated'), "success");
+                    fetchLeaderboard();
+                }
+            });
+        }
+
+        function setLang(lang) {
+            if (state.language !== lang) {
+                state.language = lang; 
+                saveData(true); 
+                render(); 
+            }
+        }
+        
         function toggleTheme() { state.user.theme = state.user.theme === 'dark' ? 'light' : 'dark'; applyTheme(); saveData(true); render(); }
         function applyTheme() { if (state.user.theme === 'dark') document.documentElement.classList.add('dark'); else document.documentElement.classList.remove('dark'); }
         function switchTab(t) { state.activeTab = t; state.selectedArticleId = null; render(); if(t === 'profile') fetchLeaderboard(); }
-        function viewArticle(id) { state.selectedArticleId = id; state.activeTab = 'library'; state.lastSeenArticleId = id; if (!state.readArticles) state.readArticles = []; if (!state.readArticles.includes(id)) { state.readArticles.push(id); addXP(5); } render(); }
-        function togglePassword() { const pwd = document.getElementById('init-password'); const btn = document.getElementById('pwd-toggle-btn'); if (pwd && btn) { if (pwd.type === 'password') { pwd.type = 'text'; btn.innerText = '🙈'; } else { pwd.type = 'password'; btn.innerText = '👁️'; } } }
+        
+        function viewArticle(id) { 
+            state.selectedArticleId = id; state.activeTab = 'library'; state.lastSeenArticleId = id;
+            if (!state.readArticles) state.readArticles = [];
+            if (!state.readArticles.includes(id)) { state.readArticles.push(id); addXP(5); }
+            render(); 
+        }
+
+        function togglePassword() {
+            const pwd = document.getElementById('init-password');
+            const btn = document.getElementById('pwd-toggle-btn');
+            if (pwd && btn) {
+                if (pwd.type === 'password') {
+                    pwd.type = 'text';
+                    btn.innerText = '🙈';
+                } else {
+                    pwd.type = 'password';
+                    btn.innerText = '👁️';
+                }
+            }
+        }
 
         function generateHeatmap() {
             let html = '<div class="flex flex-wrap gap-2 justify-center mt-6" role="img" aria-label="Activity Heatmap">';
-            const baseTime = new Date().getTime();
+            
+            const baseDate = new Date();
+            const baseTime = baseDate.getTime();
+            
             for(let i=89; i>=0; i--) { 
                 const d = new Date(baseTime - (i * 24 * 60 * 60 * 1000));
                 const dateStr = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
@@ -1448,30 +1443,24 @@
         
         function addXP(amount) { 
             amount = Math.floor(Number(amount));
-            if (isNaN(amount)) return;
-            
-            if (amount < 0) {
-                state.user.xp += amount;
-                while (state.user.xp < 0 && state.user.level > 1) { state.user.level--; state.user.xp += (state.user.level * 100); }
-                if (state.user.xp < 0) state.user.xp = 0;
-                showToast(`⚠️ Penalty applied! Lost ${Math.abs(amount)} XP.`, "error");
-                saveData(true); updatePublicLeaderboard(); fetchLeaderboard(); render();
-                return;
-            }
-
-            if (amount <= 0 || state.user.level >= 100) return;
+            if (isNaN(amount) || amount <= 0) return;
+            if (state.user.level >= 100) return; 
             state.user.xp += amount; let leveledUp = false;
             while (state.user.xp >= state.user.level * 100 && state.user.level < 100) { state.user.xp -= state.user.level * 100; state.user.level++; leveledUp = true; } 
             if (state.user.level >= 100) { state.user.level = 100; state.user.xp = 0; }
             if(leveledUp) { 
                 const title = getLevelName(state.user.level).split(' ')[0]; 
-                showToast(`🎉 Level Up! Level ${state.user.level} - ${title}`, 'success'); checkBadges(); 
+                showToast(`🎉 Level Up! Level ${state.user.level} - ${title}`, 'success'); 
+                checkBadges(); 
+                
+                // Addictive Feature: Level Up Celebration
                 try {
                     const modal = document.getElementById('levelup-modal');
                     if(modal) {
                         document.getElementById('levelup-level-text').innerText = state.user.level;
                         document.getElementById('levelup-title-text').innerText = title;
                         modal.classList.remove('hidden'); modal.classList.add('flex');
+                        
                         if(window.confetti) {
                             var duration = 3000; var end = Date.now() + duration;
                             (function frame() { 
@@ -1483,7 +1472,10 @@
                     }
                 } catch(e){}
             }
-            saveData(true); updatePublicLeaderboard(); fetchLeaderboard(); render();
+            saveData(true); 
+            updatePublicLeaderboard();
+            fetchLeaderboard();
+            render();
         }
 
         function initCharts() {
@@ -1513,6 +1505,7 @@
             }
         }
 
+        // Exporting functions to Global Window Object for HTML inline event listeners
         Object.assign(window, {
             handleRegister, handleLogin, handleForgotPassword, switchAuthMode, logout, setLang, toggleTheme, switchTab, viewArticle,
             addHabit, toggleHabit, deleteHabit, setMood, saveJournal, addFlashcard, deleteFlashcard, flipCardDOM, toggleFocusSound, 
@@ -1522,13 +1515,12 @@
             breakdownTaskAI, generateAIFlashcards, rateFlashcard, changeAvatar, handleGoogleSignIn,
             addDetoxHabit, checkInDetox, resetDetox, deleteDetox, startSOS, startBreathingSOS, stopBreathingSOS, 
             addWastedTime, deleteWastedTime, addParkedThought, deleteParkedThought,
-            claimDailyReward, closeLevelUpModal,
-            addTinyHabit, aiRestructureJournal, takeMentalCheck, addSystemGoal, deleteSystemGoal, toggleStrictMode
+            claimDailyReward, closeLevelUpModal // Addictive feature functions
         });
 
         function render() {
             const root = document.getElementById('app-root');
-            const activeStates = {}; const inputIds = ['init-name', 'init-email', 'init-password', 'habit-text', 'habit-time', 'habit-priority', 'habit-cat', 'habit-review', 'journal-text', 'fc-q', 'fc-a', 'target-date-input', 'admin-art-author', 'admin-art-cat', 'admin-art-time', 'admin-art-title', 'admin-art-intro', 'admin-art-text', 'detox-habit', 'detox-sub', 'wasted-text', 'wasted-mins', 'parked-thought-input', 'vision-goal', 'vision-system'];
+            const activeStates = {}; const inputIds = ['init-name', 'init-email', 'init-password', 'habit-text', 'habit-time', 'habit-priority', 'habit-cat', 'habit-review', 'journal-text', 'fc-q', 'fc-a', 'target-date-input', 'admin-art-author', 'admin-art-cat', 'admin-art-time', 'admin-art-title', 'admin-art-intro', 'admin-art-text', 'detox-habit', 'detox-sub', 'wasted-text', 'wasted-mins', 'parked-thought-input'];
             
             let activeId = document.activeElement ? document.activeElement.id : null;
             let cursorStart = 0, cursorEnd = 0;
@@ -1550,15 +1542,19 @@
             }
             if (state.isNewUser) { root.innerHTML = renderWelcome(); return; } 
             
-            let content = state.activeTab==='home' ? renderHome() : state.activeTab==='planner' ? renderPlanner() : state.activeTab==='timer' ? renderTimer() : state.activeTab==='flashcards' ? renderFlashcards() : state.activeTab==='library' ? renderLibrary() : state.activeTab==='stats' ? renderStats() : state.activeTab==='detox' ? renderDetox() : state.activeTab==='vision' ? renderVision() : state.activeTab==='mental' ? renderMentalHealth() : renderProfile();
+            let content = state.activeTab==='home' ? renderHome() : state.activeTab==='planner' ? renderPlanner() : state.activeTab==='timer' ? renderTimer() : state.activeTab==='flashcards' ? renderFlashcards() : state.activeTab==='library' ? renderLibrary() : state.activeTab==='stats' ? renderStats() : state.activeTab==='detox' ? renderDetox() : renderProfile();
             if(state.selectedArticleId) content = renderArticleView();
 
-            const uiDateString = new Date().toLocaleDateString(state.language === 'en' ? 'en-US' : 'en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+            const uiDateString = new Date().toLocaleDateString(state.language === 'en' ? 'en-US' : 'si-LK', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
             root.innerHTML = `
-            <div class="min-h-screen md:pl-24 lg:pl-72 pb-28 md:pb-0 flex flex-col print-content">
+            <div class="min-h-screen md:pl-24 lg:pl-72 pb-24 md:pb-0 flex flex-col print-content">
                 ${renderSidebar()}
                 <div class="fixed top-0 right-0 p-4 md:p-6 z-40 flex items-center space-x-3 md:space-x-4 print-hidden">
+                    <div class="glass-nav p-1 rounded-xl flex items-center space-x-1 shadow-sm border border-slate-300 dark:border-slate-600">
+                        <button onclick="window.setLang('si')" aria-label="Switch to Sinhala" class="px-3 py-1 text-xs font-black rounded-lg transition-colors ${state.language === 'si' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700'}">SI</button>
+                        <button onclick="window.setLang('en')" aria-label="Switch to English" class="px-3 py-1 text-xs font-black rounded-lg transition-colors ${state.language === 'en' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700'}">EN</button>
+                    </div>
                     <button onclick="window.toggleTheme()" aria-label="Toggle Theme" class="w-10 h-10 glass-nav rounded-full flex items-center justify-center shadow-sm border border-slate-300 dark:border-slate-600 transition-transform hover:scale-105"><span class="text-xl">${state.user.theme === 'dark' ? '☀️' : '🌙'}</span></button>
                     <div class="glass-nav px-4 py-2 rounded-2xl flex items-center space-x-4 shadow-sm border border-slate-300 dark:border-slate-600 cursor-pointer hover:scale-105 transition-transform" onclick="window.switchTab('profile')" aria-label="View Profile">
                         <div class="flex items-center space-x-2"><span class="text-xl">👤</span></div>
@@ -1602,120 +1598,17 @@
         }
         
         function renderSidebar() {
-            const tabs = [
-                { id:'home', icon:'📊', l:t('home') }, 
-                { id:'planner', icon:'✅', l:t('planner') }, 
-                { id:'timer', icon:'⏱️', l:t('deep_work') }, 
-                { id:'vision', icon:'🎯', l:t('vision_title') },
-                { id:'mental', icon:'🧠', l:t('mental_title') },
-                { id:'flashcards', icon:'🗂️', l:t('flashcards') }, 
-                { id:'library', icon:'📖', l:t('library') }, 
-                { id:'stats', icon:'📈', l:t('stats') }, 
-                { id:'detox', icon:'🛑', l:t('detox_tab') }, 
-                { id:'profile', icon:'⚙️', l:t('profile') }
-            ];
-            const installBtnHTML = pwaPrompt ? `<button onclick="window.installApp()" aria-label="Install App" class="flex flex-col lg:flex-row items-center lg:space-x-4 p-2 lg:p-4 rounded-2xl transition-all shrink-0 w-[4.5rem] md:w-full group relative text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 mt-auto"><div class="relative"><span class="text-xl">⬇️</span></div><span class="text-[10px] lg:text-[15px] font-bold mt-1 lg:mt-0 hidden sm:block">${t('install_app')}</span></button>` : '';
-            return `<nav class="fixed bottom-0 left-0 w-full md:top-0 md:w-24 lg:w-72 md:h-full glass-nav z-50 flex flex-row md:flex-col p-3 md:p-6 lg:p-8 overflow-x-auto md:overflow-x-hidden md:overflow-y-auto hide-scrollbar md:custom-scrollbar space-x-3 md:space-x-0 md:space-y-2 shadow-[0_-5px_20px_-5px_rgba(0,0,0,0.1)] md:shadow-lg print-hidden items-center md:items-stretch scroll-smooth">
-                <div class="hidden md:flex items-center space-x-4 mb-8 cursor-pointer shrink-0" onclick="window.switchTab('home')" aria-label="Home"><div class="bg-indigo-600 p-3 rounded-2xl text-2xl shadow-lg">🧠</div><div class="hidden lg:block"><h1 class="font-black text-2xl tracking-tighter text-slate-900 dark:text-white">Mindset<span class="text-indigo-600">OS</span></h1></div></div>
-                ${tabs.map(tab => `<button onclick="window.switchTab('${tab.id}')" aria-label="${tab.l}" class="flex flex-col lg:flex-row items-center justify-center md:justify-start lg:space-x-4 p-2 lg:p-4 rounded-2xl transition-all shrink-0 w-[4.5rem] md:w-full group relative ${state.activeTab === tab.id && !state.selectedArticleId ? 'bg-indigo-600/90 text-white shadow-xl' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-200/50 dark:hover:bg-slate-800/50'}"><div class="relative"><span class="text-xl inline-block transition-transform hover:scale-110 ${state.activeTab===tab.id?'scale-125':''}">${tab.icon}</span></div><span class="text-[10px] lg:text-[15px] font-bold mt-1 lg:mt-0 ${state.activeTab===tab.id && !state.selectedArticleId?'text-white':''} block sm:hidden md:block">${tab.l.split(' ')[0]}</span></button>`).join('')}
-                ${installBtnHTML}
-            </nav>`;
+            const tabs = [{ id:'home', icon:'📊', l:t('home') }, { id:'planner', icon:'✅', l:t('planner') }, { id:'timer', icon:'⏱️', l:t('deep_work') }, { id:'flashcards', icon:'🗂️', l:t('flashcards') }, { id:'library', icon:'📖', l:t('library') }, { id:'stats', icon:'📈', l:t('stats') }, { id:'detox', icon:'🛑', l:t('detox_tab') }, { id:'profile', icon:'⚙️', l:t('profile') }];
+            const installBtnHTML = pwaPrompt ? `<button onclick="window.installApp()" aria-label="Install App" class="flex flex-col lg:flex-row items-center lg:space-x-4 p-2 lg:p-4 rounded-2xl transition-all w-full group relative text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 mt-auto"><div class="relative"><span class="text-xl">⬇️</span></div><span class="text-[10px] lg:text-[15px] font-bold mt-1 lg:mt-0 hidden sm:block">${t('install_app')}</span></button>` : '';
+            return `<nav class="fixed bottom-0 left-0 w-full md:top-0 md:w-24 lg:w-72 md:h-full glass-nav z-50 flex md:flex-col p-3 md:p-6 lg:p-8 justify-around md:justify-start space-y-0 md:space-y-2 shadow-lg print-hidden"><div class="hidden md:flex items-center space-x-4 mb-8 cursor-pointer" onclick="window.switchTab('home')" aria-label="Home"><div class="bg-indigo-600 p-3 rounded-2xl text-2xl shadow-lg">🧠</div><div class="hidden lg:block"><h1 class="font-black text-2xl tracking-tighter text-slate-900 dark:text-white">Mindset<span class="text-indigo-600">OS</span></h1></div></div>${tabs.map(tab => `<button onclick="window.switchTab('${tab.id}')" aria-label="${tab.l}" class="flex flex-col lg:flex-row items-center lg:space-x-4 p-2 lg:p-4 rounded-2xl transition-all w-full group relative ${state.activeTab === tab.id && !state.selectedArticleId ? 'bg-indigo-600/90 text-white shadow-xl' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-200/50 dark:hover:bg-slate-800/50'}"><div class="relative"><span class="text-xl inline-block transition-transform hover:scale-110 ${state.activeTab===tab.id?'scale-125':''}">${tab.icon}</span></div><span class="text-[10px] lg:text-[15px] font-bold mt-1 lg:mt-0 ${state.activeTab===tab.id && !state.selectedArticleId?'text-white':''} hidden sm:block">${tab.l}</span></button>`).join('')}${installBtnHTML}</nav>`;
         }
 
-        // ==========================================
-        // TABS: Vision & Systems (Purpose Crisis)
-        // ==========================================
-        function renderVision() {
-            return `<div class="max-w-4xl mx-auto space-y-8 pb-10">
-                <header class="text-center"><h2 class="text-4xl font-black tracking-tight drop-shadow-md">${t('vision_title')}</h2>
-                <p class="text-slate-500 mt-3 font-medium max-w-2xl mx-auto">${t('vision_desc')}</p></header>
-
-                <div class="glass-panel p-6 rounded-[2rem] shadow-sm space-y-4">
-                    <div class="flex flex-col gap-3">
-                        <div>
-                            <label class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1 block">${t('vision_goal_lbl')}</label>
-                            <input type="text" id="vision-goal" placeholder="${t('vision_goal_ph')}" class="w-full px-4 py-3 glass-btn rounded-xl outline-none font-bold text-slate-700 dark:text-slate-200"/>
-                        </div>
-                        <div>
-                            <label class="text-xs font-bold text-indigo-500 uppercase tracking-widest mb-1 block">${t('vision_sys_lbl')}</label>
-                            <div class="flex flex-col sm:flex-row gap-3">
-                                <input type="text" id="vision-system" placeholder="${t('vision_sys_ph')}" class="flex-1 px-4 py-3 glass-btn rounded-xl outline-none font-bold text-slate-700 dark:text-slate-200 focus:border-indigo-500 border border-indigo-200 dark:border-indigo-900/50"/>
-                                <button onclick="window.addSystemGoal()" class="bg-indigo-600 text-white px-8 py-3 rounded-xl font-black shadow-lg hover:bg-indigo-500 shrink-0">${t('add_btn')}</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="space-y-4">
-                    ${(state.visionSystems || []).length === 0 ? `<div class="text-center py-10 text-slate-400 font-bold">${t('vision_empty')}</div>` : (state.visionSystems || []).map(vs => `
-                        <div class="glass-panel p-6 rounded-[2rem] shadow-sm flex flex-col md:flex-row justify-between md:items-center gap-4 border-l-4 border-indigo-500">
-                            <div class="flex-1 min-w-0">
-                                <p class="text-xs font-bold text-slate-500 mb-1 uppercase tracking-widest">Goal</p>
-                                <h3 class="text-xl font-black text-slate-800 dark:text-white mb-3 truncate w-full" title="${escapeHTML(vs.goal)}">${escapeHTML(vs.goal)}</h3>
-                                <div class="bg-indigo-50 dark:bg-indigo-900/20 px-4 py-2 rounded-lg border border-indigo-100 dark:border-indigo-800/50 inline-block w-full sm:w-auto">
-                                    <p class="text-indigo-600 dark:text-indigo-400 font-bold text-sm truncate" title="${escapeHTML(vs.system)}">⚙️ System: ${escapeHTML(vs.system)}</p>
-                                </div>
-                            </div>
-                            <button onclick="window.deleteSystemGoal(${vs.id})" class="p-3 text-slate-400 hover:text-red-500 text-xl shrink-0 transition-transform hover:scale-110 self-end md:self-center">🗑️</button>
-                        </div>
-                    `).join('')}
-                </div>
-            </div>`;
-        }
-
-        // ==========================================
-        // TABS: Mental Health (Stress, Anxiety, Depression)
-        // ==========================================
-        function renderMentalHealth() {
-            const records = state.mentalHealthRecords || [];
-            
-            return `<div class="max-w-4xl mx-auto space-y-8 pb-10">
-                <header class="text-center"><h2 class="text-4xl font-black tracking-tight drop-shadow-md">${t('mental_title')}</h2>
-                <p class="text-slate-500 mt-3 font-medium max-w-2xl mx-auto">${t('mental_desc')}</p></header>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div class="glass-panel p-8 rounded-[2.5rem] shadow-sm text-center flex flex-col justify-center bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border border-blue-200 dark:border-blue-900/50">
-                        <span class="text-5xl mb-4 drop-shadow-md">🧠</span>
-                        <h3 class="text-xl font-black text-blue-700 dark:text-blue-400 mb-2">${t('mc_title')}</h3>
-                        <p class="text-slate-600 dark:text-slate-300 text-sm font-medium mb-6">${t('mc_desc')}</p>
-                        <button onclick="window.takeMentalCheck()" class="bg-blue-600 text-white px-6 py-3 rounded-xl font-black shadow-lg hover:bg-blue-500 transition-transform hover:scale-105">${t('mc_btn')}</button>
-                    </div>
-
-                    <div class="glass-panel p-8 rounded-[2.5rem] shadow-sm">
-                        <h3 class="font-black mb-4 text-slate-700 dark:text-slate-300 flex items-center gap-2"><span>📊</span> <span>${t('mc_recent')}</span></h3>
-                        <div class="space-y-3 max-h-48 overflow-y-auto custom-scrollbar pr-2">
-                            ${records.length === 0 ? `<p class="text-slate-400 font-bold text-sm">${t('mc_empty')}</p>` : records.slice().reverse().map(r => `
-                                <div class="flex justify-between items-center bg-slate-50 dark:bg-slate-800/50 p-3 rounded-xl border border-slate-200 dark:border-slate-700">
-                                    <span class="font-bold text-sm">${r.date}</span>
-                                    <span class="font-black px-3 py-1 rounded-lg ${r.score > 7 ? 'bg-red-100 text-red-600' : r.score > 4 ? 'bg-yellow-100 text-yellow-600' : 'bg-emerald-100 text-emerald-600'}">Level: ${r.score}/10</span>
-                                </div>
-                            `).join('')}
-                        </div>
-                    </div>
-                </div>
-
-                <div class="glass-panel p-8 rounded-[2.5rem] shadow-sm relative overflow-hidden">
-                    <div class="absolute -right-10 -top-10 text-9xl opacity-5 pointer-events-none">🤖</div>
-                    <h3 class="text-2xl font-black text-indigo-600 dark:text-indigo-400 mb-4">${t('cbt_title')}</h3>
-                    <p class="text-slate-600 dark:text-slate-300 font-medium mb-6">${t('cbt_desc')}</p>
-                    <button onclick="window.aiRestructureJournal()" class="bg-gradient-to-r from-purple-500 to-indigo-600 text-white px-6 sm:px-8 py-4 rounded-xl font-black shadow-lg hover:scale-105 transition-transform flex items-center justify-center gap-2 w-full sm:w-auto">
-                        <span>✨</span> <span>${t('cbt_btn')}</span>
-                    </button>
-                </div>
-            </div>`;
-        }
-
-        // ==========================================
-        // EXISTING TABS
-        // ==========================================
         function renderHome() {
             const score = state.habits.length ? Math.round((state.habits.filter(h => h.completed).length / state.habits.length) * 100) : 0;
             const hour = new Date().getHours();
             let greeting = t('greeting_m'); if (hour >= 12 && hour < 18) greeting = t('greeting_a'); else if (hour >= 18) greeting = t('greeting_e');
             const pendingTasks = state.habits.filter(h => !h.completed).slice(0, 3);
             const userName = state.user.name || "User";
-            const addictiveQuotes = ["Your future is created by what you do today, not tomorrow.", "Discipline is choosing between what you want now and what you want most.", "Don't stop when you're tired. Stop when you're done.", "The pain of discipline is far less than the pain of regret.", "Small daily improvements over time lead to stunning results."];
-            const dailyQuote = addictiveQuotes[new Date().getDay() % addictiveQuotes.length];
 
             let targetHTML = '';
             if(state.user.targetDate) {
@@ -1754,16 +1647,18 @@
                 holidayBanner = `<div class="glass-panel p-4 rounded-2xl shadow-sm border-l-4 border-pink-500 flex items-center space-x-3 mb-4 animate-fade-in bg-gradient-to-r from-pink-50 to-transparent dark:from-pink-900/20 dark:to-transparent"><span class="text-2xl drop-shadow-md">✨</span><span class="font-bold text-sm text-pink-700 dark:text-pink-300">${t('holiday_msg_1')} ${escapeHTML(todayHolidayMessage)}${t('holiday_msg_2')}</span></div>`;
             }
 
+            // Addictive Feature: Variable Reward (Daily Box)
             let dailyRewardHTML = '';
             const todayStr = getTodayStr();
             if (state.lastRewardDate !== todayStr) {
-                dailyRewardHTML = `<div class="glass-panel p-4 rounded-2xl shadow-sm border border-yellow-400 dark:border-yellow-600 flex items-center justify-between mb-4 bg-gradient-to-r from-yellow-50 to-transparent dark:from-yellow-900/20 dark:to-transparent animate-pulse"><div class="flex items-center space-x-3"><span class="text-3xl drop-shadow-md">🎁</span><span class="font-bold text-sm text-yellow-700 dark:text-yellow-400 hidden sm:inline">${t('claim_reward')}</span></div><button onclick="window.claimDailyReward()" class="bg-yellow-500 hover:bg-yellow-400 text-white px-4 py-2 rounded-xl font-black shadow-lg text-sm hover:scale-105 transition-transform">${t('claim_btn')}</button></div>`;
+                dailyRewardHTML = `<div class="glass-panel p-4 rounded-2xl shadow-sm border border-yellow-400 dark:border-yellow-600 flex items-center justify-between mb-4 bg-gradient-to-r from-yellow-50 to-transparent dark:from-yellow-900/20 dark:to-transparent animate-pulse"><div class="flex items-center space-x-3"><span class="text-3xl drop-shadow-md">🎁</span><span class="font-bold text-sm text-yellow-700 dark:text-yellow-400">ඔබේ දෛනික ත්‍යාගය ලබාගන්න! (Daily Reward)</span></div><button onclick="window.claimDailyReward()" class="bg-yellow-500 hover:bg-yellow-400 text-white px-4 py-2 rounded-xl font-black shadow-lg text-sm hover:scale-105 transition-transform">ලබාගන්න</button></div>`;
             }
 
+            // Addictive Feature: Loss Aversion (Streak Warning)
             let streakWarning = '';
             const doneToday = state.habits.some(h => h.completed && h.date === todayStr) || (state.dailyFocus[todayStr] > 0);
             if (state.streak.count > 0 && !doneToday) {
-                streakWarning = `<div class="glass-panel p-4 rounded-2xl shadow-sm border-l-4 border-rose-500 flex items-center justify-between mb-4 bg-rose-50 dark:bg-rose-900/20 animate-pulse"><div class="flex items-center space-x-3"><span class="text-2xl">🔥</span><span class="font-bold text-sm text-rose-700 dark:text-rose-300">${t('streak_warn').replace('X', state.streak.count)}</span></div></div>`;
+                streakWarning = `<div class="glass-panel p-4 rounded-2xl shadow-sm border-l-4 border-rose-500 flex items-center justify-between mb-4 bg-rose-50 dark:bg-rose-900/20 animate-pulse"><div class="flex items-center space-x-3"><span class="text-2xl">🔥</span><span class="font-bold text-sm text-rose-700 dark:text-rose-300">අවධානයයි! ඔබගේ දින ${state.streak.count} ක Streak එක අහිමි වීමේ අවදානමක් ඇත. වහාම කාර්යයක් හෝ Focus කාලයක් අවසන් කරන්න!</span></div></div>`;
             }
 
             const todayWasted = (state.wastedTimeLog || []).filter(w => w.date === todayStr);
@@ -1772,20 +1667,20 @@
             let wastedTimeHTML = `
             <div class="glass-panel p-6 md:p-8 rounded-[3rem] shadow-sm mt-8 border border-rose-200 dark:border-rose-900/30">
                 <div class="flex justify-between items-center mb-4">
-                    <h4 class="font-black text-lg flex items-center space-x-3 text-rose-600 dark:text-rose-400 drop-shadow-sm"><span class="text-2xl">⚠️</span><span>${t('wasted_time_title')} (${t('today')}: ${totalWastedMins} ${t('minutes')})</span></h4>
+                    <h4 class="font-black text-lg flex items-center space-x-3 text-rose-600 dark:text-rose-400 drop-shadow-sm"><span class="text-2xl">⚠️</span><span>${t('wasted_time_title')} (අද: විනාඩි ${totalWastedMins})</span></h4>
                 </div>
-                <p class="text-xs text-slate-500 mb-6 font-bold uppercase tracking-wide">${t('time_audit_desc')}</p>
-                <div class="flex flex-col sm:flex-row gap-3 mb-4">
+                <p class="text-xs text-slate-500 mb-6 font-bold uppercase tracking-wide">Time Audit ක්‍රමයට අනුව, ඔබ අපතේ යවන කාලය ලිවීමෙන් ඊළඟ දවසේ එම කාලය 40% කින් ඉතිරි කරගත හැක.</p>
+                <div class="flex flex-col md:flex-row gap-3 mb-4">
                     <input type="text" id="wasted-text" onkeydown="if(event.key==='Enter') document.getElementById('wasted-mins').focus()" placeholder="${t('wasted_ph')}" class="flex-1 px-4 py-3 glass-btn rounded-xl outline-none font-bold text-sm border border-rose-100 dark:border-rose-900/50 focus:border-rose-500"/>
-                    <input type="number" id="wasted-mins" onkeydown="if(event.key==='Enter') window.addWastedTime()" placeholder="${t('wasted_mins_ph')}" class="w-full sm:w-28 px-4 py-3 glass-btn rounded-xl outline-none font-bold text-sm border border-rose-100 dark:border-rose-900/50 focus:border-rose-500" min="1"/>
-                    <button onclick="window.addWastedTime()" class="bg-rose-500 hover:bg-rose-400 text-white px-6 py-3 rounded-xl font-black shadow-md text-sm transition-transform hover:scale-105">${t('add_btn')}</button>
+                    <input type="number" id="wasted-mins" onkeydown="if(event.key==='Enter') window.addWastedTime()" placeholder="${t('wasted_mins_ph')}" class="w-full md:w-28 px-4 py-3 glass-btn rounded-xl outline-none font-bold text-sm border border-rose-100 dark:border-rose-900/50 focus:border-rose-500" min="1"/>
+                    <button onclick="window.addWastedTime()" class="bg-rose-500 hover:bg-rose-400 text-white px-6 py-3 rounded-xl font-black shadow-md text-sm transition-transform hover:scale-105">සටහන් කරන්න</button>
                 </div>
-                <div class="space-y-2 max-h-40 overflow-y-auto custom-scrollbar pr-2">
-                    ${todayWasted.length === 0 ? `<div class="text-center py-4 text-emerald-500 font-bold text-sm bg-emerald-50 dark:bg-emerald-900/10 rounded-xl">${t('wasted_empty')}</div>` : todayWasted.map(w => `
+                <div class="space-y-2 max-h-40 overflow-y-auto custom-scrollbar">
+                    ${todayWasted.length === 0 ? `<div class="text-center py-4 text-emerald-500 font-bold text-sm bg-emerald-50 dark:bg-emerald-900/10 rounded-xl">අද කිසිම කාලයක් අපතේ ගොස් නැත. නියමයි! 🎉</div>` : todayWasted.map(w => `
                         <div class="flex justify-between items-center bg-rose-50 dark:bg-rose-900/10 p-3 rounded-xl border border-rose-100 dark:border-rose-900/30">
                             <span class="font-bold text-sm text-slate-700 dark:text-slate-300 break-words flex-1 pr-4">${escapeHTML(w.text)}</span>
                             <div class="flex items-center space-x-3 shrink-0">
-                                <span class="text-[10px] font-black text-rose-600 bg-rose-100 dark:bg-rose-900/50 px-2 py-1 rounded-md uppercase">${w.mins} ${t('minutes')}</span>
+                                <span class="text-[10px] font-black text-rose-600 bg-rose-100 dark:bg-rose-900/50 px-2 py-1 rounded-md uppercase">${w.mins} mins</span>
                                 <button onclick="window.deleteWastedTime(${w.id})" class="text-slate-400 hover:text-rose-500 transition-transform hover:scale-110 text-lg">🗑️</button>
                             </div>
                         </div>
@@ -1798,21 +1693,20 @@
                     <div>
                         <p class="text-indigo-600 dark:text-indigo-400 font-bold tracking-widest uppercase text-sm mb-2 drop-shadow-sm">__DATE_PLACEHOLDER__</p>
                         <h2 class="text-4xl md:text-5xl font-black tracking-tight drop-shadow-sm">${greeting}, ${escapeHTML(userName)}! <span class="inline-block">✨</span></h2>
-                        <p class="text-slate-500 dark:text-slate-400 font-medium mt-3 text-sm italic border-l-2 border-indigo-400 pl-3">"${dailyQuote}"</p>
                     </div>
                 </header>
                 
                 <div class="mb-6">${dailyRewardHTML}${streakWarning}${holidayBanner}${targetHTML}${articleNotif}${reviewNotifs}</div>
 
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <button onclick="window.switchTab('timer')" aria-label="Deep Work Timer" class="glass-panel p-4 rounded-2xl shadow-sm flex items-center justify-center space-x-3 hover:bg-indigo-50/50 dark:hover:bg-indigo-900/50 transition-colors group"><span class="text-xl group-hover:scale-110 transition-transform drop-shadow">▶️</span><span class="font-bold text-sm md:block hidden">${t('deep_work')}</span><span class="font-bold text-sm md:hidden block">Timer</span></button>
-                    <button onclick="window.switchTab('planner')" aria-label="New Task" class="glass-panel p-4 rounded-2xl shadow-sm flex items-center justify-center space-x-3 hover:bg-indigo-50/50 transition-colors group"><span class="text-xl group-hover:scale-110 transition-transform drop-shadow">➕</span><span class="font-bold text-sm md:block hidden">${t('new_task')}</span><span class="font-bold text-sm md:hidden block">Task</span></button>
+                    <button onclick="window.switchTab('timer')" aria-label="Deep Work Timer" class="glass-panel p-4 rounded-2xl shadow-sm flex items-center justify-center space-x-3 hover:bg-indigo-50/50 dark:hover:bg-indigo-900/50 transition-colors group"><span class="text-xl group-hover:scale-110 transition-transform drop-shadow">▶️</span><span class="font-bold text-sm">${t('deep_work')}</span></button>
+                    <button onclick="window.switchTab('planner')" aria-label="New Task" class="glass-panel p-4 rounded-2xl shadow-sm flex items-center justify-center space-x-3 hover:bg-indigo-50/50 transition-colors group"><span class="text-xl group-hover:scale-110 transition-transform drop-shadow">➕</span><span class="font-bold text-sm">${t('new_task')}</span></button>
                     <button onclick="window.switchTab('detox')" aria-label="Habit Detox" class="glass-panel p-4 rounded-2xl shadow-sm flex items-center justify-center space-x-3 hover:bg-rose-50/50 dark:hover:bg-rose-900/30 transition-colors group border border-rose-200 dark:border-rose-900/50"><span class="text-xl group-hover:scale-110 transition-transform drop-shadow">🛑</span><span class="font-bold text-sm text-rose-600 dark:text-rose-400">Detox</span></button>
                     <button onclick="window.shareToWhatsApp()" aria-label="Share via WhatsApp" class="glass-panel p-4 rounded-2xl shadow-sm flex items-center justify-center space-x-3 hover:bg-[#25D366]/10 transition-colors group"><span class="text-xl group-hover:scale-110 transition-transform text-[#25D366]">🔗</span><span class="font-bold text-sm text-[#25D366]">Share</span></button>
                 </div>
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     <div class="space-y-8"><div class="glass-panel rounded-[3rem] p-10 shadow-sm relative overflow-hidden"><div class="absolute top-0 right-0 p-8 opacity-10 text-9xl">🎯</div><h4 class="font-black text-slate-500 dark:text-slate-400 uppercase text-xs tracking-widest mb-6 relative z-10">${t('daily_progress')}</h4><div class="flex items-baseline relative z-10 drop-shadow-md"><span class="text-7xl font-black">${score}</span><span class="text-3xl font-black text-slate-400">%</span></div><div class="w-full bg-slate-200/50 dark:bg-slate-800/50 h-6 rounded-full overflow-hidden p-1 mt-8 relative z-10"><div class="bg-gradient-to-r from-indigo-500 to-purple-500 h-full rounded-full transition-all duration-1000 shadow-[0_0_15px_rgba(99,102,241,0.5)]" style="width:${score}%"></div></div></div></div>
-                    <div class="lg:col-span-2 space-y-8"><div class="glass-panel rounded-[3rem] p-8 md:p-10 shadow-sm"><div class="flex justify-between items-center mb-6"><h4 class="font-black text-lg flex items-center space-x-3 drop-shadow-sm"><span class="text-2xl">🕒</span><span>${t('up_next')}</span></h4><button onclick="window.switchTab('planner')" class="text-sm font-bold text-indigo-600 dark:text-indigo-400 hover:underline">${t('view_all')}</button></div><div class="space-y-3">${pendingTasks.length === 0 ? `<div class="text-center py-8 text-slate-500 font-bold">${t('all_done')}</div>` : pendingTasks.map(h => `<div class="flex items-center justify-between p-4 glass-btn rounded-2xl cursor-pointer hover:scale-[1.01] transition-transform" onclick="window.toggleHabit(${h.id})" role="button" aria-label="Toggle Habit"><div class="flex items-center space-x-4"><div class="w-8 h-8 rounded-lg border-2 border-slate-300 dark:border-slate-500 flex items-center justify-center shrink-0">${h.completed ? '✓' : ''}</div><div class="flex-1 min-w-0"><p class="font-bold drop-shadow-sm truncate w-full">${escapeHTML(h.text)}</p></div></div><button onclick="event.stopPropagation(); window.switchTab('timer')" aria-label="Start Timer" class="text-xl hover:scale-110 transition-transform pl-2">▶️</button></div>`).join('')}</div></div></div>
+                    <div class="lg:col-span-2 space-y-8"><div class="glass-panel rounded-[3rem] p-8 md:p-10 shadow-sm"><div class="flex justify-between items-center mb-6"><h4 class="font-black text-lg flex items-center space-x-3 drop-shadow-sm"><span class="text-2xl">🕒</span><span>${t('up_next')}</span></h4><button onclick="window.switchTab('planner')" class="text-sm font-bold text-indigo-600 dark:text-indigo-400 hover:underline">${t('view_all')}</button></div><div class="space-y-3">${pendingTasks.length === 0 ? `<div class="text-center py-8 text-slate-500 font-bold">${t('all_done')}</div>` : pendingTasks.map(h => `<div class="flex items-center justify-between p-4 glass-btn rounded-2xl cursor-pointer hover:scale-[1.01] transition-transform" onclick="window.toggleHabit(${h.id})" role="button" aria-label="Toggle Habit"><div class="flex items-center space-x-4"><div class="w-8 h-8 rounded-lg border-2 border-slate-300 dark:border-slate-500 flex items-center justify-center">${h.completed ? '✓' : ''}</div><div><p class="font-bold drop-shadow-sm">${escapeHTML(h.text)}</p></div></div><button onclick="event.stopPropagation(); window.switchTab('timer')" aria-label="Start Timer" class="text-xl hover:scale-110 transition-transform">▶️</button></div>`).join('')}</div></div></div>
                 </div>
                 ${wastedTimeHTML}
             </div>`;
@@ -1846,10 +1740,10 @@
                 
                 <div class="glass-panel p-6 rounded-[2rem] shadow-sm space-y-4">
                     <div class="flex flex-col md:flex-row gap-3">
-                        <input type="text" id="habit-text" aria-label="Task Description" onkeydown="if(event.key==='Enter')window.addHabit()" placeholder="${t('add_task')}" class="flex-1 px-4 py-3 glass-btn rounded-xl outline-none font-bold min-w-0"/>
-                        <input type="time" id="habit-time" aria-label="Task Time" class="px-4 py-3 glass-btn rounded-xl outline-none font-bold text-slate-600 dark:text-slate-300 w-full md:w-auto"/>
-                        <select id="habit-priority" aria-label="Task Priority" class="px-4 py-3 glass-btn rounded-xl font-bold w-full md:w-auto">${Object.keys(priorities).map(k => `<option value="${escapeHTML(k)}">${escapeHTML(priorities[k].name)}</option>`).join('')}</select>
-                        <select id="habit-cat" aria-label="Task Category" class="px-4 py-3 glass-btn rounded-xl font-bold w-full md:w-auto">${Object.keys(state.categories).map(k => `<option value="${escapeHTML(k)}">${escapeHTML(state.categories[k].name)}</option>`).join('')}</select>
+                        <input type="text" id="habit-text" aria-label="Task Description" onkeydown="if(event.key==='Enter')window.addHabit()" placeholder="${t('add_task')}" class="flex-1 px-4 py-3 glass-btn rounded-xl outline-none font-bold"/>
+                        <input type="time" id="habit-time" aria-label="Task Time" class="px-4 py-3 glass-btn rounded-xl outline-none font-bold text-slate-600 dark:text-slate-300"/>
+                        <select id="habit-priority" aria-label="Task Priority" class="px-4 py-3 glass-btn rounded-xl font-bold">${Object.keys(priorities).map(k => `<option value="${escapeHTML(k)}">${escapeHTML(priorities[k].name)}</option>`).join('')}</select>
+                        <select id="habit-cat" aria-label="Task Category" class="px-4 py-3 glass-btn rounded-xl font-bold">${Object.keys(state.categories).map(k => `<option value="${escapeHTML(k)}">${escapeHTML(state.categories[k].name)}</option>`).join('')}</select>
                     </div>
                     <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                         <div class="flex items-center space-x-4">
@@ -1859,13 +1753,10 @@
                             </label>
                             <label class="flex items-center space-x-2 cursor-pointer font-bold text-sm text-slate-600 dark:text-slate-400">
                                 <input type="checkbox" id="habit-recurring" aria-label="Recurring Habit" class="w-5 h-5 rounded text-emerald-600 accent-emerald-600"/>
-                                <span>Daily</span>
+                                <span>Daily / දිනපතා</span>
                             </label>
                         </div>
-                        <div class="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
-                            <button onclick="window.addTinyHabit()" class="bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-4 py-3 rounded-xl font-black shadow-lg hover:scale-105 transition-transform" title="Break down a major task into a small 5-minute habit to begin.">${t('tiny_habit_btn')}</button>
-                            <button onclick="window.addHabit()" class="bg-indigo-600 text-white px-8 py-3 rounded-xl font-black shadow-lg hover:bg-indigo-500 w-full sm:w-auto">${t('add_btn')}</button>
-                        </div>
+                        <button onclick="window.addHabit()" class="bg-indigo-600 text-white px-8 py-3 rounded-xl font-black shadow-lg hover:bg-indigo-500 w-full md:w-auto">${t('add_btn')}</button>
                     </div>
                 </div>
 
@@ -1873,56 +1764,43 @@
                     ${state.habits.map(h => {
                         const cat = state.categories[h.category] || { name: 'General', color: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300' };
                         const pri = priorities[h.priority] || priorities['Q3'];
-                        return `<div class="flex items-center justify-between p-4 sm:p-5 glass-panel rounded-[1.5rem] card-hover ${h.completed ? 'opacity-50' : ''}">
-                        <div class="flex items-center space-x-4 w-full pr-2 sm:pr-4">
-                            <button onclick="window.toggleHabit(${h.id})" aria-label="Toggle Habit Completion" class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl border-2 flex items-center justify-center text-xl font-black shrink-0 transition-colors ${h.completed?'bg-indigo-600 border-indigo-600 text-white':'border-slate-400 hover:bg-slate-100'}">${h.completed?'✓':''}</button>
-                            <div class="flex-1 min-w-0">
-                                <p class="font-black text-lg sm:text-xl break-words w-full ${h.completed?'line-through':''}">${escapeHTML(h.text)}</p>
+                        return `<div class="flex items-center justify-between p-5 glass-panel rounded-[1.5rem] card-hover ${h.completed ? 'opacity-50' : ''}">
+                        <div class="flex items-center space-x-4">
+                            <button onclick="window.toggleHabit(${h.id})" aria-label="Toggle Habit Completion" class="w-12 h-12 rounded-xl border-2 flex items-center justify-center text-xl font-black shrink-0 transition-colors ${h.completed?'bg-indigo-600 border-indigo-600 text-white':'border-slate-400 hover:bg-slate-100'}">${h.completed?'✓':''}</button>
+                            <div>
+                                <p class="font-black text-xl break-words w-full ${h.completed?'line-through':''}">${escapeHTML(h.text)}</p>
                                 <div class="flex flex-wrap gap-2 mt-2">
                                     ${h.time ? `<span class="bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-300 text-[10px] font-bold px-2 py-1 rounded-md shadow-sm">⏰ ${escapeHTML(h.time)}</span>` : ''}
                                     <span class="${escapeHTML(cat.color)} text-[10px] font-bold px-2 py-1 rounded-md shadow-sm border border-current opacity-80">${escapeHTML(cat.name.split('/')[0].trim())}</span>
                                     <span class="${escapeHTML(pri.class)} text-[10px] font-bold px-2 py-1 rounded-md shadow-sm border border-current opacity-80">${escapeHTML(pri.name)}</span>
                                     ${h.needsReview ? `<span class="bg-purple-100 text-purple-600 dark:bg-purple-900/50 dark:text-purple-300 text-[10px] font-bold px-2 py-1 rounded-md shadow-sm">🔄 Review</span>` : ''}
                                     ${h.isRecurring ? `<span class="bg-emerald-100 text-emerald-600 dark:bg-emerald-900/50 dark:text-emerald-300 text-[10px] font-bold px-2 py-1 rounded-md shadow-sm">🔁 Daily</span>` : ''}
-                                    ${!h.completed ? `<button onclick="window.breakdownTaskAI(${h.id})" class="text-[10px] font-bold text-indigo-500 hover:underline inline-block mt-1 sm:mt-0">${t('ai_breakdown')}</button>` : ''}
+                                    ${!h.completed ? `<button onclick="window.breakdownTaskAI(${h.id})" class="text-[10px] font-bold text-indigo-500 hover:underline">✨ AI Breakdown</button>` : ''}
                                 </div>
                             </div>
                         </div>
-                        <button onclick="window.deleteHabit(${h.id})" aria-label="Delete Task" class="p-2 sm:p-3 text-slate-400 hover:text-red-500 text-xl shrink-0 transition-transform hover:scale-110">🗑️</button>
+                        <button onclick="window.deleteHabit(${h.id})" aria-label="Delete Task" class="p-3 text-slate-400 hover:text-red-500 text-xl shrink-0 transition-transform hover:scale-110">🗑️</button>
                     </div>`}).join('')}
                 </div>
 
-                <div class="glass-panel p-6 sm:p-8 rounded-[2.5rem] shadow-sm space-y-6"><div><h3 class="text-2xl font-black mb-2 drop-shadow-sm">${t('journal')}</h3></div>
-                <div class="flex space-x-4 mb-4">${Object.keys(moodEmojis).map(m => `<button onclick="window.setMood('${m}')" aria-label="Set mood to ${m}" class="text-3xl sm:text-4xl hover:scale-125 transition-transform ${state.moods[today]===m?'scale-125 glass-btn rounded-full':''} drop-shadow">${moodEmojis[m]}</button>`).join('')}</div>
-                <textarea id="journal-text" aria-label="Journal Text" oninput="window.updateJournalTextSilent(this.value)" placeholder="${t('journal_ph')}" class="w-full glass-btn p-4 sm:p-6 rounded-2xl outline-none font-medium text-base sm:text-lg h-32 resize-none focus:border-indigo-400 shadow-inner">${escapeHTML(state.reflections[today]||'')}</textarea>
-                <div class="flex flex-col sm:flex-row gap-3">
-                    <button onclick="window.saveJournal()" class="flex-1 py-3 sm:py-4 bg-indigo-600 text-white font-black rounded-xl shadow-lg hover:bg-indigo-500">${t('save_journal')}</button>
-                    <button onclick="window.switchTab('mental')" class="py-3 sm:py-4 px-6 border border-indigo-300 text-indigo-600 dark:text-indigo-400 font-bold rounded-xl hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors text-sm sm:text-base">${t('ai_restructure')}</button>
-                </div>
-                </div>${historyHTML}
+                <div class="glass-panel p-8 rounded-[2.5rem] shadow-sm space-y-6"><div><h3 class="text-2xl font-black mb-2 drop-shadow-sm">${t('journal')}</h3></div><div class="flex space-x-4 mb-4">${Object.keys(moodEmojis).map(m => `<button onclick="window.setMood('${m}')" aria-label="Set mood to ${m}" class="text-4xl hover:scale-125 transition-transform ${state.moods[today]===m?'scale-125 glass-btn rounded-full':''} drop-shadow">${moodEmojis[m]}</button>`).join('')}</div><textarea id="journal-text" aria-label="Journal Text" oninput="window.updateJournalTextSilent(this.value)" placeholder="${t('journal_ph')}" class="w-full glass-btn p-6 rounded-2xl outline-none font-medium text-lg h-32 resize-none focus:border-indigo-400 shadow-inner">${escapeHTML(state.reflections[today]||'')}</textarea><button onclick="window.saveJournal()" class="w-full py-4 bg-indigo-600 text-white font-black rounded-xl shadow-lg hover:bg-indigo-500">${t('save_journal')}</button></div>${historyHTML}
             </div>`;
         }
 
         function renderTimer() {
             let controlButtons = '';
             if (timerState.phase === 'focus-ended') {
-                controlButtons = `<div class="flex justify-center space-x-4 mt-8 animate-fade-in"><button onclick="window.startBreakManual()" class="px-6 sm:px-8 py-4 bg-emerald-500 text-white rounded-2xl font-black shadow-lg text-base sm:text-lg hover:bg-emerald-400">${t('start_break').replace('X', escapeHTML(state.timerSettings?.break || 5) + 'm')}</button><button onclick="window.skipBreakManual()" class="px-6 sm:px-8 py-4 glass-btn rounded-2xl font-black text-slate-500 dark:text-slate-300 transition-colors text-base sm:text-lg">${t('skip_break')}</button></div>`;
+                controlButtons = `<div class="flex justify-center space-x-4 mt-8 animate-fade-in"><button onclick="window.startBreakManual()" class="px-8 py-4 bg-emerald-500 text-white rounded-2xl font-black shadow-lg text-lg hover:bg-emerald-400">${t('start_break').replace('5m', escapeHTML(state.timerSettings?.break || 5) + 'm')}</button><button onclick="window.skipBreakManual()" class="px-8 py-4 glass-btn rounded-2xl font-black text-slate-500 dark:text-slate-300 transition-colors">${t('skip_break')}</button></div>`;
             } else {
                 let icon = (timerState.phase === 'running' || timerState.phase === 'break-running') ? '⏸️' : '▶️';
-                controlButtons = `<div class="flex justify-center space-x-6 mt-8"><button onclick="window.toggleTimer()" aria-label="Toggle Timer" class="w-16 h-16 sm:w-20 sm:h-20 rounded-full flex items-center justify-center text-white text-2xl sm:text-3xl shadow-xl transition-transform hover:scale-105 ${(timerState.phase==='running'||timerState.phase==='break-running')?'bg-rose-500':'bg-indigo-600'}"><span>${icon}</span></button><button onclick="window.resetTimer()" aria-label="Reset Timer" class="w-16 h-16 sm:w-20 sm:h-20 rounded-full flex items-center justify-center bg-slate-300 text-slate-700 text-2xl sm:text-3xl shadow-xl transition-transform hover:scale-105" title="${t('reset_timer')}"><span>⏹️</span></button></div>`;
+                controlButtons = `<div class="flex justify-center space-x-6 mt-8"><button onclick="window.toggleTimer()" aria-label="Toggle Timer" class="w-20 h-20 rounded-full flex items-center justify-center text-white text-3xl shadow-xl transition-transform hover:scale-105 ${(timerState.phase==='running'||timerState.phase==='break-running')?'bg-rose-500':'bg-indigo-600'}"><span>${icon}</span></button><button onclick="window.resetTimer()" aria-label="Reset Timer" class="w-20 h-20 rounded-full flex items-center justify-center bg-slate-300 text-slate-700 text-3xl shadow-xl transition-transform hover:scale-105" title="${t('reset_timer')}"><span>⏹️</span></button></div>`;
             }
 
             let settingsUI = '';
             if (timerState.phase === 'idle') {
-                settingsUI = `<div class="flex justify-center space-x-6 mb-4 animate-fade-in">
-                    <div class="flex flex-col items-center"><label for="focus-time-input" class="text-[10px] font-bold text-slate-500 uppercase mb-1">Focus (Min)</label><input type="number" id="focus-time-input" value="${escapeHTML(state.timerSettings?.focus || 25)}" onchange="window.updateTimerSettings('focus', this.value)" class="w-16 sm:w-20 px-2 sm:px-3 py-2 text-center glass-btn rounded-xl font-black text-base sm:text-lg outline-none focus:border-indigo-500" min="1" max="120"></div>
-                    <div class="flex flex-col items-center"><label for="break-time-input" class="text-[10px] font-bold text-slate-500 uppercase mb-1">Break (Min)</label><input type="number" id="break-time-input" value="${escapeHTML(state.timerSettings?.break || 5)}" onchange="window.updateTimerSettings('break', this.value)" class="w-16 sm:w-20 px-2 sm:px-3 py-2 text-center glass-btn rounded-xl font-black text-base sm:text-lg outline-none focus:border-indigo-500" min="1" max="30"></div>
-                </div>
-                <div class="flex justify-center mb-8 animate-fade-in">
-                    <label class="flex items-center space-x-2 cursor-pointer font-bold text-xs sm:text-sm text-rose-600 bg-rose-50 dark:bg-rose-900/20 px-4 py-2 rounded-xl border border-rose-200 dark:border-rose-800 transition-transform hover:scale-105">
-                        <input type="checkbox" id="timer-strict-mode" ${timerState.isStrict ? 'checked' : ''} onchange="window.toggleStrictMode(this.checked)" class="w-4 h-4 rounded text-rose-600 accent-rose-600"/>
-                        <span>🔒 Strict Detox (Penalty for quitting)</span>
-                    </label>
+                settingsUI = `<div class="flex justify-center space-x-6 mb-8 animate-fade-in">
+                    <div class="flex flex-col items-center"><label for="focus-time-input" class="text-[10px] font-bold text-slate-500 uppercase mb-1">Focus Time (Min)</label><input type="number" id="focus-time-input" value="${escapeHTML(state.timerSettings?.focus || 25)}" onchange="window.updateTimerSettings('focus', this.value)" class="w-20 px-3 py-2 text-center glass-btn rounded-xl font-black text-lg outline-none focus:border-indigo-500" min="1" max="120"></div>
+                    <div class="flex flex-col items-center"><label for="break-time-input" class="text-[10px] font-bold text-slate-500 uppercase mb-1">Break Time (Min)</label><input type="number" id="break-time-input" value="${escapeHTML(state.timerSettings?.break || 5)}" onchange="window.updateTimerSettings('break', this.value)" class="w-20 px-3 py-2 text-center glass-btn rounded-xl font-black text-lg outline-none focus:border-indigo-500" min="1" max="30"></div>
                 </div>`;
             }
 
@@ -1933,10 +1811,10 @@
             <div class="mt-12 pt-8 border-t border-slate-200 dark:border-slate-700/50">
                 <h4 class="font-black text-sm text-slate-600 dark:text-slate-400 mb-3 flex items-center justify-center space-x-2"><span>${t('park_thought_title')}</span></h4>
                 <div class="flex gap-2 mb-4">
-                    <input type="text" id="parked-thought-input" onkeydown="if(event.key==='Enter')window.addParkedThought()" placeholder="${t('park_thought_ph')}" class="flex-1 px-4 py-3 glass-btn rounded-xl outline-none font-bold text-sm border border-indigo-100 dark:border-indigo-900/50 focus:border-indigo-500 min-w-0"/>
-                    <button onclick="window.addParkedThought()" class="bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 px-4 py-3 rounded-xl font-black hover:bg-indigo-200 dark:hover:bg-indigo-800 transition-transform hover:scale-105 text-xl shadow-sm shrink-0">📥</button>
+                    <input type="text" id="parked-thought-input" onkeydown="if(event.key==='Enter')window.addParkedThought()" placeholder="${t('park_thought_ph')}" class="flex-1 px-4 py-3 glass-btn rounded-xl outline-none font-bold text-sm border border-indigo-100 dark:border-indigo-900/50 focus:border-indigo-500"/>
+                    <button onclick="window.addParkedThought()" class="bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 px-4 py-3 rounded-xl font-black hover:bg-indigo-200 dark:hover:bg-indigo-800 transition-transform hover:scale-105 text-xl shadow-sm">📥</button>
                 </div>
-                <div class="space-y-2 text-left max-h-32 overflow-y-auto custom-scrollbar pr-2">
+                <div class="space-y-2 text-left max-h-32 overflow-y-auto custom-scrollbar">
                     ${parkedToday.map(p => `
                         <div class="flex justify-between items-center glass-btn p-3 rounded-xl opacity-80 hover:opacity-100 transition-opacity border border-slate-200 dark:border-slate-700">
                             <span class="font-bold text-sm text-slate-700 dark:text-slate-300 break-words flex-1 pr-4">${escapeHTML(p.text)}</span>
@@ -1946,7 +1824,7 @@
                 </div>
             </div>`;
 
-            return `<div class="max-w-xl mx-auto space-y-10 text-center pb-20"><header><h2 class="text-4xl font-black drop-shadow-md">${t('timer_title')}</h2></header><div class="glass-panel p-6 sm:p-12 rounded-[3rem] relative shadow-xl">
+            return `<div class="max-w-xl mx-auto space-y-10 text-center pb-20"><header><h2 class="text-4xl font-black drop-shadow-md">${t('timer_title')}</h2></header><div class="glass-panel p-12 rounded-[3rem] relative shadow-xl">
                 <div class="flex flex-col items-center justify-center space-y-2 mb-8">
                     <div class="flex space-x-2">
                         <button onclick="window.toggleFocusSound()" class="px-4 py-2 rounded-lg text-xs font-bold border glass-btn shadow-sm hover:scale-105 transition-transform">${t('sound_beta')} ${audioCtxObj ? '🔊' : '🔇'}</button>
@@ -1957,7 +1835,7 @@
                         <option value="binaural" ${state.soundType==='binaural'?'selected':''}>Binaural Beats (Alpha)</option>
                     </select>
                 </div>
-                ${settingsUI}<div class="relative w-60 h-60 sm:w-72 sm:h-72 mx-auto mb-10 flex items-center justify-center"><div class="absolute inset-0 bg-slate-200/50 dark:bg-slate-700/50 rounded-full shadow-inner"></div><div id="timer-circle-bg" class="absolute inset-0 timer-circle transition-all duration-500"></div><div class="absolute inset-4 glass-panel rounded-full flex flex-col items-center justify-center"><span class="text-sm font-bold text-slate-500 uppercase tracking-widest mb-1">${escapeHTML(timerState.mode)} MODE</span><span id="timer-display" class="text-6xl sm:text-7xl font-black drop-shadow-md">${String(Math.floor(timerState.timeLeft / 60)).padStart(2, '0')}:${String(timerState.timeLeft % 60).padStart(2, '0')}</span></div></div>${controlButtons}${parkingLotHTML}</div></div>`;
+                ${settingsUI}<div class="relative w-72 h-72 mx-auto mb-10 flex items-center justify-center"><div class="absolute inset-0 bg-slate-200/50 dark:bg-slate-700/50 rounded-full shadow-inner"></div><div id="timer-circle-bg" class="absolute inset-0 timer-circle transition-all duration-500"></div><div class="absolute inset-4 glass-panel rounded-full flex flex-col items-center justify-center"><span class="text-sm font-bold text-slate-500 uppercase tracking-widest mb-1">${escapeHTML(timerState.mode)} MODE</span><span id="timer-display" class="text-7xl font-black drop-shadow-md">${String(Math.floor(timerState.timeLeft / 60)).padStart(2, '0')}:${String(timerState.timeLeft % 60).padStart(2, '0')}</span></div></div>${controlButtons}${parkingLotHTML}</div></div>`;
         }
 
         function renderDetox() {
@@ -1968,8 +1846,8 @@
 
                 <div class="glass-panel p-8 rounded-[2.5rem] shadow-xl text-center bg-gradient-to-br from-rose-50 to-orange-50 dark:from-rose-900/20 dark:to-orange-900/20 border-rose-200 dark:border-rose-800 relative overflow-hidden">
                     <div class="absolute -right-10 -top-10 text-9xl opacity-10">🌊</div>
-                    <h3 class="text-2xl font-black text-rose-600 dark:text-rose-400 mb-4">${t('sos_craving')}</h3>
-                    <p class="text-slate-600 dark:text-slate-300 font-medium mb-6">${t('sos_desc')}</p>
+                    <h3 class="text-2xl font-black text-rose-600 dark:text-rose-400 mb-4">🔥 තදබල ආශාවක් (Craving) ආවද?</h3>
+                    <p class="text-slate-600 dark:text-slate-300 font-medium mb-6">මනෝවිද්‍යාවට අනුව ඕනෑම නරක පුරුද්දක් කිරීමේ තදබල ආශාවක් මොළයේ පවතින්නේ විනාඩි 3කට ආසන්න කාලයක් පමණි. එම කාලය තුළ එයට යටත් නොවී "Urge Surfing" (ආශාව දෙස උපේක්ෂාවෙන් බලා සිටීම) කිරීමෙන් ඔබට එය පහසුවෙන්ම පාලනය කරගත හැක.</p>
                     <button onclick="window.startSOS()" class="bg-rose-500 hover:bg-rose-400 text-white px-8 py-4 rounded-2xl font-black shadow-lg hover:scale-105 transition-transform text-lg flex items-center justify-center mx-auto space-x-3"><span>🚨</span><span>${t('sos_btn')}</span></button>
                 </div>
 
@@ -1982,18 +1860,18 @@
                 </div>
 
                 <div class="space-y-4">
-                    ${(state.detoxHabits || []).length === 0 ? `<div class="text-center py-10 text-slate-400 font-bold">${t('detox_empty')}</div>` : (state.detoxHabits || []).map(dh => {
+                    ${(state.detoxHabits || []).length === 0 ? `<div class="text-center py-10 text-slate-400 font-bold">ආරම්භ කිරීමට නරක පුරුද්දක් ඇතුළත් කරන්න.</div>` : (state.detoxHabits || []).map(dh => {
                         const isCheckedToday = dh.lastCheckIn === today;
                         const progressPercent = Math.min(100, (dh.streak / 7) * 100);
                         return `<div class="glass-panel p-6 rounded-[2rem] shadow-sm relative overflow-hidden">
                             <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4 relative z-10">
-                                <div class="flex-1 min-w-0">
-                                    <h3 class="text-2xl font-black text-slate-800 dark:text-white line-through decoration-rose-500 decoration-4 truncate w-full" title="${escapeHTML(dh.habit)}">${escapeHTML(dh.habit)}</h3>
-                                    ${dh.substitute ? `<p class="text-emerald-600 dark:text-emerald-400 font-bold text-sm mt-1 truncate" title="${escapeHTML(dh.substitute)}">🔄 ${escapeHTML(dh.substitute)}</p>` : ''}
+                                <div>
+                                    <h3 class="text-2xl font-black text-slate-800 dark:text-white line-through decoration-rose-500 decoration-4">${escapeHTML(dh.habit)}</h3>
+                                    ${dh.substitute ? `<p class="text-emerald-600 dark:text-emerald-400 font-bold text-sm mt-1">🔄 ඒ වෙනුවට කරන දේ: ${escapeHTML(dh.substitute)}</p>` : ''}
                                 </div>
                                 <div class="flex flex-wrap items-center gap-3">
-                                    ${!isCheckedToday ? `<button onclick="window.checkInDetox(${dh.id})" class="bg-emerald-500 hover:bg-emerald-400 text-white px-4 py-2 rounded-xl font-black shadow-sm text-sm transition-transform hover:scale-105">✅ Done</button>` : `<span class="bg-emerald-100 text-emerald-700 px-4 py-2 rounded-xl font-black text-sm">${t('detox_success')}</span>`}
-                                    <button onclick="window.resetDetox(${dh.id})" class="bg-orange-100 hover:bg-orange-200 text-orange-700 px-4 py-2 rounded-xl font-black shadow-sm text-sm transition-transform hover:scale-105" title="Restart if you relapsed by mistake">${t('detox_reset')}</button>
+                                    ${!isCheckedToday ? `<button onclick="window.checkInDetox(${dh.id})" class="bg-emerald-500 hover:bg-emerald-400 text-white px-4 py-2 rounded-xl font-black shadow-sm text-sm transition-transform hover:scale-105">✅ අද දින සාර්ථකයි</button>` : `<span class="bg-emerald-100 text-emerald-700 px-4 py-2 rounded-xl font-black text-sm">✅ අද දින සාර්ථකයි</span>`}
+                                    <button onclick="window.resetDetox(${dh.id})" class="bg-orange-100 hover:bg-orange-200 text-orange-700 px-4 py-2 rounded-xl font-black shadow-sm text-sm transition-transform hover:scale-105" title="වැරදීමකින් පුරුද්ද කළා නම් මුල සිට අරඹන්න">🔄 Reset</button>
                                     <button onclick="window.deleteDetox(${dh.id})" class="p-2 text-slate-400 hover:text-red-500 transition-transform hover:scale-110">🗑️</button>
                                 </div>
                             </div>
@@ -2016,16 +1894,16 @@
             return `<div class="max-w-4xl mx-auto space-y-10 pb-20"><header class="text-center"><h2 class="text-4xl font-black drop-shadow-md">${t('flashcards')}</h2></header>
             <div class="glass-panel p-6 rounded-[2rem] flex flex-col space-y-4">
                 <div class="flex flex-col md:flex-row gap-4">
-                    <input type="text" id="fc-q" aria-label="Flashcard Question" placeholder="${t('q_ph')}" class="flex-1 px-4 py-3 glass-btn rounded-xl outline-none font-bold min-w-0"/>
-                    <input type="text" id="fc-a" aria-label="Flashcard Answer" placeholder="${t('a_ph')}" class="flex-1 px-4 py-3 glass-btn rounded-xl outline-none font-bold min-w-0"/>
-                    <button onclick="window.addFlashcard()" class="bg-indigo-600 text-white px-6 py-3 rounded-xl font-black shrink-0">${t('add_btn')}</button>
+                    <input type="text" id="fc-q" aria-label="Flashcard Question" placeholder="${t('q_ph')}" class="flex-1 px-4 py-3 glass-btn rounded-xl outline-none font-bold"/>
+                    <input type="text" id="fc-a" aria-label="Flashcard Answer" placeholder="${t('a_ph')}" class="flex-1 px-4 py-3 glass-btn rounded-xl outline-none font-bold"/>
+                    <button onclick="window.addFlashcard()" class="bg-indigo-600 text-white px-6 py-3 rounded-xl font-black">${t('add_btn')}</button>
                 </div>
-                <button onclick="window.generateAIFlashcards()" class="w-full py-3 border-2 border-indigo-200 dark:border-indigo-800 text-indigo-600 dark:text-indigo-400 font-bold rounded-xl hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-colors flex justify-center items-center gap-2">✨ Generate Flashcards via AI</button>
+                <button onclick="window.generateAIFlashcards()" class="w-full py-3 border-2 border-indigo-200 dark:border-indigo-800 text-indigo-600 dark:text-indigo-400 font-bold rounded-xl hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-colors flex justify-center items-center gap-2">✨ AI මගින් Flashcards සෑදීම</button>
             </div>
             
-            ${futureCards > 0 ? `<div class="text-center font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 p-3 rounded-xl border border-emerald-200 dark:border-emerald-800 text-sm">🎉 ${futureCards} Flashcards successfully reviewed for today. Upcoming are below:</div>` : ''}
+            ${futureCards > 0 ? `<div class="text-center font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 p-3 rounded-xl border border-emerald-200 dark:border-emerald-800">🎉 Flashcards ${futureCards} ක් සාර්ථකව මතක තබාගෙන ඇත (Reviewed). අදට නියමිත ඒවා පහතින්:</div>` : ''}
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 perspective">${dueCards.length === 0 ? `<div class="col-span-full text-center py-10 text-slate-400 font-bold">${state.flashcards.length > 0 ? 'All Flashcards for today are done!' : t('no_fc')}</div>` : dueCards.map(f => `<div class="relative h-56 w-full group cursor-pointer" onclick="window.flipCardDOM('${f.id}', this)" role="button" aria-label="Flip Flashcard"><div class="absolute inset-0 w-full h-full preserve-3d ${state.flippedCards[f.id] ? 'rotate-y-180' : ''}"><div class="absolute inset-0 backface-hidden glass-panel rounded-[2rem] p-6 flex flex-col justify-center items-center shadow-sm"><span class="text-xs font-bold text-indigo-500 mb-2">${t('fc_q')}</span><h3 class="text-xl font-black text-center break-words w-full">${escapeHTML(f.q)}</h3><button onclick="event.stopPropagation(); window.deleteFlashcard(${f.id})" aria-label="Delete Flashcard" class="absolute top-4 right-4 text-slate-400 hover:text-red-500 text-lg hover:scale-110 transition-transform">🗑️</button></div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 perspective">${dueCards.length === 0 ? `<div class="col-span-full text-center py-10 text-slate-400 font-bold">${state.flashcards.length > 0 ? 'අද දිනට නියමිත Flashcards අවසන්!' : t('no_fc')}</div>` : dueCards.map(f => `<div class="relative h-56 w-full group cursor-pointer" onclick="window.flipCardDOM('${f.id}', this)" role="button" aria-label="Flip Flashcard"><div class="absolute inset-0 w-full h-full preserve-3d ${state.flippedCards[f.id] ? 'rotate-y-180' : ''}"><div class="absolute inset-0 backface-hidden glass-panel rounded-[2rem] p-6 flex flex-col justify-center items-center shadow-sm"><span class="text-xs font-bold text-indigo-500 mb-2">${t('fc_q')}</span><h3 class="text-xl font-black text-center break-words w-full">${escapeHTML(f.q)}</h3><button onclick="event.stopPropagation(); window.deleteFlashcard(${f.id})" aria-label="Delete Flashcard" class="absolute top-4 right-4 text-slate-400 hover:text-red-500 text-lg hover:scale-110 transition-transform">🗑️</button></div>
             <div class="absolute inset-0 backface-hidden rotate-y-180 bg-indigo-600/90 text-white rounded-[2rem] p-4 flex flex-col justify-between items-center shadow-md">
                 <span class="text-xs font-bold text-indigo-200">${t('fc_a')}</span>
                 <h3 class="text-2xl font-black text-center break-words w-full overflow-y-auto custom-scrollbar max-h-24">${escapeHTML(f.a)}</h3>
@@ -2047,18 +1925,22 @@
             }).join('')}</div></div>`;
         }
 
+        function renderArticleView() {
+            const a = articles.find(x => x.id === state.selectedArticleId);
+            if(!a) return '';
+            return `<div class="max-w-3xl mx-auto space-y-10 pb-20 print-content"><div class="flex justify-between items-center print-hidden"><button onclick="window.switchTab('library')" class="glass-btn px-4 py-2 rounded-xl flex items-center space-x-2 font-bold shadow-sm"><span class="text-xl">⬅️</span><span>Back</span></button></div><h2 class="text-5xl font-black drop-shadow-md print-text-black">${escapeHTML(a.title)}</h2><div class="flex space-x-4 text-sm font-bold opacity-70"><span>Author: ${escapeHTML(a.author)}</span></div><p class="text-xl italic border-l-4 border-indigo-400 pl-6 print-text-black font-medium">${escapeHTML(a.intro)}</p>${a.sections.map(s=>`<div class="space-y-2"><h3 class="text-2xl font-black text-indigo-600 drop-shadow-sm">${escapeHTML(s.title)}</h3><p class="text-lg font-medium leading-relaxed whitespace-pre-wrap">${escapeHTML(s.text)}</p></div>`).join('')}</div>`;
+        }
+
         function renderStats() {
-            return `<div class="space-y-10 pb-20"><header class="text-center"><h2 class="text-4xl font-black drop-shadow-md">${t('stats')}</h2></header><div class="grid grid-cols-1 md:grid-cols-2 gap-6"><div class="glass-panel p-8 rounded-[2rem] text-center shadow-sm"><h4 class="text-4xl sm:text-5xl font-black mb-2 drop-shadow-md"><span class="inline-block">⌛</span> ${Math.floor((state.stats.totalFocusMinutes || 0)/60)}<span class="text-xl sm:text-2xl text-slate-500">h</span> ${((state.stats.totalFocusMinutes || 0)%60)}<span class="text-xl sm:text-2xl text-slate-500">m</span></h4><p class="font-bold uppercase tracking-widest text-xs text-slate-500">${t('total_focus')}</p></div><div class="glass-panel p-8 rounded-[2rem] text-center shadow-sm"><h4 class="text-4xl sm:text-5xl font-black mb-2 drop-shadow-md text-orange-500"><span class="inline-block">🔥</span> ${state.streak.count}</h4><p class="font-bold uppercase tracking-widest text-xs text-slate-500">Current Streak (Days)</p></div></div><div class="grid grid-cols-1 lg:grid-cols-2 gap-8"><div class="glass-panel p-6 sm:p-8 rounded-[3rem] shadow-sm"><h4 class="font-black mb-6 text-center text-slate-600 dark:text-slate-300 drop-shadow-sm"><span class="inline-block">📈</span> ${t('progress_chart')}</h4><div class="chart-container"><canvas id="progressChart" aria-label="Progress Chart" role="img"></canvas></div></div><div class="glass-panel p-6 sm:p-8 rounded-[3rem] shadow-sm"><h4 class="font-black mb-6 text-center text-slate-600 dark:text-slate-300 drop-shadow-sm"><span class="inline-block">📊</span> ${t('focus_chart')}</h4><div class="chart-container"><canvas id="focusChart" aria-label="Focus Time Chart" role="img"></canvas></div></div>
-            <div class="glass-panel p-6 sm:p-8 rounded-[3rem] shadow-sm lg:col-span-2">
+            return `<div class="space-y-10 pb-20"><header class="text-center"><h2 class="text-4xl font-black drop-shadow-md">${t('stats')}</h2></header><div class="grid grid-cols-1 md:grid-cols-2 gap-6"><div class="glass-panel p-8 rounded-[2rem] text-center shadow-sm"><h4 class="text-5xl font-black mb-2 drop-shadow-md"><span class="inline-block">⌛</span> ${Math.floor((state.stats.totalFocusMinutes || 0)/60)}<span class="text-2xl text-slate-500">h</span> ${((state.stats.totalFocusMinutes || 0)%60)}<span class="text-2xl text-slate-500">m</span></h4><p class="font-bold uppercase tracking-widest text-xs text-slate-500">${t('total_focus')}</p></div><div class="glass-panel p-8 rounded-[2rem] text-center shadow-sm"><h4 class="text-5xl font-black mb-2 drop-shadow-md text-orange-500"><span class="inline-block">🔥</span> ${state.streak.count}</h4><p class="font-bold uppercase tracking-widest text-xs text-slate-500">Current Streak (Days)</p></div></div><div class="grid grid-cols-1 lg:grid-cols-2 gap-8"><div class="glass-panel p-8 rounded-[3rem] shadow-sm"><h4 class="font-black mb-6 text-center text-slate-600 dark:text-slate-300 drop-shadow-sm"><span class="inline-block">📈</span> ${t('progress_chart')}</h4><div class="chart-container"><canvas id="progressChart" aria-label="Progress Chart" role="img"></canvas></div></div><div class="glass-panel p-8 rounded-[3rem] shadow-sm"><h4 class="font-black mb-6 text-center text-slate-600 dark:text-slate-300 drop-shadow-sm"><span class="inline-block">📊</span> ${t('focus_chart')}</h4><div class="chart-container"><canvas id="focusChart" aria-label="Focus Time Chart" role="img"></canvas></div></div>
+            <div class="glass-panel p-8 rounded-[3rem] shadow-sm lg:col-span-2">
                 <h4 class="font-black mb-6 text-center text-slate-600 dark:text-slate-300 drop-shadow-sm"><span class="inline-block">🎭</span> Mood vs Focus Analytics</h4>
                 <div class="chart-container"><canvas id="moodFocusChart" aria-label="Mood vs Focus Chart" role="img"></canvas></div>
             </div>
-            <div class="glass-panel p-6 sm:p-8 rounded-[3rem] shadow-sm lg:col-span-2 overflow-hidden">
+            <div class="glass-panel p-8 rounded-[3rem] shadow-sm lg:col-span-2">
                 <h4 class="font-black mb-2 text-center text-slate-600 dark:text-slate-300 drop-shadow-sm">${t('heatmap_title')}</h4>
                 <p class="text-xs text-center text-slate-500 mb-6">${t('heatmap_desc')}</p>
-                <div class="overflow-x-auto hide-scrollbar text-center">
-                    ${generateHeatmap()}
-                </div>
+                ${generateHeatmap()}
             </div>
             </div></div>`;
         }
@@ -2093,10 +1975,10 @@
                             return `<div class="flex items-center justify-between p-3 rounded-2xl ${isMe ? 'bg-indigo-100 dark:bg-indigo-900/50 border border-indigo-300 dark:border-indigo-700 scale-105 transition-transform' : 'bg-slate-50 dark:bg-slate-800/50 hover:scale-[1.02] transition-transform'}">
                                 <div class="flex items-center space-x-3">
                                     <span class="font-black text-lg w-6 text-center ${iconClass}">${rankIcon}</span>
-                                    <div class="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 text-white flex items-center justify-center font-bold text-xs shadow-inner shrink-0">${escapeHTML(uName.charAt(0).toUpperCase())}</div>
-                                    <div class="min-w-0"><p class="font-bold text-sm truncate w-24 sm:w-auto ${isMe ? 'text-indigo-700 dark:text-indigo-300' : ''}">${escapeHTML(uName)} ${isMe ? '(You)' : ''}</p><p class="text-[10px] uppercase font-bold text-slate-500">Lvl ${u.level}</p></div>
+                                    <div class="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 text-white flex items-center justify-center font-bold text-xs shadow-inner">${escapeHTML(uName.charAt(0).toUpperCase())}</div>
+                                    <div><p class="font-bold text-sm ${isMe ? 'text-indigo-700 dark:text-indigo-300' : ''}">${escapeHTML(uName)} ${isMe ? '(You)' : ''}</p><p class="text-[10px] uppercase font-bold text-slate-500">Lvl ${u.level}</p></div>
                                 </div>
-                                <div class="text-right shrink-0"><p class="font-black text-emerald-500">${u.xp}</p><p class="text-[9px] uppercase font-bold text-slate-400">XP</p></div>
+                                <div class="text-right"><p class="font-black text-emerald-500">${u.xp}</p><p class="text-[9px] uppercase font-bold text-slate-400">XP</p></div>
                             </div>`;
                         }).join('')}
                     </div>
@@ -2105,7 +1987,7 @@
 
             let badgesHTML = '';
             if (state.badges && state.badges.length > 0) {
-                badgesHTML = `<div class="glass-panel p-6 rounded-[2rem] shadow-sm mt-6 text-left"><h4 class="font-black text-indigo-600 dark:text-indigo-400 mb-4 text-center sm:text-left">🏆 My Badges</h4><div class="flex flex-wrap gap-4 justify-center sm:justify-start">${state.badges.map(b => `<div class="flex flex-col items-center bg-slate-100 dark:bg-slate-800 p-3 rounded-2xl w-24 text-center border border-slate-200 dark:border-slate-700 shadow-sm" title="${badgeDict[b]?.d || ''}"><span class="text-3xl mb-2 drop-shadow-sm">${badgeDict[b]?.i || '🎖️'}</span><span class="text-[10px] font-black text-slate-700 dark:text-slate-300 tracking-tight leading-tight">${badgeDict[b]?.n || 'Badge'}</span></div>`).join('')}</div></div>`;
+                badgesHTML = `<div class="glass-panel p-6 rounded-[2rem] shadow-sm mt-6 text-left"><h4 class="font-black text-indigo-600 dark:text-indigo-400 mb-4">🏆 මගේ පදක්කම්</h4><div class="flex flex-wrap gap-4 justify-center">${state.badges.map(b => `<div class="flex flex-col items-center bg-slate-100 dark:bg-slate-800 p-3 rounded-2xl w-24 text-center border border-slate-200 dark:border-slate-700 shadow-sm" title="${badgeDict[b]?.d || ''}"><span class="text-3xl mb-2 drop-shadow-sm">${badgeDict[b]?.i || '🎖️'}</span><span class="text-[10px] font-black text-slate-700 dark:text-slate-300 tracking-tight leading-tight">${badgeDict[b]?.n || 'Badge'}</span></div>`).join('')}</div></div>`;
             }
 
             return `<div class="max-w-2xl mx-auto space-y-8 pb-20">
@@ -2113,39 +1995,39 @@
                 
                 ${leaderboardHTML}
 
-                <div class="glass-panel p-6 sm:p-10 rounded-[3rem] shadow-sm text-center relative">
-                    <div onclick="window.changeAvatar()" class="w-24 h-24 sm:w-28 sm:h-28 bg-gradient-to-tr from-indigo-500 to-purple-500 rounded-full flex items-center justify-center mx-auto mb-4 shadow-xl text-4xl sm:text-5xl text-white font-black cursor-pointer hover:scale-110 transition-transform" title="Click to change Avatar" aria-label="Change Avatar">${escapeHTML(state.user.avatar || '👤')}</div>
-                    <h3 class="text-2xl sm:text-3xl font-black mb-1 flex justify-center items-center gap-2">
-                        <span class="truncate max-w-[200px] sm:max-w-xs">${escapeHTML(userName)}</span>
-                        <button onclick="window.editName()" class="text-lg text-slate-400 hover:text-indigo-500 transition-colors shrink-0" title="Edit Name" aria-label="Edit Name">✏️</button>
+                <div class="glass-panel p-8 md:p-10 rounded-[3rem] shadow-sm text-center relative">
+                    <div onclick="window.changeAvatar()" class="w-28 h-28 bg-gradient-to-tr from-indigo-500 to-purple-500 rounded-full flex items-center justify-center mx-auto mb-4 shadow-xl text-5xl text-white font-black cursor-pointer hover:scale-110 transition-transform" title="Click to change Avatar" aria-label="Change Avatar">${escapeHTML(state.user.avatar || '👤')}</div>
+                    <h3 class="text-3xl font-black mb-1 flex justify-center items-center gap-2">
+                        <span>${escapeHTML(userName)}</span>
+                        <button onclick="window.editName()" class="text-lg text-slate-400 hover:text-indigo-500 transition-colors" title="Edit Name" aria-label="Edit Name">✏️</button>
                     </h3>
-                    <p class="text-slate-500 font-bold mb-6 text-sm sm:text-base break-words">${escapeHTML(state.user.email)}</p>
+                    <p class="text-slate-500 font-bold mb-6">${escapeHTML(state.user.email)}</p>
                     
                     ${trialHTML}
 
-                    <div class="flex justify-center space-x-4 sm:space-x-8 border-t border-slate-300 dark:border-slate-700 pt-6">
-                        <div><p class="text-xl sm:text-2xl font-black text-indigo-500">${state.user.level}</p><p class="text-[9px] sm:text-[10px] uppercase font-bold text-indigo-400 mt-1 break-words w-20 sm:w-24">${getLevelName(state.user.level)}</p></div>
-                        <div><p class="text-xl sm:text-2xl font-black text-emerald-500">${state.user.xp}</p><p class="text-[9px] sm:text-[10px] uppercase font-bold text-slate-500 mt-1">XP</p></div>
-                        <div><p class="text-xl sm:text-2xl font-black text-orange-500">${escapeHTML(state.user.joined)}</p><p class="text-[9px] sm:text-[10px] uppercase font-bold text-slate-500 mt-1">Joined</p></div>
+                    <div class="flex justify-center space-x-8 border-t border-slate-300 dark:border-slate-700 pt-6">
+                        <div><p class="text-2xl font-black text-indigo-500">${state.user.level}</p><p class="text-[10px] uppercase font-bold text-indigo-400 mt-1 break-words w-24">${getLevelName(state.user.level)}</p></div>
+                        <div><p class="text-2xl font-black text-emerald-500">${state.user.xp}</p><p class="text-[10px] uppercase font-bold text-slate-500 mt-1">XP</p></div>
+                        <div><p class="text-2xl font-black text-orange-500">${escapeHTML(state.user.joined)}</p><p class="text-[10px] uppercase font-bold text-slate-500 mt-1">Joined</p></div>
                     </div>
 
                     ${badgesHTML}
                 </div>
 
-                <div class="glass-panel p-6 sm:p-10 rounded-[3rem] space-y-6 shadow-sm text-center">
+                <div class="glass-panel p-8 md:p-10 rounded-[3rem] space-y-6 shadow-sm text-center">
                     <h3 class="text-xl font-black mb-2 text-slate-700 dark:text-slate-200">${t('feedback_title')}</h3>
-                    <div class="flex justify-center space-x-2 text-2xl sm:text-3xl mb-4">
+                    <div class="flex justify-center space-x-2 text-3xl mb-4">
                         ${[1,2,3,4,5].map(i => `<button onclick="window.setRating(${i})" aria-label="Rate ${i} Stars" class="${(state.appRating||0) >= i ? '' : 'grayscale opacity-30'} hover:scale-110 transition-transform drop-shadow-md">⭐</button>`).join('')}
                     </div>
-                    <textarea id="feedback-text" aria-label="Feedback Text" placeholder="${t('feedback_ph')}" class="w-full p-4 glass-btn rounded-xl outline-none focus:border-indigo-500 font-medium h-24 text-sm sm:text-base"></textarea>
+                    <textarea id="feedback-text" aria-label="Feedback Text" placeholder="${t('feedback_ph')}" class="w-full p-4 glass-btn rounded-xl outline-none focus:border-indigo-500 font-medium h-24"></textarea>
                     <button onclick="window.submitFeedback()" class="w-full bg-indigo-600 text-white px-6 py-3 rounded-xl font-black shadow-lg hover:bg-indigo-500 transition-colors">${t('send_btn')}</button>
                 </div>
                 
                 ${isAdmin() ? `<div class="p-6 bg-slate-900/80 backdrop-blur-md rounded-3xl border border-slate-700 mb-6 text-white shadow-2xl"><h3 class="text-2xl font-black text-indigo-400 mb-4">${t('admin_core')}</h3><p class="text-sm opacity-80 mb-6">Publish articles to all users instantly.</p>
-                <div class="flex flex-col sm:flex-row gap-2 mb-3">
-                    <input type="text" id="admin-art-author" aria-label="Author" placeholder="Author" class="w-full sm:w-1/3 p-3 bg-slate-950 rounded-xl outline-none font-bold border border-slate-800 text-sm"/>
-                    <input type="text" id="admin-art-cat" aria-label="Category" placeholder="Category" class="w-full sm:w-1/3 p-3 bg-slate-950 rounded-xl outline-none font-bold border border-slate-800 text-sm"/>
-                    <input type="text" id="admin-art-time" aria-label="Read Time" placeholder="Read Time (e.g. 5m)" class="w-full sm:w-1/3 p-3 bg-slate-950 rounded-xl outline-none font-bold border border-slate-800 text-sm"/>
+                <div class="flex gap-2 mb-3">
+                    <input type="text" id="admin-art-author" aria-label="Author" placeholder="Author" class="w-1/3 p-3 bg-slate-950 rounded-xl outline-none font-bold border border-slate-800 text-sm"/>
+                    <input type="text" id="admin-art-cat" aria-label="Category" placeholder="Category" class="w-1/3 p-3 bg-slate-950 rounded-xl outline-none font-bold border border-slate-800 text-sm"/>
+                    <input type="text" id="admin-art-time" aria-label="Read Time" placeholder="Read Time (e.g. 5m)" class="w-1/3 p-3 bg-slate-950 rounded-xl outline-none font-bold border border-slate-800 text-sm"/>
                 </div>
                 <input type="text" id="admin-art-title" aria-label="Article Title" placeholder="Title" class="w-full p-4 bg-slate-950 rounded-xl outline-none mb-3 font-bold border border-slate-800"/><textarea id="admin-art-intro" aria-label="Article Intro" placeholder="Intro..." class="w-full p-4 bg-slate-950 rounded-xl outline-none mb-3 h-20 border border-slate-800"></textarea><textarea id="admin-art-text" aria-label="Article Content" placeholder="Content..." class="w-full p-4 bg-slate-950 rounded-xl outline-none mb-4 h-32 border border-slate-800"></textarea><button id="publish-btn" onclick="window.publishAdminArticle()" class="w-full bg-indigo-600 hover:bg-indigo-500 py-4 rounded-xl font-black shadow-lg">Publish Global Article</button></div>` : ''}
 
@@ -2154,26 +2036,20 @@
                     <input type="date" id="target-date-input" value="${escapeHTML(state.user.targetDate)}" onchange="window.updateTargetDate(this.value)" class="w-full px-4 py-3 glass-btn rounded-xl outline-none mb-4 font-bold text-slate-700 dark:text-slate-200" />
                 </div>
                 <div>
-                    <button onclick="window.addCustomCategory()" class="w-full py-4 border-2 border-indigo-200 dark:border-indigo-900 text-indigo-600 dark:text-indigo-400 font-black rounded-2xl hover:bg-indigo-50 dark:hover:bg-indigo-900/30 hover:scale-[1.02] transition-transform text-sm sm:text-base">${t('add_category')}</button>
+                    <button onclick="window.addCustomCategory()" class="w-full py-4 border-2 border-indigo-200 dark:border-indigo-900 text-indigo-600 dark:text-indigo-400 font-black rounded-2xl hover:bg-indigo-50 dark:hover:bg-indigo-900/30 hover:scale-[1.02] transition-transform">${t('add_category')}</button>
                 </div>
 
-                <div class="pt-6 space-y-4 border-t border-slate-300 dark:border-slate-700 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <button onclick="window.exportData()" class="w-full py-4 glass-btn font-black rounded-2xl shadow-sm text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 hover:scale-[1.02] transition-transform flex items-center justify-center gap-2 text-sm sm:text-base">💾 ${t('backup_data')}</button>
-                    <label class="w-full py-4 glass-btn font-black rounded-2xl shadow-sm text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:scale-[1.02] transition-transform cursor-pointer flex items-center justify-center gap-2 text-sm sm:text-base">
+                <div class="pt-6 space-y-4 border-t border-slate-300 dark:border-slate-700 grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <button onclick="window.exportData()" class="w-full py-4 glass-btn font-black rounded-2xl shadow-sm text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 hover:scale-[1.02] transition-transform flex items-center justify-center gap-2">💾 ${t('backup_data')}</button>
+                    <label class="w-full py-4 glass-btn font-black rounded-2xl shadow-sm text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:scale-[1.02] transition-transform cursor-pointer flex items-center justify-center gap-2">
                         📂 ${t('restore_data')}
                         <input type="file" class="hidden" accept=".json" onchange="window.importData(event)"/>
                     </label>
-                    <button onclick="window.exportDataPDF()" class="w-full py-4 glass-btn font-black rounded-2xl shadow-sm text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 hover:scale-[1.02] transition-transform flex items-center justify-center gap-2 sm:col-span-2 text-sm sm:text-base">📄 ${t('export_pdf')}</button>
-                    <button onclick="window.clearAllData()" class="w-full py-4 glass-btn font-black rounded-2xl shadow-sm text-slate-600 dark:text-slate-300 hover:bg-slate-200/50 dark:hover:bg-slate-800/50 hover:scale-[1.02] transition-transform flex items-center justify-center gap-2 sm:col-span-2 text-sm sm:text-base">🧹 ${t('clear_all')}</button>
-                    <button onclick="window.logout()" class="w-full py-4 glass-btn font-black rounded-2xl shadow-sm text-rose-500 hover:scale-[1.02] transition-transform flex items-center justify-center gap-2 sm:col-span-2 text-sm sm:text-base">🚪 ${t('logout')}</button>
-                    <button onclick="window.deleteAccount()" class="w-full py-4 border-2 border-red-200 text-red-500 font-black rounded-2xl hover:bg-red-50 dark:hover:bg-red-900/20 hover:scale-[1.02] transition-transform flex items-center justify-center gap-2 sm:col-span-2 text-sm sm:text-base">⚠️ ${t('del_acc')}</button>
+                    <button onclick="window.exportDataPDF()" class="w-full py-4 glass-btn font-black rounded-2xl shadow-sm text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 hover:scale-[1.02] transition-transform flex items-center justify-center gap-2 md:col-span-2">📄 ${t('export_pdf')}</button>
+                    <button onclick="window.clearAllData()" class="w-full py-4 glass-btn font-black rounded-2xl shadow-sm text-slate-600 dark:text-slate-300 hover:bg-slate-200/50 dark:hover:bg-slate-800/50 hover:scale-[1.02] transition-transform flex items-center justify-center gap-2 md:col-span-2">🧹 ${t('clear_all')}</button>
+                    <button onclick="window.logout()" class="w-full py-4 glass-btn font-black rounded-2xl shadow-sm text-rose-500 hover:scale-[1.02] transition-transform flex items-center justify-center gap-2 md:col-span-2">🚪 ${t('logout')}</button>
+                    <button onclick="window.deleteAccount()" class="w-full py-4 border-2 border-red-200 text-red-500 font-black rounded-2xl hover:bg-red-50 dark:hover:bg-red-900/20 hover:scale-[1.02] transition-transform flex items-center justify-center gap-2 md:col-span-2">⚠️ ${t('del_acc')}</button>
                 </div></div></div>`;
-        }
-
-        function renderArticleView() {
-            const a = articles.find(x => x.id === state.selectedArticleId);
-            if(!a) return '';
-            return `<div class="max-w-3xl mx-auto space-y-8 pb-20 print-content"><div class="flex justify-between items-center print-hidden"><button onclick="window.switchTab('library')" class="glass-btn px-4 py-2 rounded-xl flex items-center space-x-2 font-bold shadow-sm"><span class="text-xl">⬅️</span><span>Back</span></button></div><h2 class="text-3xl sm:text-5xl font-black drop-shadow-md print-text-black">${escapeHTML(a.title)}</h2><div class="flex space-x-4 text-xs sm:text-sm font-bold opacity-70"><span>Author: ${escapeHTML(a.author)}</span></div><p class="text-lg sm:text-xl italic border-l-4 border-indigo-400 pl-4 sm:pl-6 print-text-black font-medium">${escapeHTML(a.intro)}</p>${a.sections.map(s=>`<div class="space-y-2"><h3 class="text-xl sm:text-2xl font-black text-indigo-600 drop-shadow-sm">${escapeHTML(s.title)}</h3><p class="text-base sm:text-lg font-medium leading-relaxed whitespace-pre-wrap">${escapeHTML(s.text)}</p></div>`).join('')}</div>`;
         }
 
         function initApp() {
